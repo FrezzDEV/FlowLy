@@ -1,98 +1,96 @@
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 
-void main() => runApp(const FlowLyApp());
+import 'models/track.dart';
+import 'services/player_service.dart';
+import 'services/theme_service.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final player = PlayerService();
+  await player.initialize();
+  final themes = ThemeService();
+  await themes.load();
+  runApp(FlowLyApp(player: player, themes: themes));
+}
 
 class FlowLyApp extends StatelessWidget {
-  const FlowLyApp({super.key});
+  const FlowLyApp({super.key, required this.player, required this.themes});
+  final PlayerService player;
+  final ThemeService themes;
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFF07080D);
-    const surface = Color(0xFF11131A);
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'FlowLy',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: bg,
-        colorScheme: const ColorScheme.dark(
-          primary: Colors.white,
-          onPrimary: Colors.black,
-          surface: surface,
-          onSurface: Colors.white,
+    return AnimatedBuilder(
+      animation: themes,
+      builder: (_, __) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'FlowLy',
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          useMaterial3: true,
+          scaffoldBackgroundColor: themes.theme.background,
+          colorScheme: ColorScheme.dark(
+            primary: themes.theme.accent,
+            onPrimary: themes.theme.accent.computeLuminance() > .5 ? Colors.black : Colors.white,
+            surface: themes.theme.surface,
+            onSurface: Colors.white,
+          ),
+          sliderTheme: SliderThemeData(
+            activeTrackColor: themes.theme.accent,
+            thumbColor: themes.theme.accent,
+            inactiveTrackColor: Colors.white12,
+          ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: themes.theme.background,
+            indicatorColor: themes.theme.accent.withOpacity(.10),
+            labelTextStyle: WidgetStateProperty.all(const TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: themes.theme.surface.withOpacity(.88),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(themes.theme.radius), borderSide: BorderSide.none),
+          ),
         ),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
+        home: FlowLyShell(player: player, themes: themes),
       ),
-      home: const Shell(),
     );
   }
 }
 
-class Track {
-  final String title;
-  final String artist;
-  final String art;
-  const Track(this.title, this.artist, this.art);
+class FlowLyShell extends StatefulWidget {
+  const FlowLyShell({super.key, required this.player, required this.themes});
+  final PlayerService player;
+  final ThemeService themes;
+  @override State<FlowLyShell> createState() => _FlowLyShellState();
 }
 
-const tracks = <Track>[
-  Track('Blinding Lights', 'The Weeknd', 'amber'),
-  Track('After Hours', 'The Weeknd', 'red'),
-  Track('Starboy', 'The Weeknd', 'blue'),
-  Track('Un Verano Sin Ti', 'Bad Bunny', 'pink'),
-  Track('Save Your Tears', 'The Weeknd', 'violet'),
-  Track('Another Love', 'Tom Odell', 'mono'),
-  Track('Believer', 'Imagine Dragons', 'cyan'),
-  Track('Hurt', 'Johnny Cash', 'gray'),
-  Track('Wasted Times', 'The Weeknd', 'orange'),
-];
-
-class Shell extends StatefulWidget {
-  const Shell({super.key});
-  @override
-  State<Shell> createState() => _ShellState();
-}
-
-class _ShellState extends State<Shell> {
+class _FlowLyShellState extends State<FlowLyShell> {
   int tab = 0;
-  Track current = tracks.first;
-  bool playing = true;
-
-  void play(Track track) => setState(() {
-    current = track;
-    playing = true;
-  });
-
-  void openPlayer() => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => PlayerSheet(track: current, playing: playing, onPlay: () => setState(() => playing = !playing)),
-  );
-
+  Future<void> openPlayer() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => PlayerScreen(player: widget.player, themes: widget.themes)));
+    if (mounted) setState(() {});
+  }
   @override
   Widget build(BuildContext context) {
     final screens = [
-      HomeScreen(onPlay: play),
-      SearchScreen(onPlay: play),
-      LibraryScreen(onPlay: play),
-      ProfileScreen(onOpenSettings: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))),
+      HomeScreen(player: widget.player),
+      SearchScreen(player: widget.player),
+      LibraryScreen(player: widget.player),
+      ProfileScreen(player: widget.player, themes: widget.themes),
     ];
     return Scaffold(
       body: SafeArea(child: IndexedStack(index: tab, children: screens)),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          MiniPlayer(track: current, playing: playing, onTap: openPlayer, onPlay: () => setState(() => playing = !playing)),
+          MiniPlayer(player: widget.player, onTap: openPlayer),
           NavigationBar(
             selectedIndex: tab,
-            onDestinationSelected: (i) => setState(() => tab = i),
-            backgroundColor: const Color(0xFF08090E),
-            indicatorColor: Colors.white.withOpacity(.08),
+            onDestinationSelected: (value) => setState(() => tab = value),
             destinations: const [
               NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Главная'),
-              NavigationDestination(icon: Icon(Icons.search), label: 'Поиск'),
+              NavigationDestination(icon: Icon(Icons.search), selectedIcon: Icon(Icons.search_rounded), label: 'Поиск'),
               NavigationDestination(icon: Icon(Icons.library_music_outlined), selectedIcon: Icon(Icons.library_music), label: 'Библиотека'),
               NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Профиль'),
             ],
@@ -104,124 +102,172 @@ class _ShellState extends State<Shell> {
 }
 
 class HomeScreen extends StatelessWidget {
-  final ValueChanged<Track> onPlay;
-  const HomeScreen({super.key, required this.onPlay});
+  const HomeScreen({super.key, required this.player});
+  final PlayerService player;
   @override
-  Widget build(BuildContext context) {
-    return CustomScrollView(slivers: [
-      SliverPadding(padding: const EdgeInsets.fromLTRB(20, 18, 20, 0), sliver: SliverToBoxAdapter(child: Row(children: [
-        const Expanded(child: Text('FlowLy', style: TextStyle(fontSize: 31, fontWeight: FontWeight.w700, letterSpacing: -.8))),
-        IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none_rounded)),
-      ]))),
-      SliverPadding(padding: const EdgeInsets.fromLTRB(20, 28, 0, 0), sliver: SliverToBoxAdapter(child: SectionTitle('Недавно прослушано'))),
-      SliverPadding(padding: const EdgeInsets.only(top: 12), sliver: SliverToBoxAdapter(child: SizedBox(height: 205, child: ListView.separated(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 20), itemCount: 4, separatorBuilder: (_, __) => const SizedBox(width: 14), itemBuilder: (_, i) => TrackCard(track: tracks[i], onTap: onPlay)))),
-      SliverPadding(padding: const EdgeInsets.fromLTRB(20, 30, 0, 0), sliver: SliverToBoxAdapter(child: SectionTitle('Для тебя'))),
-      SliverPadding(padding: const EdgeInsets.only(top: 12), sliver: SliverToBoxAdapter(child: SizedBox(height: 150, child: ListView.separated(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 20), itemCount: 4, separatorBuilder: (_, __) => const SizedBox(width: 14), itemBuilder: (_, i) => MoodCard(['Chill', 'Night Drive', 'Focus', 'Workout'][i], i)))),
-      SliverPadding(padding: const EdgeInsets.fromLTRB(20, 30, 0, 0), sliver: SliverToBoxAdapter(child: SectionTitle('Рекомендуем для тебя'))),
-      SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8), sliver: SliverList(delegate: SliverChildBuilderDelegate((_, i) => TrackRow(track: tracks[i + 4], onTap: onPlay), childCount: 4))),
-      SliverPadding(padding: const EdgeInsets.fromLTRB(20, 22, 0, 0), sliver: SliverToBoxAdapter(child: SectionTitle('Популярные плейлисты'))),
-      SliverPadding(padding: const EdgeInsets.only(top: 12, bottom: 20), sliver: SliverToBoxAdapter(child: SizedBox(height: 165, child: ListView.separated(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 20), itemCount: 4, separatorBuilder: (_, __) => const SizedBox(width: 14), itemBuilder: (_, i) => PlaylistCard(['Рассвет', 'Ночь', 'Лето', 'Дорога'][i], 64 + i * 11, i)))),
-    ]);
-  }
+  Widget build(BuildContext context) => CustomScrollView(slivers: [
+    const SliverPadding(padding: EdgeInsets.fromLTRB(20, 18, 20, 0), sliver: SliverToBoxAdapter(child: Text('FlowLy', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -.8)))),
+    const SliverPadding(padding: EdgeInsets.fromLTRB(20, 28, 20, 10), sliver: SliverToBoxAdapter(child: SectionTitle('Недавно прослушано'))),
+    SliverToBoxAdapter(child: SizedBox(height: 210, child: ListView.separated(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 20), itemCount: 4, separatorBuilder: (_, __) => const SizedBox(width: 14), itemBuilder: (_, i) => TrackCard(track: demoTracks[i], onTap: () => player.playTrack(demoTracks[i]))))),
+    const SliverPadding(padding: EdgeInsets.fromLTRB(20, 28, 20, 10), sliver: SliverToBoxAdapter(child: SectionTitle('Для тебя'))),
+    SliverToBoxAdapter(child: SizedBox(height: 152, child: ListView.separated(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 20), itemCount: 4, separatorBuilder: (_, __) => const SizedBox(width: 12), itemBuilder: (_, i) => MoodCard(title: ['Chill', 'Night Drive', 'Focus', 'Workout'][i], icon: [Icons.nights_stay_outlined, Icons.route_outlined, Icons.center_focus_strong_outlined, Icons.bolt_outlined][i], color: [0xFF53205E, 0xFF09264B, 0xFF0D5C4B, 0xFF3C1B55][i])))),
+    const SliverPadding(padding: EdgeInsets.fromLTRB(20, 28, 20, 10), sliver: SliverToBoxAdapter(child: SectionTitle('Рекомендуем для тебя'))),
+    SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 20), sliver: SliverList(delegate: SliverChildBuilderDelegate((_, i) => TrackRow(track: demoTracks[i + 4], onTap: () => player.playTrack(demoTracks[i + 4])), childCount: 4))),
+    const SliverPadding(padding: EdgeInsets.fromLTRB(20, 28, 20, 10), sliver: SliverToBoxAdapter(child: SectionTitle('Популярные плейлисты'))),
+    SliverToBoxAdapter(child: SizedBox(height: 172, child: ListView.separated(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 20), itemCount: 4, separatorBuilder: (_, __) => const SizedBox(width: 14), itemBuilder: (_, i) => PlaylistCard(title: ['Рассвет', 'Ночь', 'Лето', 'Дорога'][i], count: 120 - i * 17, index: i)))),
+    const SliverToBoxAdapter(child: SizedBox(height: 20)),
+  ]);
 }
 
 class SearchScreen extends StatefulWidget {
-  final ValueChanged<Track> onPlay;
-  const SearchScreen({super.key, required this.onPlay});
-  @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  const SearchScreen({super.key, required this.player});
+  final PlayerService player;
+  @override State<SearchScreen> createState() => _SearchScreenState();
 }
 class _SearchScreenState extends State<SearchScreen> {
-  final controller = TextEditingController();
+  final query = TextEditingController();
   int filter = 0;
-  @override
-  Widget build(BuildContext context) {
-    final q = controller.text.toLowerCase();
-    final results = tracks.where((t) => q.isEmpty || '${t.title} ${t.artist}'.toLowerCase().contains(q)).toList();
+  @override void dispose() { query.dispose(); super.dispose(); }
+  @override Widget build(BuildContext context) {
+    final text = query.text.toLowerCase();
+    final results = demoTracks.where((t) => text.isEmpty || '${t.title} ${t.artist}'.toLowerCase().contains(text)).toList();
     return CustomScrollView(slivers: [
-      const SliverPadding(padding: EdgeInsets.fromLTRB(20, 22, 20, 18), sliver: SliverToBoxAdapter(child: Text('Поиск', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w700)))),
-      SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 20), sliver: SliverToBoxAdapter(child: TextField(controller: controller, onChanged: (_) => setState(() {}), decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: 'Трек, артист, альбом...', suffixIcon: IconButton(onPressed: () {}, icon: const Icon(Icons.tune)), filled: true, fillColor: const Color(0xFF15171E), border: OutlineInputBorder(borderRadius: BorderRadius.circular(22), borderSide: BorderSide.none))))),
-      SliverPadding(padding: const EdgeInsets.fromLTRB(20, 20, 0, 14), sliver: SliverToBoxAdapter(child: SizedBox(height: 44, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: 4, separatorBuilder: (_, __) => const SizedBox(width: 10), itemBuilder: (_, i) { final labels = ['Треки', 'Альбомы', 'Артисты', 'Плейлисты']; return ChoiceChip(label: Text(labels[i]), selected: filter == i, onSelected: (_) => setState(() => filter = i), selectedColor: Colors.white, labelStyle: TextStyle(color: filter == i ? Colors.black : Colors.white, fontWeight: FontWeight.w600)); })))),
-      SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 20), sliver: SliverList(delegate: SliverChildBuilderDelegate((_, i) => TrackRow(track: results[i], onTap: widget.onPlay, trailing: const Icon(Icons.add_rounded)), childCount: results.length.clamp(0, 8)))),
+      const SliverPadding(padding: EdgeInsets.fromLTRB(20, 22, 20, 18), sliver: SliverToBoxAdapter(child: Text('Поиск', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w800)))),
+      SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 20), sliver: SliverToBoxAdapter(child: TextField(controller: query, onChanged: (_) => setState(() {}), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Трек, артист, альбом...', suffixIcon: Icon(Icons.tune))))),
+      SliverPadding(padding: const EdgeInsets.fromLTRB(20, 18, 20, 14), sliver: SliverToBoxAdapter(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: ['Треки', 'Альбомы', 'Артисты', 'Плейлисты'].asMap().entries.map((entry) => Padding(padding: const EdgeInsets.only(right: 10), child: ChoiceChip(label: Text(entry.value), selected: filter == entry.key, onSelected: (_) => setState(() => filter = entry.key), selectedColor: Colors.white, labelStyle: TextStyle(color: filter == entry.key ? Colors.black : Colors.white)))).toList()))),
+      SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 20), sliver: SliverList(delegate: SliverChildBuilderDelegate((_, i) => TrackRow(track: results[i], onTap: () => widget.player.playTrack(results[i]), trailing: const Icon(Icons.add_rounded)), childCount: results.length)),
     ]);
   }
 }
 
 class LibraryScreen extends StatelessWidget {
-  final ValueChanged<Track> onPlay;
-  const LibraryScreen({super.key, required this.onPlay});
-  @override
-  Widget build(BuildContext context) => CustomScrollView(slivers: [
-    const SliverPadding(padding: EdgeInsets.fromLTRB(20, 22, 20, 20), sliver: SliverToBoxAdapter(child: Text('Библиотека', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w700)))),
-    SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 20), sliver: SliverToBoxAdapter(child: GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.45, children: const [LibraryTile(Icons.favorite, 'Любимые', '128 треков'), LibraryTile(Icons.queue_music, 'Плейлисты', '24'), LibraryTile(Icons.download, 'Скачанное', '312 треков'), LibraryTile(Icons.history, 'Недавние', '50 треков')]))),
-    const SliverPadding(padding: EdgeInsets.fromLTRB(20, 28, 20, 12), sliver: SliverToBoxAdapter(child: Text('Плейлисты', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)))),
-    SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 20), sliver: SliverList(delegate: SliverChildListDelegate(['Моя музыка', 'Chill Vibes', 'Топ 2024', 'Тренировка', 'В дороге', 'Грустное'].asMap().entries.map((e) => TrackRow(track: Track(e.value, '${20 + e.key * 13} треков', ['violet','blue','pink','green','orange','cyan'][e.key]), onTap: onPlay)).toList()))),
+  const LibraryScreen({super.key, required this.player});
+  final PlayerService player;
+  @override Widget build(BuildContext context) => CustomScrollView(slivers: [
+    const SliverPadding(padding: EdgeInsets.fromLTRB(20, 22, 20, 20), sliver: SliverToBoxAdapter(child: Text('Библиотека', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w800)))),
+    SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 20), sliver: SliverToBoxAdapter(child: GridView.count(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1.55, children: const [LibraryTile(Icons.favorite_rounded, 'Любимые', '128 треков'), LibraryTile(Icons.queue_music_rounded, 'Плейлисты', '24'), LibraryTile(Icons.download_rounded, 'Скачанное', '312 треков'), LibraryTile(Icons.history_rounded, 'Недавние', '50 треков')]))),
+    const SliverPadding(padding: EdgeInsets.fromLTRB(20, 28, 20, 10), sliver: SliverToBoxAdapter(child: Text('Плейлисты', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)))),
+    SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 20), sliver: SliverList(delegate: SliverChildBuilderDelegate((_, i) => TrackRow(track: Track(id: 'playlist-$i', title: ['Моя музыка', 'Chill Vibes', 'Топ 2024', 'Тренировка', 'В дороге', 'Грустное'][i], artist: '${20 + i * 13} треков', duration: Duration.zero, audioUrl: demoTracks[i % demoTracks.length].audioUrl, gradient: demoTracks[i % demoTracks.length].gradient), onTap: () => player.playTrack(demoTracks[i % demoTracks.length])), childCount: 6))),
   ]);
 }
 
 class ProfileScreen extends StatelessWidget {
-  final VoidCallback onOpenSettings;
-  const ProfileScreen({super.key, required this.onOpenSettings});
-  @override
-  Widget build(BuildContext context) => ListView(padding: const EdgeInsets.fromLTRB(20, 22, 20, 30), children: [
-    Row(children: [const CircleAvatar(radius: 32, backgroundColor: Color(0xFF242630), child: Icon(Icons.person, size: 34)), const SizedBox(width: 14), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Алекс', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)), Text('Персональный музыкальный профиль', style: TextStyle(color: Colors.white54))])), IconButton(onPressed: onOpenSettings, icon: const Icon(Icons.settings_outlined))]),
-    const SizedBox(height: 28),
+  const ProfileScreen({super.key, required this.player, required this.themes});
+  final PlayerService player;
+  final ThemeService themes;
+  @override Widget build(BuildContext context) => ListView(padding: const EdgeInsets.fromLTRB(20, 22, 20, 30), children: [
+    Row(children: [const CircleAvatar(radius: 32, backgroundColor: Color(0xFF252832), child: Icon(Icons.person, size: 34)), const SizedBox(width: 14), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Алекс', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w700)), Text('Персональный музыкальный профиль', style: TextStyle(color: Colors.white54))])), IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen(player: player, themes: themes))), icon: const Icon(Icons.settings_outlined))]),
+    const SizedBox(height: 26),
     const Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [Stat('24', 'Плейлисты'), Stat('128', 'Подписки'), Stat('56', 'Подписчики')]),
-    const SizedBox(height: 30),
-    const Text('Быстрые действия', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-    const SizedBox(height: 12),
-    ActionTile(Icons.palette_outlined, 'Темы', 'Настройте стиль FlowLy', () {}),
-    ActionTile(Icons.import_export, 'Импорт музыки', 'Перенесите свою медиатеку', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ImportScreen()))),
-    ActionTile(Icons.tune, 'Фильтры контента', 'Оригиналы, ремиксы и AI', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FiltersScreen()))),
-    ActionTile(Icons.settings_outlined, 'Настройки', 'Воспроизведение, язык, приватность', onOpenSettings),
+    const SizedBox(height: 30), const Text('Быстрые действия', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)), const SizedBox(height: 12),
+    ActionTile(Icons.palette_outlined, 'Темы', 'Настройте стиль FlowLy', () => Navigator.push(context, MaterialPageRoute(builder: (_) => ThemesScreen(themes: themes)))),
+    ActionTile(Icons.import_export_rounded, 'Импорт музыки', 'Перенесите свою медиатеку', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ImportScreen()))),
+    ActionTile(Icons.tune_rounded, 'Фильтры контента', 'Оригиналы, ремиксы и AI', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FiltersScreen()))),
+    ActionTile(Icons.queue_music_rounded, 'Очередь', 'Управление следующим треком', () => Navigator.push(context, MaterialPageRoute(builder: (_) => QueueScreen(player: player)))),
+    ActionTile(Icons.settings_outlined, 'Настройки', 'Воспроизведение, язык, приватность', () => Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen(player: player, themes: themes)))),
   ]);
 }
 
-class PlayerSheet extends StatefulWidget {
-  final Track track; final bool playing; final VoidCallback onPlay;
-  const PlayerSheet({super.key, required this.track, required this.playing, required this.onPlay});
-  @override State<PlayerSheet> createState() => _PlayerSheetState();
+class PlayerScreen extends StatefulWidget {
+  const PlayerScreen({super.key, required this.player, required this.themes});
+  final PlayerService player; final ThemeService themes;
+  @override State<PlayerScreen> createState() => _PlayerScreenState();
 }
-class _PlayerSheetState extends State<PlayerSheet> {
-  late bool playing;
-  @override void initState() { super.initState(); playing = widget.playing; }
-  @override Widget build(BuildContext context) => Container(height: MediaQuery.sizeOf(context).height * .94, decoration: const BoxDecoration(color: Color(0xFF08090D), borderRadius: BorderRadius.vertical(top: Radius.circular(28))), child: SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(20, 10, 20, 20), child: Column(children: [
-    Row(children: [IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.keyboard_arrow_down)), const Expanded(child: Column(children: [Text('Сейчас играет', style: TextStyle(color: Colors.white54)), Text('Плейлист «Chill»', style: TextStyle(fontWeight: FontWeight.w600))])), IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz))]),
-    const SizedBox(height: 24),
-    Expanded(child: Center(child: ArtCard(track: widget.track, size: MediaQuery.sizeOf(context).width - 40, radius: 24))),
-    const SizedBox(height: 22),
-    Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(widget.track.title, style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w700)), Text(widget.track.artist, style: const TextStyle(fontSize: 18, color: Colors.white60))])), IconButton(onPressed: () {}, icon: const Icon(Icons.favorite_border, size: 30))]),
-    const SizedBox(height: 10), const LinearProgressIndicator(value: .42, minHeight: 3, backgroundColor: Color(0xFF33343A), color: Colors.white), const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('1:24', style: TextStyle(color: Colors.white54)), Text('3:20', style: TextStyle(color: Colors.white54))]),
-    const SizedBox(height: 12),
-    Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [IconButton(onPressed: () {}, icon: const Icon(Icons.shuffle, size: 26)), IconButton(onPressed: () {}, icon: const Icon(Icons.skip_previous_rounded, size: 42)), GestureDetector(onTap: () => setState(() => playing = !playing), child: Container(width: 78, height: 78, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle), child: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.black, size: 42))), IconButton(onPressed: () {}, icon: const Icon(Icons.skip_next_rounded, size: 42)), IconButton(onPressed: () {}, icon: const Icon(Icons.repeat, size: 26))]),
-    const SizedBox(height: 10), Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: const [PlayerAction(Icons.lyrics, 'Текст'), PlayerAction(Icons.auto_awesome, 'Похожее'), PlayerAction(Icons.timer_outlined, 'Таймер'), PlayerAction(Icons.queue_music, 'Очередь')]),
-    const SizedBox(height: 18), Container(width: double.infinity, padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: const Color(0xFF12141A), borderRadius: BorderRadius.circular(20)), child: const Row(children: [Expanded(child: Text('Далее в очереди', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600))), Icon(Icons.keyboard_arrow_up)])),
-  ]))));
+class _PlayerScreenState extends State<PlayerScreen> {
+  bool shuffle = false; bool repeat = false; bool liked = false;
+  @override Widget build(BuildContext context) => Scaffold(body: SafeArea(child: StreamBuilder<int?>(stream: widget.player.player.currentIndexStream, builder: (_, __) {
+    final track = widget.player.currentTrack;
+    return StreamBuilder<bool>(stream: widget.player.player.playingStream, initialData: widget.player.player.playing, builder: (_, playingSnapshot) {
+      final playing = playingSnapshot.data ?? false;
+      return Column(children: [
+        Padding(padding: const EdgeInsets.fromLTRB(10, 4, 10, 0), child: Row(children: [IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 30)), const Expanded(child: Column(children: [Text('Сейчас играет', style: TextStyle(color: Colors.white54)), Text('Плейлист «Chill»', style: TextStyle(fontWeight: FontWeight.w700))])), IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz))])),
+        Expanded(child: Padding(padding: const EdgeInsets.fromLTRB(20, 22, 20, 0), child: TrackArt(track: track, size: double.infinity, radius: 26))),
+        Padding(padding: const EdgeInsets.fromLTRB(24, 22, 24, 0), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(track.title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)), Text(track.artist, style: const TextStyle(fontSize: 18, color: Colors.white60))])), IconButton(onPressed: () => setState(() => liked = !liked), icon: Icon(liked ? Icons.favorite : Icons.favorite_border, size: 31))])),
+        StreamBuilder<Duration>(stream: widget.player.player.positionStream, builder: (_, positionSnapshot) { final position = positionSnapshot.data ?? Duration.zero; final duration = widget.player.player.duration ?? track.duration; final max = duration.inMilliseconds.clamp(1, 1 << 31).toDouble(); final value = position.inMilliseconds.clamp(0, max.toInt()).toDouble(); return Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Column(children: [Slider(value: value, min: 0, max: max, onChanged: (v) => widget.player.seek(Duration(milliseconds: v.toInt()))), Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(formatDuration(position), style: const TextStyle(color: Colors.white54)), Text(formatDuration(duration), style: const TextStyle(color: Colors.white54))])])); }),
+        const SizedBox(height: 4),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [IconButton(onPressed: () { setState(() => shuffle = !shuffle); widget.player.setShuffle(shuffle); }, icon: Icon(Icons.shuffle, color: shuffle ? Theme.of(context).colorScheme.primary : Colors.white)), IconButton(onPressed: widget.player.previous, icon: const Icon(Icons.skip_previous_rounded, size: 44)), GestureDetector(onTap: widget.player.toggle, child: Container(width: 78, height: 78, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle), child: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.black, size: 43))), IconButton(onPressed: widget.player.next, icon: const Icon(Icons.skip_next_rounded, size: 44)), IconButton(onPressed: () { setState(() => repeat = !repeat); widget.player.setRepeat(repeat); }, icon: Icon(Icons.repeat, color: repeat ? Theme.of(context).colorScheme.primary : Colors.white))]),
+        const SizedBox(height: 12),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [PlayerAction(Icons.lyrics_outlined, 'Текст', () => Navigator.push(context, MaterialPageRoute(builder: (_) => LyricsScreen(track: track)))), PlayerAction(Icons.auto_awesome, 'Похожее', () {}), PlayerAction(Icons.timer_outlined, 'Таймер', () => showTimer(context)), PlayerAction(Icons.queue_music_rounded, 'Очередь', () => Navigator.push(context, MaterialPageRoute(builder: (_) => QueueScreen(player: widget.player))))]),
+        const SizedBox(height: 18),
+        Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 20), child: Container(padding: const EdgeInsets.all(17), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withOpacity(.8), borderRadius: BorderRadius.circular(widget.themes.theme.radius)), child: Row(children: [const Expanded(child: Text('Далее в очереди', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700))), Text('${widget.player.queue.length - 1}', style: const TextStyle(color: Colors.white54)), const SizedBox(width: 8), const Icon(Icons.keyboard_arrow_up)]))),
+      ]);
+    });
+  })));
 }
 
-class SettingsScreen extends StatelessWidget { const SettingsScreen({super.key}); @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Настройки')), body: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 30), children: [SettingGroup(title: 'Аккаунт', children: [SettingTile(Icons.person_outline, 'Аккаунт', 'Профиль, подписка и данные'), SettingTile(Icons.security, 'Безопасность', 'Пароль и двухфакторная аутентификация'), SettingTile(Icons.credit_card, 'Платежи', 'Способы оплаты и история')]), SettingGroup(title: 'Приложение', children: [SettingTile(Icons.music_note, 'Воспроизведение', 'Качество звука, кроссфейд, эквалайзер'), SettingTile(Icons.download, 'Скачивание', 'Настройки скачивания и хранения'), SettingTile(Icons.notifications_none, 'Уведомления', 'Только важное'), SettingTile(Icons.palette_outlined, 'Внешний вид', 'Тема, цвета и оформление'), SettingTile(Icons.subtitles_outlined, 'Текст', 'Отображение текста песен')]), SettingGroup(title: 'Другое', children: [SettingTile(Icons.language, 'Язык', 'Русский'), SettingTile(Icons.info_outline, 'О приложении', 'Версия, лицензии и информация'), SettingTile(Icons.help_outline, 'Поддержка', 'Помощь и обратная связь')]) ]); }
+class MiniPlayer extends StatelessWidget {
+  const MiniPlayer({super.key, required this.player, required this.onTap});
+  final PlayerService player; final VoidCallback onTap;
+  @override Widget build(BuildContext context) => StreamBuilder<int?>(stream: player.player.currentIndexStream, builder: (_, __) { final track = player.currentTrack; return Container(margin: const EdgeInsets.fromLTRB(10, 0, 10, 4), padding: const EdgeInsets.all(9), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withOpacity(.96), borderRadius: BorderRadius.circular(18)), child: StreamBuilder<bool>(stream: player.player.playingStream, initialData: player.player.playing, builder: (_, snapshot) => Row(children: [GestureDetector(onTap: onTap, child: TrackArt(track: track, size: 48, radius: 12)), const SizedBox(width: 10), Expanded(child: GestureDetector(onTap: onTap, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(track.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)), Text(track.artist, style: const TextStyle(color: Colors.white54, fontSize: 12))]))), IconButton(onPressed: player.previous, icon: const Icon(Icons.skip_previous_rounded)), IconButton(onPressed: player.toggle, icon: Icon((snapshot.data ?? false) ? Icons.pause_rounded : Icons.play_arrow_rounded)), IconButton(onPressed: player.next, icon: const Icon(Icons.skip_next_rounded))]))); });
+}
+
+class QueueScreen extends StatefulWidget {
+  const QueueScreen({super.key, required this.player}); final PlayerService player;
+  @override State<QueueScreen> createState() => _QueueScreenState();
+}
+class _QueueScreenState extends State<QueueScreen> {
+  @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Очередь'), actions: [TextButton(onPressed: () async { await widget.player.clearQueue(); setState(() {}); }, child: const Text('Очистить'))]), body: ReorderableListView.builder(padding: const EdgeInsets.fromLTRB(16, 8, 16, 20), itemCount: widget.player.queue.length, onReorder: (oldIndex, newIndex) async { await widget.player.reorderQueue(oldIndex, newIndex); setState(() {}); }, itemBuilder: (_, index) { final track = widget.player.queue[index]; return ListTile(key: ValueKey(track.id), contentPadding: const EdgeInsets.symmetric(vertical: 5), leading: TrackArt(track: track, size: 52, radius: 10), title: Text(track.title, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(track.artist), trailing: Row(mainAxisSize: MainAxisSize.min, children: [if (index == (widget.player.player.currentIndex ?? 0)) const Icon(Icons.equalizer_rounded), IconButton(onPressed: () async { await widget.player.removeFromQueue(index); setState(() {}); }, icon: const Icon(Icons.close_rounded))]), onTap: () async { await widget.player.playTrack(track); setState(() {}); }); }));
+}
+
+class ThemesScreen extends StatelessWidget {
+  const ThemesScreen({super.key, required this.themes}); final ThemeService themes;
+  @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Темы'), actions: [IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ThemeEditorScreen(themes: themes))), icon: const Icon(Icons.edit_outlined))]), body: AnimatedBuilder(animation: themes, builder: (_, __) => ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 30), children: [const Text('Рекомендуемые', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)), const SizedBox(height: 14), ...themes.presets.map((theme) => ThemeCard(theme: theme, active: themes.theme.name == theme.name, onApply: () => themes.apply(theme))), const SizedBox(height: 20), FilledButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ThemeEditorScreen(themes: themes))), icon: const Icon(Icons.add), label: const Text('Создать свою тему'))]));
+}
+
+class ThemeEditorScreen extends StatefulWidget {
+  const ThemeEditorScreen({super.key, required this.themes}); final ThemeService themes;
+  @override State<ThemeEditorScreen> createState() => _ThemeEditorScreenState();
+}
+class _ThemeEditorScreenState extends State<ThemeEditorScreen> {
+  late FlowTheme draft;
+  final colors = const [Colors.white, Color(0xFFB9E7FF), Color(0xFFD6F5D1), Color(0xFFFFD6C2), Color(0xFFFFC4E1), Color(0xFFE4D1FF)];
+  @override void initState() { super.initState(); draft = widget.themes.theme; }
+  @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Редактор темы'), actions: [TextButton(onPressed: () async { await widget.themes.apply(draft); if (mounted) Navigator.pop(context); }, child: const Text('Сохранить'))]), body: ListView(padding: const EdgeInsets.fromLTRB(20, 10, 20, 40), children: [
+    Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: draft.surface.withOpacity(draft.opacity), borderRadius: BorderRadius.circular(draft.radius)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('FlowLy', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)), const SizedBox(height: 10), Row(children: [Expanded(child: Container(height: 76, decoration: BoxDecoration(gradient: LinearGradient(colors: [draft.accent.withOpacity(.9), draft.surface]), borderRadius: BorderRadius.circular(draft.radius)))), const SizedBox(width: 12), const Icon(Icons.play_circle_fill_rounded, size: 52)])]),
+    const SizedBox(height: 24),
+    const Text('Основной цвет', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)), const SizedBox(height: 12), Wrap(spacing: 14, children: colors.map((color) => GestureDetector(onTap: () => setState(() => draft = draft.copyWith(accent: color)), child: CircleAvatar(radius: 17, backgroundColor: color, child: draft.accent.value == color.value ? const Icon(Icons.check, color: Colors.black) : null))).toList()),
+    const SizedBox(height: 22),
+    const Text('Прозрачность', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)), Slider(value: draft.opacity, min: .55, max: 1, onChanged: (value) => setState(() => draft = draft.copyWith(opacity: value))),
+    const Text('Радиус карточек', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)), Slider(value: draft.radius, min: 8, max: 32, onChanged: (value) => setState(() => draft = draft.copyWith(radius: value))),
+    SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Плавные анимации'), subtitle: const Text('Синхронизация переходов и плеера'), value: draft.animations, onChanged: (value) => setState(() => draft = draft.copyWith(animations: value))),
+    SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Компактный режим'), subtitle: const Text('Больше контента на экране'), value: draft.compact, onChanged: (value) => setState(() => draft = draft.copyWith(compact: value))),
+    DropdownButtonFormField<String>(initialValue: draft.coverStyle, decoration: const InputDecoration(labelText: 'Стиль обложек'), items: const [DropdownMenuItem(value: 'rounded', child: Text('Скруглённые')), DropdownMenuItem(value: 'square', child: Text('Квадратные')), DropdownMenuItem(value: 'soft', child: Text('Мягкие'))], onChanged: (value) => setState(() => draft = draft.copyWith(coverStyle: value))),
+    const SizedBox(height: 18), OutlinedButton(onPressed: () => setState(() => draft = FlowTheme.defaultTheme), child: const Text('Сбросить')),
+  ]);
+}
+
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key, required this.player, required this.themes}); final PlayerService player; final ThemeService themes;
+  @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Настройки')), body: ListView(padding: const EdgeInsets.fromLTRB(20, 10, 20, 30), children: [const SettingsGroupTitle('Аккаунт'), SettingsTile(Icons.person_outline, 'Аккаунт', 'Профиль, подписка и данные'), SettingsTile(Icons.security_outlined, 'Безопасность', 'Пароль, двухфакторная аутентификация'), SettingsTile(Icons.credit_card_outlined, 'Платежи', 'Способы оплаты и история'), const SettingsGroupTitle('Приложение'), SettingsTile(Icons.music_note_outlined, 'Воспроизведение', 'Качество звука, кроссфейд, эквалайзер'), SettingsTile(Icons.download_outlined, 'Скачивание', 'Настройки скачивания и хранения'), SettingsTile(Icons.notifications_none, 'Уведомления', 'Только важное'), SettingsTile(Icons.palette_outlined, 'Внешний вид', 'Темы, цвета и оформление', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ThemesScreen(themes: themes)))), SettingsTile(Icons.tune_rounded, 'Фильтры контента', 'Ремиксы, каверы, AI и дубликаты', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FiltersScreen()))), SettingsTile(Icons.queue_music_rounded, 'Очередь', 'Управление текущим воспроизведением', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QueueScreen(player: player)))), const SettingsGroupTitle('Другое'), SettingsTile(Icons.language, 'Язык', 'Русский'), SettingsTile(Icons.info_outline, 'О приложении', 'FlowLy 1.1.0'), SettingsTile(Icons.help_outline, 'Поддержка', 'Помощь и обратная связь') ]));
+}
 
 class FiltersScreen extends StatefulWidget { const FiltersScreen({super.key}); @override State<FiltersScreen> createState() => _FiltersScreenState(); }
-class _FiltersScreenState extends State<FiltersScreen> { bool remixes=true, covers=true, ai=true, duplicates=true; @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Фильтры контента')), body: ListView(padding: const EdgeInsets.all(20), children: [const Text('Чистый каталог', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)), const SizedBox(height: 8), const Text('Настройте, какие версии треков показывать в рекомендациях.', style: TextStyle(color: Colors.white60)), const SizedBox(height: 20), SwitchListTile(value: remixes, onChanged:(v)=>setState(()=>remixes=v), title: const Text('Скрывать ремиксы'), subtitle: const Text('Показывать оригинальные версии в приоритете')), SwitchListTile(value: covers, onChanged:(v)=>setState(()=>covers=v), title: const Text('Скрывать каверы и пародии')), SwitchListTile(value: ai, onChanged:(v)=>setState(()=>ai=v), title: const Text('Скрывать AI-generated треки')), SwitchListTile(value: duplicates, onChanged:(v)=>setState(()=>duplicates=v), title: const Text('Скрывать дубликаты и низкое качество')) ]); }
+class _FiltersScreenState extends State<FiltersScreen> { bool remixes = true, covers = true, ai = true, duplicates = true, originals = true; @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Фильтры контента')), body: ListView(padding: const EdgeInsets.all(20), children: [const Text('Чистый каталог', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)), const SizedBox(height: 8), const Text('Управляйте тем, какие версии треков FlowLy показывает в рекомендациях.', style: TextStyle(color: Colors.white60)), const SizedBox(height: 20), SwitchListTile(title: const Text('Приоритет оригиналов'), value: originals, onChanged: (v) => setState(() => originals = v)), SwitchListTile(title: const Text('Скрывать ремиксы'), value: remixes, onChanged: (v) => setState(() => remixes = v)), SwitchListTile(title: const Text('Скрывать каверы и пародии'), value: covers, onChanged: (v) => setState(() => covers = v)), SwitchListTile(title: const Text('Скрывать AI-generated треки'), value: ai, onChanged: (v) => setState(() => ai = v)), SwitchListTile(title: const Text('Скрывать дубликаты'), value: duplicates, onChanged: (v) => setState(() => duplicates = v)) ])); }
 
-class ImportScreen extends StatelessWidget { const ImportScreen({super.key}); @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Импорт музыки')), body: ListView(padding: const EdgeInsets.all(20), children: [const Text('Перенесите свою библиотеку', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)), const SizedBox(height: 8), const Text('Плейлисты, избранное, альбомы и историю прослушивания.', style: TextStyle(color: Colors.white60)), const SizedBox(height: 24), ...['Spotify','Apple Music','YouTube Music','VK Музыка','Deezer','Yandex Music'].map((name)=>Card(color: const Color(0xFF12141A), child: ListTile(leading: const Icon(Icons.library_music_outlined), title: Text(name), trailing: FilledButton(onPressed: () {}, child: const Text('Импортировать')))))]); }
+class ImportScreen extends StatelessWidget { const ImportScreen({super.key}); @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Импорт музыки')), body: ListView(padding: const EdgeInsets.fromLTRB(20, 10, 20, 30), children: [const Text('Перенесите свою библиотеку', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)), const SizedBox(height: 8), const Text('FlowLy подготовит плейлисты, избранное, альбомы и историю к переносу.', style: TextStyle(color: Colors.white60)), const SizedBox(height: 20), ...['Spotify', 'Apple Music', 'YouTube Music', 'VK Музыка', 'Deezer', 'Yandex Music'].map((name) => ListTile(contentPadding: const EdgeInsets.symmetric(vertical: 5), leading: CircleAvatar(backgroundColor: Colors.white10, child: Text(name.substring(0, 1))), title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)), trailing: FilledButton.tonal(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Импорт $name будет подключён через API.'))), child: const Text('Импортировать'))).toList() ])); }
 
-class TrackCard extends StatelessWidget { final Track track; final ValueChanged<Track> onTap; const TrackCard({super.key, required this.track, required this.onTap}); @override Widget build(BuildContext context) => SizedBox(width: 165, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Stack(children: [ArtCard(track: track, size: 165, radius: 16), Positioned(right: 8,bottom:8,child: CircleAvatar(backgroundColor: Colors.black.withOpacity(.72), child: const Icon(Icons.play_arrow, color: Colors.white)))]), const SizedBox(height: 8), Text(track.title, maxLines:1, overflow:TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)), Text(track.artist, style: const TextStyle(color: Colors.white54))])); }
+class LyricsScreen extends StatelessWidget { const LyricsScreen({super.key, required this.track}); final Track track; @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Текст')), body: ListView(padding: const EdgeInsets.fromLTRB(24, 20, 24, 40), children: [Text(track.title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)), Text(track.artist, style: const TextStyle(fontSize: 17, color: Colors.white54)), const SizedBox(height: 28), const Text('Текст песни подключается через музыкальный API.\n\nЭкран уже отделён от плеера, поэтому позже сюда можно добавить синхронизацию по времени, перевод и режим караоке.', style: TextStyle(fontSize: 18, height: 1.6))])); }
 
-class TrackRow extends StatelessWidget { final Track track; final ValueChanged<Track> onTap; final Widget? trailing; const TrackRow({super.key, required this.track, required this.onTap, this.trailing}); @override Widget build(BuildContext context) => InkWell(onTap:()=>onTap(track), borderRadius: BorderRadius.circular(14), child: Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(children: [ArtCard(track:track,size:54,radius:10), const SizedBox(width:12), Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(track.title, style:const TextStyle(fontWeight:FontWeight.w600)), Text(track.artist, style:const TextStyle(color:Colors.white54))])), trailing ?? const Icon(Icons.more_horiz, color:Colors.white54)]))); }
+class TrackCard extends StatelessWidget { const TrackCard({super.key, required this.track, required this.onTap}); final Track track; final VoidCallback onTap; @override Widget build(BuildContext context) => SizedBox(width: 166, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Stack(children: [TrackArt(track: track, size: 166, radius: 18), Positioned(right: 9, bottom: 9, child: CircleAvatar(backgroundColor: Colors.black54, child: IconButton(onPressed: onTap, icon: const Icon(Icons.play_arrow_rounded, color: Colors.white))) ]), const SizedBox(height: 8), Text(track.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)), Text(track.artist, style: const TextStyle(color: Colors.white54))])); }
 
-class MiniPlayer extends StatelessWidget { final Track track; final bool playing; final VoidCallback onTap,onPlay; const MiniPlayer({super.key, required this.track, required this.playing, required this.onTap, required this.onPlay}); @override Widget build(BuildContext context)=>InkWell(onTap:onTap, child:Container(margin:const EdgeInsets.fromLTRB(12,4,12,0), padding:const EdgeInsets.all(8), decoration:BoxDecoration(color:const Color(0xFF15171E), borderRadius:BorderRadius.circular(16)), child:Row(children:[ArtCard(track:track,size:48,radius:9), const SizedBox(width:10), Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(track.title, maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w600)),Text(track.artist,style:const TextStyle(color:Colors.white54))])), IconButton(onPressed:onPlay,icon:Icon(playing?Icons.pause:Icons.play_arrow)), const Icon(Icons.queue_music,color:Colors.white54)]))); }
+class TrackRow extends StatelessWidget { const TrackRow({super.key, required this.track, required this.onTap, this.trailing}); final Track track; final VoidCallback onTap; final Widget? trailing; @override Widget build(BuildContext context) => ListTile(contentPadding: const EdgeInsets.symmetric(vertical: 3), leading: TrackArt(track: track, size: 52, radius: 11), title: Text(track.title, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(track.artist, style: const TextStyle(color: Colors.white60)), trailing: trailing ?? const Icon(Icons.more_horiz), onTap: onTap); }
 
-class ArtCard extends StatelessWidget { final Track track; final double size; final double radius; const ArtCard({super.key,required this.track,required this.size,required this.radius}); Color c(String key){switch(key){case'amber':return const Color(0xFFD56A1D);case'red':return const Color(0xFFB70C30);case'blue':return const Color(0xFF132B72);case'pink':return const Color(0xFFB45A67);case'violet':return const Color(0xFF632A8F);case'mono':return const Color(0xFF777777);case'cyan':return const Color(0xFF0C706F);case'gray':return const Color(0xFF404247);default:return const Color(0xFF9B4B18);}} @override Widget build(BuildContext context)=>Container(width:size,height:size,decoration:BoxDecoration(borderRadius:BorderRadius.circular(radius),gradient:LinearGradient(begin:Alignment.topLeft,end:Alignment.bottomRight,colors:[c(track.art),Colors.black])),child:Stack(children:[Positioned.fill(child:CustomPaint(painter:_ArtPainter(c(track.art)))),Center(child:Text(track.artist.substring(0,1),style:TextStyle(fontSize:size*.24,fontWeight:FontWeight.w900,color:Colors.white.withOpacity(.16))))])); }
+class TrackArt extends StatelessWidget { const TrackArt({super.key, required this.track, required this.size, this.radius = 16}); final Track track; final double size; final double radius; @override Widget build(BuildContext context) { final colors = track.gradient.map((value) => Color(value)).toList(); return Container(width: size, height: size, decoration: BoxDecoration(borderRadius: BorderRadius.circular(radius), gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors), boxShadow: [BoxShadow(color: colors.first.withOpacity(.22), blurRadius: 18, spreadRadius: 1)]), child: Center(child: Text(track.title.substring(0, 1), style: TextStyle(fontSize: size.isFinite ? size * .28 : 36, fontWeight: FontWeight.w900, color: Colors.white.withOpacity(.85))))); } }
 
-class _ArtPainter extends CustomPainter { final Color color; _ArtPainter(this.color); @override void paint(Canvas canvas,Size size){final p=Paint()..color=color.withOpacity(.22); for(var i=0;i<5;i++){canvas.drawCircle(Offset(size.width*(.15+i*.2),size.height*(.25+(i%2)*.3)),size.width*(.08+i*.025),p);}} @override bool shouldRepaint(covariant _ArtPainter old)=>false; }
+class MoodCard extends StatelessWidget { const MoodCard({super.key, required this.title, required this.icon, required this.color}); final String title; final IconData icon; final int color; @override Widget build(BuildContext context) => Container(width: 148, padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Color(color), borderRadius: BorderRadius.circular(20)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.end, children: [Icon(icon, size: 24), const Spacer(), Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)), const Text('плейлист', style: TextStyle(color: Colors.white60))])); }
 
-class SectionTitle extends StatelessWidget { final String title; const SectionTitle(this.title,{super.key}); @override Widget build(BuildContext context)=>Row(children:[Text(title,style:const TextStyle(fontSize:20,fontWeight:FontWeight.w700)),const Spacer(),const Padding(padding:EdgeInsets.only(right:20),child:Text('Ещё  ›',style:TextStyle(color:Colors.white54)))]); }
-class MoodCard extends StatelessWidget { final String title; final int index; const MoodCard(this.title,this.index,{super.key}); @override Widget build(BuildContext context)=>Container(width:145,decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:LinearGradient(begin:Alignment.topLeft,end:Alignment.bottomRight,colors:[[Color(0xFF6D247D),Color(0xFF1C1641)],[Color(0xFF123C7D),Color(0xFF111827)],[Color(0xFF0C665B),Color(0xFF102B2B)],[Color(0xFF6C247A),Color(0xFF27143D)]][index])),padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[Icon([Icons.cloud_outlined,Icons.nightlight_outlined,Icons.track_changes,Icons.bolt_outlined][index],color:Colors.white),const SizedBox(height:18),Text(title,style:const TextStyle(fontSize:19,fontWeight:FontWeight.w700)),const Text('плейлист',style:TextStyle(color:Colors.white54))])); }
-class PlaylistCard extends StatelessWidget { final String title; final int count,index; const PlaylistCard(this.title,this.count,this.index,{super.key}); @override Widget build(BuildContext context)=>Container(width:160,decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:LinearGradient(colors:[[Color(0xFF9B3D9E),Color(0xFF2B205E)],[Color(0xFF172C80),Color(0xFF07101F)],[Color(0xFF9B416E),Color(0xFF26304A)],[Color(0xFF28749B),Color(0xFF12294C)]][index])),padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[const Spacer(),const Icon(Icons.play_circle_fill,size:30),const SizedBox(height:8),Text(title,style:const TextStyle(fontSize:18,fontWeight:FontWeight.w700)),Text('$count треков',style:const TextStyle(color:Colors.white60))])); }
-class LibraryTile extends StatelessWidget { final IconData icon; final String title,subtitle; const LibraryTile(this.icon,this.title,this.subtitle,{super.key}); @override Widget build(BuildContext context)=>Container(decoration:BoxDecoration(color:const Color(0xFF12141A),borderRadius:BorderRadius.circular(20)),padding:const EdgeInsets.all(16),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Icon(icon,size:34),const SizedBox(height:10),Text(title,style:const TextStyle(fontSize:17,fontWeight:FontWeight.w600)),Text(subtitle,style:const TextStyle(color:Colors.white54))])); }
-class Stat extends StatelessWidget { final String value,label; const Stat(this.value,this.label,{super.key}); @override Widget build(BuildContext context)=>Column(children:[Text(value,style:const TextStyle(fontSize:22,fontWeight:FontWeight.w700)),Text(label,style:const TextStyle(color:Colors.white54))]); }
-class ActionTile extends StatelessWidget { final IconData icon; final String title,subtitle; final VoidCallback onTap; const ActionTile(this.icon,this.title,this.subtitle,this.onTap,{super.key}); @override Widget build(BuildContext context)=>ListTile(onTap:onTap,contentPadding:const EdgeInsets.symmetric(vertical:6),leading:Icon(icon),title:Text(title),subtitle:Text(subtitle),trailing:const Icon(Icons.chevron_right,color:Colors.white54)); }
-class SettingGroup extends StatelessWidget { final String title; final List<Widget> children; const SettingGroup({super.key,required this.title,required this.children}); @override Widget build(BuildContext context)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Padding(padding:const EdgeInsets.fromLTRB(4,18,4,8),child:Text(title,style:const TextStyle(color:Colors.white60))),Container(decoration:BoxDecoration(color:const Color(0xFF11131A),borderRadius:BorderRadius.circular(18)),child:Column(children:children))]); }
-class SettingTile extends StatelessWidget { final IconData icon; final String title,subtitle; const SettingTile(this.icon,this.title,this.subtitle,{super.key}); @override Widget build(BuildContext context)=>ListTile(leading:Icon(icon),title:Text(title),subtitle:Text(subtitle),trailing:const Icon(Icons.chevron_right,color:Colors.white54)); }
-class PlayerAction extends StatelessWidget { final IconData icon; final String label; const PlayerAction(this.icon,this.label,{super.key}); @override Widget build(BuildContext context)=>Column(children:[Icon(icon),const SizedBox(height:6),Text(label,style:const TextStyle(color:Colors.white60))]); }
+class PlaylistCard extends StatelessWidget { const PlaylistCard({super.key, required this.title, required this.count, required this.index}); final String title; final int count; final int index; @override Widget build(BuildContext context) => SizedBox(width: 160, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Container(height: 126, decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), gradient: LinearGradient(colors: [const Color(0xFF5B1A72), [const Color(0xFF132F6B), const Color(0xFF7A2B78), const Color(0xFF174D77)][index], const Color(0xFF090B13)])), child: const Center(child: Icon(Icons.play_circle_fill_rounded, size: 42))), const SizedBox(height: 8), Text(title, style: const TextStyle(fontWeight: FontWeight.w700)), Text('$count треков', style: const TextStyle(color: Colors.white54))])); }
+
+class LibraryTile extends StatelessWidget { const LibraryTile(this.icon, this.title, this.subtitle, {super.key}); final IconData icon; final String title; final String subtitle; @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(20)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Icon(icon, size: 27), Text(title, style: const TextStyle(fontWeight: FontWeight.w700)), Text(subtitle, style: const TextStyle(color: Colors.white54))])); }
+
+class SectionTitle extends StatelessWidget { const SectionTitle(this.title, {super.key}); final String title; @override Widget build(BuildContext context) => Row(children: [Expanded(child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800))), const Text('Ещё', style: TextStyle(color: Colors.white54)), const Icon(Icons.chevron_right, color: Colors.white54)]); }
+class Stat extends StatelessWidget { const Stat(this.value, this.label, {super.key}); final String value; final String label; @override Widget build(BuildContext context) => Column(children: [Text(value, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)), Text(label, style: const TextStyle(color: Colors.white54))]); }
+class ActionTile extends StatelessWidget { const ActionTile(this.icon, this.title, this.subtitle, this.onTap, {super.key}); final IconData icon; final String title; final String subtitle; final VoidCallback onTap; @override Widget build(BuildContext context) => ListTile(onTap: onTap, contentPadding: const EdgeInsets.symmetric(vertical: 4), leading: Icon(icon), title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(subtitle), trailing: const Icon(Icons.chevron_right)); }
+class PlayerAction extends StatelessWidget { const PlayerAction(this.icon, this.label, this.onTap, {super.key}); final IconData icon; final String label; final VoidCallback onTap; @override Widget build(BuildContext context) => InkWell(onTap: onTap, borderRadius: BorderRadius.circular(16), child: Padding(padding: const EdgeInsets.all(8), child: Column(children: [Icon(icon), const SizedBox(height: 5), Text(label, style: const TextStyle(fontSize: 12, color: Colors.white70))]))); }
+class SettingsGroupTitle extends StatelessWidget { const SettingsGroupTitle(this.title, {super.key}); final String title; @override Widget build(BuildContext context) => Padding(padding: const EdgeInsets.fromLTRB(0, 18, 0, 8), child: Text(title, style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.w700))); }
+class SettingsTile extends StatelessWidget { const SettingsTile(this.icon, this.title, this.subtitle, {super.key, this.onTap}); final IconData icon; final String title; final String subtitle; final VoidCallback? onTap; @override Widget build(BuildContext context) => ListTile(onTap: onTap, contentPadding: const EdgeInsets.symmetric(vertical: 2), leading: Icon(icon), title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)), subtitle: Text(subtitle), trailing: const Icon(Icons.chevron_right)); }
+
+class ThemeCard extends StatelessWidget { const ThemeCard({super.key, required this.theme, required this.active, required this.onApply}); final FlowTheme theme; final bool active; final VoidCallback onApply; @override Widget build(BuildContext context) => Container(margin: const EdgeInsets.only(bottom: 14), padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: theme.surface, borderRadius: BorderRadius.circular(theme.radius)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Container(height: 110, decoration: BoxDecoration(borderRadius: BorderRadius.circular(theme.radius), gradient: LinearGradient(colors: [theme.accent.withOpacity(.9), theme.surface, theme.background]))), const SizedBox(height: 12), Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(theme.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)), const Text('Бесплатно', style: TextStyle(color: Colors.white54))])), active ? const Icon(Icons.check_circle_rounded) : FilledButton.tonal(onPressed: onApply, child: const Text('Применить'))]) ])); }
+
+void showTimer(BuildContext context) { showModalBottomSheet(context: context, builder: (_) => SafeArea(child: ListView(shrinkWrap: true, children: [const ListTile(title: Text('Таймер сна', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800))), for (final value in ['15 минут', '30 минут', '45 минут', '60 минут']) ListTile(title: Text(value), onTap: () => Navigator.pop(context))]))); }
+String formatDuration(Duration duration) { final minutes = duration.inMinutes.remainder(60).toString(); final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0'); return '$minutes:$seconds'; }
