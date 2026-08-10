@@ -17,7 +17,7 @@ class PlayerService {
     await player.setAudioSources(
       queue.map((track) => AudioSource.uri(Uri.parse(track.audioUrl))).toList(),
       initialIndex: 0,
-      preload: true,
+      preload: false,
     );
   }
 
@@ -37,31 +37,30 @@ class PlayerService {
 
   Future<void> removeFromQueue(int index) async {
     if (queue.length <= 1 || index < 0 || index >= queue.length) return;
+    final currentId = currentTrack.id;
     queue.removeAt(index);
-    final current = player.currentIndex ?? 0;
     final sources = queue.map((track) => AudioSource.uri(Uri.parse(track.audioUrl))).toList();
-    final safeIndex = current.clamp(0, queue.length - 1);
-    await player.setAudioSources(sources, initialIndex: safeIndex, preload: true);
+    final safeIndex = queue.indexWhere((track) => track.id == currentId).clamp(0, queue.length - 1);
+    await player.setAudioSources(sources, initialIndex: safeIndex, preload: false);
   }
 
   Future<void> reorderQueue(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex || oldIndex < 0 || oldIndex >= queue.length) return;
+    final currentId = currentTrack.id;
     if (newIndex > oldIndex) newIndex -= 1;
     final track = queue.removeAt(oldIndex);
     queue.insert(newIndex.clamp(0, queue.length), track);
-    final currentId = currentTrack.id;
     final sources = queue.map((track) => AudioSource.uri(Uri.parse(track.audioUrl))).toList();
-    final current = queue.indexWhere((track) => track.id == currentId);
-    await player.setAudioSources(sources, initialIndex: current < 0 ? 0 : current, preload: true);
+    final current = queue.indexWhere((track) => track.id == currentId).clamp(0, queue.length - 1);
+    await player.setAudioSources(sources, initialIndex: current, preload: false);
   }
 
   Future<void> clearQueue() async {
-    if (queue.isEmpty) return;
     final current = currentTrack;
     queue
       ..clear()
       ..add(current);
-    await player.setAudioSources([AudioSource.uri(Uri.parse(current.audioUrl))], preload: true);
+    await player.setAudioSources([AudioSource.uri(Uri.parse(current.audioUrl))], preload: false);
   }
 
   Future<void> dispose() => player.dispose();
