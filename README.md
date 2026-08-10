@@ -76,5 +76,3 @@ Workflow `.github/workflows/build-apk.yml` генерирует нативный
 10. Visualizer, эквалайзер и crossfade.
 
 ---
-
-**Я работаю © ChatGPT**
