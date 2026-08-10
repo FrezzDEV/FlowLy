@@ -29,12 +29,11 @@ jobs:
       - name: Generate native platform projects
         run: flutter create --platforms=android,ios --project-name=flowly --org=com.flowly .
 
+      - name: Allow network audio on Android release
+        run: python3 -c "from pathlib import Path; p=Path('android/app/src/main/AndroidManifest.xml'); s=p.read_text(); perm='<uses-permission android:name=\"android.permission.INTERNET\"/>\n'; p.write_text(s if 'android.permission.INTERNET' in s else s.replace('<manifest', '<manifest\\n    '+perm, 1))"
+
       - name: Install dependencies
         run: flutter pub get
-
-      # Keep the prototype source compatible with current Dart typing rules.
-      - name: Normalize prototype source
-        run: python3 -c "from pathlib import Path; p=Path('lib/main.dart'); s=p.read_text(); s=s.replace('results.length.clamp(0, 8)', 'results.length > 8 ? 8 : results.length'); p.write_text(s)"
 
       - name: Analyze
         run: flutter analyze
