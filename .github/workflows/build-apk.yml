@@ -25,11 +25,21 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate native platform projects
-        run: flutter create --platforms=android,ios --project-name=flowly --org=com.flowly .
+      - name: Generate native Android project
+        run: flutter create --platforms=android --project-name=flowly --org=com.flowly .
 
-      - name: Allow network audio on Android release
-        run: python3 -c "from pathlib import Path; p=Path('android/app/src/main/AndroidManifest.xml'); s=p.read_text(); perm='<uses-permission android:name=\"android.permission.INTERNET\"/>\n'; p.write_text(s if 'android.permission.INTERNET' in s else s.replace('<manifest', '<manifest\\n    '+perm, 1))"
+      - name: Configure Android network permission
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('android/app/src/main/AndroidManifest.xml')
+          text = path.read_text()
+          permission = '    <uses-permission android:name="android.permission.INTERNET" />\n'
+          if 'android.permission.INTERNET' not in text:
+              marker = 'xmlns:android="http://schemas.android.com/apk/res/android">'
+              text = text.replace(marker, marker + '\n' + permission, 1)
+          path.write_text(text)
+          PY
 
       - name: Install dependencies
         run: flutter pub get
