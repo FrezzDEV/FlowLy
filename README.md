@@ -1,78 +1,60 @@
-# FlowLy
+# Musive
 
-**FlowLy — музыка, которая течёт так, как удобно тебе.**
+Full-stack music player app is written in flutter and dart using node.js music API. Fully Functional music player with UI like Spotify app. Added 500+ royalty-free music and information about artists. Application users can make their own playlist or collect liked songs.
 
-Нативное мобильное приложение на **Flutter + Dart** с тёмным минималистичным интерфейсом, белым акцентом и фокусом на персональном музыкальном опыте.
 
-## Что уже есть
 
-- Главная с недавно прослушанным, рекомендациями, mood-плейлистами и популярными подборками.
-- Поиск по трекам и артистам.
-- Библиотека: любимое, плейлисты, скачанное и история.
-- **Реальное воспроизведение аудио** через `just_audio`.
-- Полноэкранный плеер и мини-плеер.
-- Play/pause, next/previous, перемотка, shuffle и repeat.
-- **Очередь воспроизведения**: запуск трека, удаление, очистка и drag-and-drop сортировка.
-- Экран текста песни и заготовка под синхронизированные lyrics.
-- Профиль слушателя.
-- Настройки и фильтры контента: ремиксы, каверы/пародии, AI-generated и дубликаты.
-- Импорт музыки из популярных сервисов как UI/API-заготовка.
-- **Экран «Темы»** с готовыми пресетами.
-- **Редактор тем**: акцент, прозрачность, радиус карточек, анимации, компактный режим и стиль обложек.
-- Сохранение выбранной темы между запусками приложения.
-- GitHub Actions для автоматической сборки release APK.
 
-## Архитектура
+></h3>
+</p>
 
-```text
-lib/
-├── main.dart
-├── models/
-│   └── track.dart
-└── services/
-    ├── player_service.dart
-    └── theme_service.dart
-```
+# Features
 
-`PlayerService` изолирует audio engine и очередь от UI. `ThemeService` отвечает за состояние визуальной системы и её локальное сохранение. Это оставляет проект готовым к подключению API, базы данных, авторизации и настоящего каталога музыки.
+- added 1000+ music, 300+ artists
+- Queue Management
+- can make a collection of liked songs.
+- create/delete your own playlist.
+- Spotify UI clone for the best experience.
+- notification player.
+- recordable list for currently playing playlist ( you can drag music to set an order for playlist).
+- Cache support
+- Song, Album, Artist, and Playlist Search
+- Best Streaming Quality
 
-## Аудио
+And much more
+<br/>
 
-Сейчас приложение использует демонстрационный HTTP-каталог аудиофайлов, чтобы плеер был настоящим уже на этапе MVP. Для production-каталога URL треков должны приходить с backend/API FlowLy.
+## **Image Gallery**
 
-Для Android release workflow автоматически создаёт native host и добавляет `INTERNET` permission, необходимый для сетевого аудио.
+<hr/>
 
-## Дизайн
+<br>
 
-Интерфейс реализован нативными Flutter Material-компонентами и кастомными виджетами. Визуальная система ориентирована на предоставленные референсы: почти чёрный фон, большие карточки, мягкие градиенты, скругления, крупная типографика и минимальный **белый акцент вместо фиолетового**.
+<p align="center">
+<img src="screenshots/1642936098449.png" alt="Gallery Image" width="30%" />
+<img src="screenshots/1642936111418.png" alt="Gallery Image" width="30%" />
+<img src="screenshots/1642936132519.png" alt="Gallery Image" width="30%" />
+<img src="screenshots/1642936144940.png" alt="Gallery Image" width="30%" />
+<img src="screenshots/1642936154266.png" alt="Gallery Image" width="30%" />
+<img src="screenshots/1642936174061.png" alt="Gallery Image" width="30%" />
+<img src="screenshots/1642936184125.png" alt="Gallery Image" width="30%" />
+<img src="screenshots/1642936198947.png" alt="Gallery Image" width="30%" />
+<img src="screenshots/1642936208745.png" alt="Gallery Image" width="30%" />
 
-Референсы из запроса используются как дизайн-направление; коммерческие обложки и музыка не являются частью исходного приложения.
+</p>
+<hr/>
 
-## Запуск
+## **Dependencies**
 
-```bash
-flutter pub get
-flutter create --platforms=android,ios --project-name=flowly --org=com.flowly .
-flutter run
-```
+- [cupertino_icons](https://pub.dev/packages/cupertino_icons)
+- [http](https://pub.dev/packages/http)
+- [flutter_bloc](https://pub.dev/packages/flutter_bloc)
+- [assets_audio_player](https://pub.dev/packages/assets_audio_player)
+- [hive_flutter](https://pub.dev/packages/hive_flutter)
+- [cached_network_image](https://pub.dev/packages/cached_network_image)
+- [url_launcher](https://pub.dev/packages/url_launcher)
+- [line_icons](https://pub.dev/packages/line_icons)
+- [provider](https://pub.dev/packages/provider)
 
-Для обычного локального запуска Android/iOS native host создаётся командой `flutter create`, если его ещё нет в checkout.
 
-## APK через GitHub Actions
 
-Workflow `.github/workflows/build-apk.yml` генерирует нативный Android/iOS host-проект, устанавливает Flutter и Java 17, запускает `flutter analyze`, собирает release APK и публикует его как Artifact.
-
-## Что дальше
-
-1. Background audio / lock-screen controls.
-2. Локальная база библиотеки и полноценный offline mode.
-3. Авторизация и синхронизация аккаунта.
-4. Реальный поиск и музыкальный каталог через backend.
-5. Синхронизированные тексты песен.
-6. FlowMix и персональные рекомендации.
-7. Marketplace пользовательских тем.
-8. Реальный импорт медиатек из внешних сервисов.
-9. Сообщество, подписки и публикация плейлистов.
-10. Visualizer, эквалайзер и crossfade.
-
----
