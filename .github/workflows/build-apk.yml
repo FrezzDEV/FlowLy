@@ -3,34 +3,46 @@ name: Build Flutter APK
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: zulu
           java-version: '17'
+          cache: gradle
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
+          cache: true
+
+      # Generate the native Android/iOS host projects from the Flutter SDK.
+      # This keeps the repository focused on the cross-platform app source.
+      - name: Generate native platform projects
+        run: flutter create --platforms=android,ios --project-name=flowly --org=com.flowly .
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build release APK
         run: flutter build apk --release
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: flowly-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
