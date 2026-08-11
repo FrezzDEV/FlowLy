@@ -86,7 +86,6 @@ class _AppState extends State<App> {
             screens: _buildScreens(con),
             items: _navBarsItems(),
             onItemSelected: (index) {
-              // Tapping Profile while already on Profile also closes Settings.
               if (index == 3) _profileKey.currentState?.showProfile();
             },
             confineInSafeArea: true,
@@ -135,10 +134,10 @@ class _LibraryNavPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final centerY = size.height / 2;
-    canvas.drawLine(3, centerY - 7, 3, centerY + 7, paint);
-    canvas.drawLine(9, centerY - 9, 9, centerY + 8, paint);
-    canvas.drawLine(15, centerY - 6, 15, centerY + 8, paint);
-    canvas.drawLine(20, centerY - 8, 22, centerY + 7, paint);
+    canvas.drawLine(Offset(3, centerY - 7), Offset(3, centerY + 7), paint);
+    canvas.drawLine(Offset(9, centerY - 9), Offset(9, centerY + 8), paint);
+    canvas.drawLine(Offset(15, centerY - 6), Offset(15, centerY + 8), paint);
+    canvas.drawLine(Offset(20, centerY - 8), Offset(22, centerY + 7), paint);
   }
 
   @override
