@@ -13,9 +13,7 @@ import '../../utils/bottom_play_widget.dart';
 import '../home/home_screen.dart';
 
 class App extends StatefulWidget {
-  const App({
-    super.key,
-  });
+  const App({super.key});
 
   @override
   State<App> createState() => _AppState();
@@ -42,8 +40,8 @@ class _AppState extends State<App> {
         activeColorPrimary: Colors.grey,
       ),
       PersistentBottomNavBarItem(
-        icon: const Icon(CupertinoIcons.music_albums),
-        inactiveIcon: const Icon(CupertinoIcons.music_albums),
+        icon: const Icon(Icons.library_music_outlined),
+        inactiveIcon: const Icon(Icons.library_music_outlined),
         activeColorSecondary: Colors.white,
         activeColorPrimary: Colors.grey,
       ),
