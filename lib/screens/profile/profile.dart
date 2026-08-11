@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../controllers/main_controller.dart';
 import '../../models/song_model.dart';
+import '../current_playing/current_playing_song.dart';
 
 class ProfilePage extends StatefulWidget {
   final MainController con;
@@ -19,6 +20,7 @@ class ProfilePage extends StatefulWidget {
 
 class ProfilePageState extends State<ProfilePage> {
   bool _showSettings = false;
+  bool _showEditProfile = false;
   String? _avatarPath;
 
   static const _top = [
@@ -42,7 +44,12 @@ class ProfilePageState extends State<ProfilePage> {
   }
 
   void showProfile() {
-    if (_showSettings) setState(() => _showSettings = false);
+    if (_showSettings || _showEditProfile) {
+      setState(() {
+        _showSettings = false;
+        _showEditProfile = false;
+      });
+    }
   }
 
   Future<void> _loadAvatar() async {
@@ -96,7 +103,15 @@ class ProfilePageState extends State<ProfilePage> {
         name: value['fullname']?.toString(),
       ));
     }
-    if (index < songs.length) await widget.con.playSong(songs, index);
+    if (index >= songs.length) return;
+    await widget.con.playSong(songs, index);
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.black,
+      builder: (_) => CurrentPlayingSong(con: widget.con),
+    );
   }
 
   @override
@@ -104,31 +119,40 @@ class ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: _showSettings
-            ? _SettingsView(onBack: () => setState(() => _showSettings = false))
-            : ValueListenableBuilder(
-                valueListenable: Hive.box('liked').listenable(),
-                builder: (context, Box<dynamic> _, child) => ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 82),
-                  children: [
-                    _ProfileHeader(onSettings: () => setState(() => _showSettings = true)),
-                    const SizedBox(height: 10),
-                    _Identity(avatarPath: _avatarPath, onPickAvatar: _pickAvatar),
-                    const SizedBox(height: 14),
-                    const _Stats(),
-                    const SizedBox(height: 14),
-                    const _ImportCard(),
-                    const SizedBox(height: 20),
-                    const _Title('Топ за месяц'),
-                    const SizedBox(height: 8),
-                    const _TopCards(_top),
-                    const SizedBox(height: 18),
-                    const _Title('Любимые треки'),
-                    const SizedBox(height: 4),
-                    _FavoriteTracks(tracks: _tracks(), onTap: _playTrack),
-                  ],
-                ),
-              ),
+        child: _showEditProfile
+            ? _EditProfileView(
+                avatarPath: _avatarPath,
+                onBack: () => setState(() => _showEditProfile = false),
+                onPickAvatar: _pickAvatar,
+              )
+            : _showSettings
+                ? _SettingsView(
+                    onBack: () => setState(() => _showSettings = false),
+                    onAccount: () => setState(() => _showEditProfile = true),
+                  )
+                : ValueListenableBuilder(
+                    valueListenable: Hive.box('liked').listenable(),
+                    builder: (context, Box<dynamic> _, child) => ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 82),
+                      children: [
+                        _ProfileHeader(onSettings: () => setState(() => _showSettings = true)),
+                        const SizedBox(height: 10),
+                        _Identity(avatarPath: _avatarPath),
+                        const SizedBox(height: 14),
+                        const _Stats(),
+                        const SizedBox(height: 14),
+                        const _ImportCard(),
+                        const SizedBox(height: 20),
+                        const _Title('Топ за месяц'),
+                        const SizedBox(height: 8),
+                        const _TopCards(_top),
+                        const SizedBox(height: 18),
+                        const _Title('Любимые треки'),
+                        const SizedBox(height: 4),
+                        _FavoriteTracks(tracks: _tracks(), onTap: _playTrack),
+                      ],
+                    ),
+                  ),
       ),
     );
   }
@@ -159,42 +183,19 @@ class _ProfileHeader extends StatelessWidget {
 
 class _Identity extends StatelessWidget {
   final String? avatarPath;
-  final VoidCallback onPickAvatar;
-  const _Identity({required this.avatarPath, required this.onPickAvatar});
+  const _Identity({required this.avatarPath});
 
   @override
   Widget build(BuildContext context) {
     final name = Hive.box('profile').get('name', defaultValue: 'Алекс') as String;
     return Column(
       children: [
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            CircleAvatar(
-              radius: 60,
-              backgroundColor: const Color(0xFF242424),
-              backgroundImage: avatarPath == null
-                  ? const NetworkImage('https://i.pravatar.cc/400?img=12')
-                  : FileImage(File(avatarPath!)) as ImageProvider,
-            ),
-            Positioned(
-              right: -2,
-              bottom: -2,
-              child: Material(
-                color: Colors.white,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: onPickAvatar,
-                  child: const SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: Icon(Icons.edit_outlined, color: Colors.black, size: 16),
-                  ),
-                ),
-              ),
-            ),
-          ],
+        CircleAvatar(
+          radius: 60,
+          backgroundColor: const Color(0xFF242424),
+          backgroundImage: avatarPath == null
+              ? const NetworkImage('https://i.pravatar.cc/400?img=12')
+              : FileImage(File(avatarPath!)) as ImageProvider,
         ),
         const SizedBox(height: 7),
         Text(
@@ -399,7 +400,8 @@ class _TrackData {
 
 class _SettingsView extends StatelessWidget {
   final VoidCallback onBack;
-  const _SettingsView({required this.onBack});
+  final VoidCallback onAccount;
+  const _SettingsView({required this.onBack, required this.onAccount});
 
   static const _groups = <({String title, List<({IconData icon, String title, String subtitle})> rows})>[
     (
@@ -445,7 +447,12 @@ class _SettingsView extends StatelessWidget {
           for (var groupIndex = 0; groupIndex < _groups.length; groupIndex++) ...[
             _SettingsLabel(_groups[groupIndex].title),
             const SizedBox(height: 6),
-            _SettingsCard(rows: _groups[groupIndex].rows),
+            _SettingsCard(
+              rows: _groups[groupIndex].rows,
+              onRowTap: (index) {
+                if (groupIndex == 0 && index == 0) onAccount();
+              },
+            ),
             if (groupIndex != _groups.length - 1) const SizedBox(height: 14),
           ],
           const SizedBox(height: 14),
@@ -454,6 +461,97 @@ class _SettingsView extends StatelessWidget {
           const _SettingsCard(
             rows: [(icon: Icons.logout_outlined, title: 'Выйти из аккаунта', subtitle: '')],
             logout: true,
+          ),
+        ],
+      );
+}
+
+class _EditProfileView extends StatefulWidget {
+  final String? avatarPath;
+  final VoidCallback onBack;
+  final Future<void> Function() onPickAvatar;
+
+  const _EditProfileView({required this.avatarPath, required this.onBack, required this.onPickAvatar});
+
+  @override
+  State<_EditProfileView> createState() => _EditProfileViewState();
+}
+
+class _EditProfileViewState extends State<_EditProfileView> {
+  late final TextEditingController _nameController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: Hive.box('profile').get('name', defaultValue: 'Алекс') as String);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _nameController.text.trim();
+    if (name.isNotEmpty) await Hive.box('profile').put('name', name);
+    if (mounted) widget.onBack();
+  }
+
+  @override
+  Widget build(BuildContext context) => ListView(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 88),
+        children: [
+          Row(
+            children: [
+              IconButton(onPressed: widget.onBack, padding: EdgeInsets.zero, constraints: const BoxConstraints.tightFor(width: 34, height: 34), icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 19)),
+              const SizedBox(width: 8),
+              const Text('Редактирование профиля', style: TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const SizedBox(height: 26),
+          Center(
+            child: CircleAvatar(
+              radius: 54,
+              backgroundColor: const Color(0xFF242424),
+              backgroundImage: widget.avatarPath == null
+                  ? const NetworkImage('https://i.pravatar.cc/400?img=12')
+                  : FileImage(File(widget.avatarPath!)) as ImageProvider,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: TextButton.icon(
+              onPressed: widget.onPickAvatar,
+              icon: const Icon(Icons.photo_outlined, size: 18),
+              label: const Text('Изменить фото'),
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text('Имя', style: TextStyle(color: Color(0xFF858585), fontSize: 12, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 7),
+          TextField(
+            controller: _nameController,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+            cursorColor: Colors.white,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFF111111),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2A2A2A))),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2A2A2A))),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF555555))),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 48,
+            child: FilledButton(
+              onPressed: _save,
+              style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              child: const Text('Сохранить', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            ),
           ),
         ],
       );
@@ -473,7 +571,8 @@ class _SettingsLabel extends StatelessWidget {
 class _SettingsCard extends StatelessWidget {
   final List<({IconData icon, String title, String subtitle})> rows;
   final bool logout;
-  const _SettingsCard({required this.rows, this.logout = false});
+  final void Function(int index)? onRowTap;
+  const _SettingsCard({required this.rows, this.logout = false, this.onRowTap});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -481,32 +580,35 @@ class _SettingsCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
-            for (final row in rows)
-              Container(
-                constraints: const BoxConstraints(minHeight: 60),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFF202020)))),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(color: logout ? const Color(0xFF2A1111) : Colors.white, shape: BoxShape.circle),
-                      child: Icon(row.icon, color: logout ? const Color(0xFFB52B2B) : Colors.black, size: 20),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(row.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: logout ? const Color(0xFFB52B2B) : Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-                          if (row.subtitle.isNotEmpty) Text(row.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF858585), fontSize: 10, fontWeight: FontWeight.w500)),
-                        ],
+            for (var i = 0; i < rows.length; i++)
+              InkWell(
+                onTap: logout ? null : () => onRowTap?.call(i),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 60),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFF202020)))),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(color: logout ? const Color(0xFF2A1111) : Colors.white, shape: BoxShape.circle),
+                        child: Icon(rows[i].icon, color: logout ? const Color(0xFFB52B2B) : Colors.black, size: 20),
                       ),
-                    ),
-                    if (!logout) const Icon(Icons.chevron_right, color: Color(0xFF858585), size: 20),
-                  ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(rows[i].title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: logout ? const Color(0xFFB52B2B) : Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                            if (rows[i].subtitle.isNotEmpty) Text(rows[i].subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF858585), fontSize: 10, fontWeight: FontWeight.w500)),
+                          ],
+                        ),
+                      ),
+                      if (!logout) const Icon(Icons.chevron_right, color: Color(0xFF858585), size: 20),
+                    ],
+                  ),
                 ),
               ),
           ],
