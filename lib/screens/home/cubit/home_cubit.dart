@@ -14,22 +14,33 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> getUsers() async {
     emit(state.copyWith(status: LoadPage.loading, clearError: true));
 
-    try {
-      final users = await repo.getUsers();
-      final songs = await repo.getSongs();
+    List<User> users = const [];
+    List<SongModel> songs = const [];
+    Object? usersError;
+    Object? songsError;
 
-      emit(state.copyWith(
-        users: users,
-        songs: songs,
-        status: LoadPage.loaded,
-        clearError: true,
-      ));
+    // Load each Home section independently. A failing users endpoint must not
+    // prevent the song recommendations from rendering.
+    try {
+      users = await repo.getUsers();
     } catch (error) {
-      final message = error.toString();
-      emit(state.copyWith(
-        status: LoadPage.error,
-        errorMessage: message,
-      ));
+      usersError = error;
     }
+
+    try {
+      songs = await repo.getSongs();
+    } catch (error) {
+      songsError = error;
+    }
+
+    // HomeScreen contains a guaranteed local demo recommendation, so it must
+    // still render even when both remote endpoints are unavailable.
+    final error = songsError ?? usersError;
+    emit(state.copyWith(
+      users: users,
+      songs: songs,
+      status: LoadPage.loaded,
+      errorMessage: error == null ? null : error.toString(),
+    ));
   }
 }
