@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -36,8 +36,31 @@ jobs:
       - name: Apply Flutter compatibility fixes
         run: python3 tool/migrate_flutter_legacy.py
 
-      - name: Verify project
+      - name: Resolve Flutter dependencies
         run: flutter --version && flutter pub get
+
+      - name: Patch legacy Android plugin Gradle files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          root = Path(os.environ["PUB_CACHE"]) / "hosted" / "pub.dev"
+          changed = []
+
+          if root.exists():
+              for path in root.rglob("android/build.gradle"):
+                  text = path.read_text(encoding="utf-8")
+                  patched = re.sub(r"compileSdkVersion\s+\d+", "compileSdkVersion 35", text)
+                  if patched != text:
+                      path.write_text(patched, encoding="utf-8")
+                      changed.append(str(path))
+
+          print("Patched legacy Android plugin SDK declarations:")
+          for path in changed:
+              print(path)
+          PY
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
