@@ -35,7 +35,7 @@ class SearchPage extends StatelessWidget {
                 (BuildContext context, bool innerBoxIsScrolled) {
               return [
                 const SliverToBoxAdapter(child: SizedBox(height: 18)),
-                const SliverToBoxAdapter(child: _PageTitle('Search')),
+                const SliverToBoxAdapter(child: _PageTitle()),
                 const SliverToBoxAdapter(child: SizedBox(height: 5)),
                 SliverPersistentHeader(
                   pinned: true,
@@ -49,9 +49,7 @@ class SearchPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 18.0),
                   child: Text(
                     "Your Top genre",
-                    style: Theme.of(context).textTheme.headline4!.copyWith(
-                          fontSize: 18,
-                        ),
+                    style: Theme.of(context).textTheme.headline4!.copyWith(fontSize: 18),
                   ),
                 ),
                 GridView.builder(
@@ -64,17 +62,13 @@ class SearchPage extends StatelessWidget {
                     crossAxisSpacing: 14,
                     childAspectRatio: 16 / 8,
                   ),
-                  itemBuilder: (context, i) {
-                    return TagWidget(tag: allTags.sublist(0, 4)[i], con: con);
-                  },
+                  itemBuilder: (context, i) => TagWidget(tag: allTags.sublist(0, 4)[i], con: con),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24.0),
                   child: Text(
                     "Browse all",
-                    style: Theme.of(context).textTheme.headline4!.copyWith(
-                          fontSize: 18,
-                        ),
+                    style: Theme.of(context).textTheme.headline4!.copyWith(fontSize: 18),
                   ),
                 ),
                 GridView.builder(
@@ -87,9 +81,7 @@ class SearchPage extends StatelessWidget {
                     crossAxisSpacing: 14,
                     childAspectRatio: 16 / 8,
                   ),
-                  itemBuilder: (context, i) {
-                    return TagWidget(tag: allTags.sublist(4)[i], con: con);
-                  },
+                  itemBuilder: (context, i) => TagWidget(tag: allTags.sublist(4)[i], con: con),
                 ),
                 const SizedBox(height: 100),
               ],
@@ -102,9 +94,7 @@ class SearchPage extends StatelessWidget {
 }
 
 class _PageTitle extends StatelessWidget {
-  final String title;
-
-  const _PageTitle(this.title);
+  const _PageTitle();
 
   @override
   Widget build(BuildContext context) {
@@ -142,12 +132,7 @@ class TagWidget extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          SearchPage._noAnimationRoute(
-            GenrePage(
-              tag: tag,
-              con: con,
-            ),
-          ),
+          SearchPage._noAnimationRoute(GenrePage(tag: tag, con: con)),
         );
       },
       child: ClipRRect(
@@ -191,26 +176,18 @@ class TagWidget extends StatelessWidget {
                         height: 70,
                         maxHeightDiskCache: 120,
                         maxWidthDiskCache: 120,
-                        memCacheHeight:
-                            (120 * MediaQuery.of(context).devicePixelRatio)
-                                .round(),
-                        memCacheWidth:
-                            (120 * MediaQuery.of(context).devicePixelRatio)
-                                .round(),
+                        memCacheHeight: (120 * MediaQuery.of(context).devicePixelRatio).round(),
+                        memCacheWidth: (120 * MediaQuery.of(context).devicePixelRatio).round(),
                       ),
                     ),
                   ),
                 ),
               ),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
                 child: Text(
                   tag.tag.toTitleCase(),
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyText1!
-                      .copyWith(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.bodyText1!.copyWith(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -229,10 +206,7 @@ class SliverSearchAppBar extends SliverPersistentHeaderDelegate {
   Widget build(context, double shrinkOffset, bool overlapsContent) {
     return InkWell(
       onTap: () {
-        Navigator.push(
-          context,
-          SearchPage._noAnimationRoute(SearchResultsPage(con: con)),
-        );
+        Navigator.push(context, SearchPage._noAnimationRoute(SearchResultsPage(con: con)));
       },
       child: Container(
         color: Colors.black,
@@ -240,26 +214,17 @@ class SliverSearchAppBar extends SliverPersistentHeaderDelegate {
           padding: const EdgeInsets.symmetric(vertical: 10.0),
           child: Container(
             width: MediaQuery.of(context).size.width,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(5),
-            ),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(5)),
             height: 50,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
               child: Row(
                 children: [
-                  const SizedBox(
-                    height: 50,
-                    child: Icon(CupertinoIcons.search),
-                  ),
+                  const SizedBox(height: 50, child: Icon(CupertinoIcons.search)),
                   const SizedBox(width: 10),
                   Text(
                     "Songs, Artists or Genres",
-                    style: Theme.of(context).textTheme.bodyText1!.copyWith(
-                          color: Colors.grey.shade800,
-                          fontSize: 18,
-                        ),
+                    style: Theme.of(context).textTheme.bodyText1!.copyWith(color: Colors.grey.shade800, fontSize: 18),
                   ),
                 ],
               ),
