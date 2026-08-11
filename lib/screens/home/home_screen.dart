@@ -3,16 +3,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../controllers/main_controller.dart';
 import '../../models/loading_enum.dart';
 import '../../utils/horizontal_songs_list.dart';
-
 import '../../utils/recent_users.dart';
 import 'cubit/home_cubit.dart';
 
 class HomeScreen extends StatelessWidget {
   final MainController con;
+
   const HomeScreen({
-    Key? key,
+    super.key,
     required this.con,
-  }) : super(key: key);
+  });
+
+  List<T> _take<T>(List<T> values, int start, [int? end]) {
+    if (start >= values.length) return const [];
+    final safeEnd = (end ?? values.length).clamp(start, values.length);
+    return values.sublist(start, safeEnd);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,81 +28,127 @@ class HomeScreen extends StatelessWidget {
         builder: (context, state) {
           if (state.status == LoadPage.loading) {
             return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
+              body: Center(child: CircularProgressIndicator()),
             );
           }
+
           if (state.status == LoadPage.loaded) {
+            final recentUsers = _take(state.users, 0, 6);
+            final bestArtists = _take(state.users, 6, 16);
+            final moreArtists = _take(state.users, 16);
+            final popularSongs = _take(state.songs, 0, 10);
+            final newReleases = _take(state.songs, 10, 20);
+
+            if (state.users.isEmpty && state.songs.isEmpty) {
+              return _EmptyHome(
+                message: 'No recommendations are available yet.',
+                onRetry: () => context.read<HomeCubit>().getUsers(),
+              );
+            }
+
             return Scaffold(
               body: ListView(
                 children: [
-                  RecentUsers(
-                    con: con,
-                    users: state.users.sublist(0, 6),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8),
-                    child: Text(
-                      "Popular Hits",
-                      style: Theme.of(context).textTheme.headline4,
-                    ),
-                  ),
-                  HorizontalSongList(
-                      con: con, songs: state.songs.sublist(0, 10)),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8),
-                    child: Text(
-                      "Best Picks For You",
-                      style: Theme.of(context).textTheme.headline4,
-                    ),
-                  ),
-                  HorizontalArtistList(
-                      con: con, users: state.users.sublist(6, 16)),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8),
-                    child: Text(
-                      "New Releases",
-                      style: Theme.of(context).textTheme.headline4,
-                    ),
-                  ),
-                  HorizontalSongList(
-                      con: con, songs: state.songs.sublist(10, 20)),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8),
-                    child: Text(
-                      "You might also like",
-                      style: Theme.of(context).textTheme.headline4,
-                    ),
-                  ),
-                  HorizontalArtistList(
-                      con: con, users: state.users.sublist(16)),
-                  const SizedBox(height: 12),
+                  if (recentUsers.isNotEmpty) ...[
+                    RecentUsers(con: con, users: recentUsers),
+                    const SizedBox(height: 12),
+                  ],
+                  if (popularSongs.isNotEmpty) ...[
+                    _SectionTitle(title: 'Popular Hits'),
+                    HorizontalSongList(con: con, songs: popularSongs),
+                    const SizedBox(height: 12),
+                  ],
+                  if (bestArtists.isNotEmpty) ...[
+                    _SectionTitle(title: 'Best Picks For You'),
+                    HorizontalArtistList(con: con, users: bestArtists),
+                    const SizedBox(height: 12),
+                  ],
+                  if (newReleases.isNotEmpty) ...[
+                    _SectionTitle(title: 'New Releases'),
+                    HorizontalSongList(con: con, songs: newReleases),
+                    const SizedBox(height: 12),
+                  ],
+                  if (moreArtists.isNotEmpty) ...[
+                    _SectionTitle(title: 'You might also like'),
+                    HorizontalArtistList(con: con, users: moreArtists),
+                    const SizedBox(height: 12),
+                  ],
                 ],
               ),
             );
           }
+
           if (state.status == LoadPage.error) {
-            return const Scaffold(
-              body: Center(
-                child: Text(
-                  "Error",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
+            return _EmptyHome(
+              message: 'Unable to load recommendations.\n\n${state.errorMessage ?? 'Unknown error.'}',
+              onRetry: () => context.read<HomeCubit>().getUsers(),
             );
           }
 
-          return Container();
+          return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+
+  const _SectionTitle({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.headlineSmall,
+      ),
+    );
+  }
+}
+
+class _EmptyHome extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _EmptyHome({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off, size: 56, color: Colors.white54),
+              const SizedBox(height: 16),
+              const Text(
+                'Home is unavailable',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 22, color: Colors.white),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white60),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
