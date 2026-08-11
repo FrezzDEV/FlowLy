@@ -86,6 +86,7 @@ class _AppState extends State<App> {
             screens: _buildScreens(con),
             items: _navBarsItems(),
             onItemSelected: (index) {
+              // Tapping Profile while already on Profile also closes Settings.
               if (index == 3) _profileKey.currentState?.showProfile();
             },
             confineInSafeArea: true,
@@ -96,7 +97,7 @@ class _AppState extends State<App> {
             popAllScreensOnTapOfSelectedTab: true,
             popActionScreens: PopActionScreensType.all,
             navBarStyle: NavBarStyle.simple,
-            navBarHeight: 55,
+            navBarHeight: 64,
             padding: const NavBarPadding.all(0),
           );
         },
@@ -113,8 +114,8 @@ class _LibraryNavIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 28,
-      height: 28,
+      width: 24,
+      height: 24,
       child: CustomPaint(painter: _LibraryNavPainter(color)),
     );
   }
@@ -129,30 +130,15 @@ class _LibraryNavPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 2.8
+      ..strokeWidth = 2.6
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
+
     final centerY = size.height / 2;
-    canvas.drawLine(
-      Offset(4, centerY - 8),
-      Offset(4, centerY + 8),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(11, centerY - 5),
-      Offset(11, centerY + 8),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(18, centerY - 7),
-      Offset(18, centerY + 8),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(22, centerY - 7),
-      Offset(26, centerY + 7),
-      paint,
-    );
+    canvas.drawLine(3, centerY - 7, 3, centerY + 7, paint);
+    canvas.drawLine(9, centerY - 9, 9, centerY + 8, paint);
+    canvas.drawLine(15, centerY - 6, 15, centerY + 8, paint);
+    canvas.drawLine(20, centerY - 8, 22, centerY + 7, paint);
   }
 
   @override
