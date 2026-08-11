@@ -13,10 +13,10 @@ class ArtistProfile extends StatelessWidget {
   final String username;
   final MainController con;
   const ArtistProfile({
-    Key? key,
+    super.key,
     required this.username,
     required this.con,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -49,15 +49,15 @@ class ArtistProfile extends StatelessWidget {
                       padding: const EdgeInsets.all(12.0),
                       child: Text(
                         "Popular",
-                        style: Theme.of(context).textTheme.headline4,
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
                     ),
                   ),
                   SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (_, i) {
-                        bool isPlaying = con.player.getCurrentAudioTitle ==
-                            state.songs[i].songname;
+                        final isPlaying =
+                            con.currentSong?.songname == state.songs[i].songname;
                         return InkWell(
                           onTap: () {
                             BlocProvider.of<ArtistProfileCubit>(context)
@@ -116,7 +116,7 @@ class ArtistProfile extends StatelessWidget {
                                                 maxLines: 1,
                                                 style: Theme.of(context)
                                                     .textTheme
-                                                    .bodyText1!
+                                                    .bodyLarge!
                                                     .copyWith(
                                                         color: isPlaying
                                                             ? Colors.lightGreenAccent[
@@ -130,7 +130,7 @@ class ArtistProfile extends StatelessWidget {
                                                 state.songs[i].duration!,
                                                 style: Theme.of(context)
                                                     .textTheme
-                                                    .bodyText1!
+                                                    .bodyLarge!
                                                     .copyWith(
                                                       color: Colors.grey,
                                                     ),
