@@ -131,18 +131,19 @@ class _FlowLyHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 10, 14, 10),
+      padding: const EdgeInsets.fromLTRB(20, 18, 14, 14),
       child: Row(
         children: [
-          const Icon(Icons.waves_rounded, color: Colors.white, size: 26),
+          const Icon(Icons.waves_rounded, color: Colors.white, size: 30),
           const SizedBox(width: 8),
           const Text(
             'FlowLy',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 24,
+              fontSize: 32,
+              height: 1.0,
               fontWeight: FontWeight.w800,
-              letterSpacing: -0.7,
+              letterSpacing: -1.0,
             ),
           ),
           const Spacer(),
@@ -215,6 +216,10 @@ class _EmptyHome extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF7C3AED),
+                foregroundColor: Colors.white,
+              ),
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
