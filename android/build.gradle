@@ -15,6 +15,38 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// Keep older Flutter/Android plugins compatible with the JVM target used by
+// the current Android Gradle Plugin and Kotlin Gradle Plugin.
+subprojects {
+    pluginManager.withPlugin("com.android.library") {
+        android {
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+        }
+
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            compilerOptions {
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            }
+        }
+    }
+}
+
+// Some older Android libraries still do not declare a namespace. AGP 8+
+// requires one for every Android module, so provide a stable fallback for
+// third-party libraries that omit it.
+subprojects {
+    pluginManager.withPlugin("com.android.library") {
+        afterEvaluate {
+            if (project.android.namespace == null || project.android.namespace.trim().isEmpty()) {
+                project.android.namespace = project.group.toString()
+            }
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
