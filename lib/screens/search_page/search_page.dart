@@ -11,9 +11,9 @@ class SearchPage extends StatelessWidget {
   final MainController con;
 
   const SearchPage({
-    Key? key,
+    super.key,
     required this.con,
-  }) : super(key: key);
+  });
 
   static Route<void> _noAnimationRoute(Widget page) {
     return PageRouteBuilder<void>(
@@ -34,18 +34,8 @@ class SearchPage extends StatelessWidget {
             headerSliverBuilder:
                 (BuildContext context, bool innerBoxIsScrolled) {
               return [
-                const SliverToBoxAdapter(child: SizedBox(height: 40)),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    child: Text(
-                      "Search",
-                      style: Theme.of(context).textTheme.headline4!.copyWith(
-                            fontSize: 36,
-                          ),
-                    ),
-                  ),
-                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 18)),
+                const SliverToBoxAdapter(child: _PageTitle('Search')),
                 const SliverToBoxAdapter(child: SizedBox(height: 5)),
                 SliverPersistentHeader(
                   pinned: true,
@@ -111,14 +101,40 @@ class SearchPage extends StatelessWidget {
   }
 }
 
+class _PageTitle extends StatelessWidget {
+  final String title;
+
+  const _PageTitle(this.title);
+
+  @override
+  Widget build(BuildContext context) {
+    return const Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(4, 0, 4, 14),
+        child: Text(
+          'Search',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 32,
+            height: 1.0,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -1.0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class TagWidget extends StatelessWidget {
   final TagsModel tag;
   final MainController con;
   const TagWidget({
-    Key? key,
+    super.key,
     required this.tag,
     required this.con,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -152,10 +168,7 @@ class TagWidget extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              const SizedBox(
-                width: double.infinity,
-                height: double.infinity,
-              ),
+              const SizedBox(width: double.infinity, height: double.infinity),
               Positioned(
                 bottom: 5,
                 right: -15,
