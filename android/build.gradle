@@ -17,8 +17,11 @@ subprojects {
 
 // Keep older Flutter/Android plugins compatible with the JVM target used by
 // the current Android Gradle Plugin and Kotlin Gradle Plugin.
-subprojects {
-    afterEvaluate { project ->
+//
+// Do not use Project.afterEvaluate here: with modern Gradle it can be invoked
+// after a project has already completed evaluation and fails the build.
+gradle.projectsEvaluated {
+    subprojects { project ->
         if (project.plugins.hasPlugin("com.android.library")) {
             project.android {
                 // Old plugins such as assets_audio_player_web may override this
