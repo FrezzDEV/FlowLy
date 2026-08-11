@@ -16,9 +16,9 @@ import 'cubit/search_results_cubit.dart';
 class SearchResultsPage extends StatelessWidget {
   final MainController con;
   const SearchResultsPage({
-    Key? key,
+    super.key,
     required this.con,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -60,8 +60,8 @@ class SearchResultsPage extends StatelessWidget {
                       return ListView.builder(
                           itemCount: state.songs.length,
                           itemBuilder: (context, i) {
-                            bool isPlaying = con.player.getCurrentAudioTitle ==
-                                state.songs[i].songname;
+                            final isPlaying =
+                                con.currentSong?.songname == state.songs[i].songname;
                             return InkWell(
                               onTap: () {
                                 FocusScope.of(context).unfocus();
@@ -123,7 +123,7 @@ class SearchResultsPage extends StatelessWidget {
                                                     maxLines: 1,
                                                     style: Theme.of(context)
                                                         .textTheme
-                                                        .bodyText1!
+                                                        .bodyLarge!
                                                         .copyWith(
                                                             color: isPlaying
                                                                 ? Colors.lightGreenAccent[
@@ -138,7 +138,7 @@ class SearchResultsPage extends StatelessWidget {
                                                     state.songs[i].duration!,
                                                     style: Theme.of(context)
                                                         .textTheme
-                                                        .bodyText1!
+                                                        .bodyLarge!
                                                         .copyWith(
                                                           color: Colors.grey,
                                                         ),
@@ -237,7 +237,7 @@ class SearchResultsPage extends StatelessWidget {
                                               maxLines: 1,
                                               style: Theme.of(context)
                                                   .textTheme
-                                                  .bodyText1!
+                                                  .bodyLarge!
                                                   .copyWith(
                                                       color: Colors.white,
                                                       overflow: TextOverflow
@@ -248,7 +248,7 @@ class SearchResultsPage extends StatelessWidget {
                                               state.users[i].username!,
                                               style: Theme.of(context)
                                                   .textTheme
-                                                  .bodyText1!
+                                                  .bodyLarge!
                                                   .copyWith(
                                                     color: Colors.grey,
                                                   ),
@@ -285,11 +285,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isSong;
   final void Function() onPressed;
   const CustomAppBar({
-    Key? key,
+    super.key,
     required this.onChanged,
     required this.isSong,
     required this.onPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
