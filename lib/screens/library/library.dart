@@ -14,9 +14,9 @@ import '../../utils/loading.dart';
 class Library extends StatelessWidget {
   final MainController con;
   const Library({
-    Key? key,
+    super.key,
     required this.con,
-  }) : super(key: key);
+  });
 
   static Route<void> _noAnimationRoute(Widget page) {
     return PageRouteBuilder<void>(
@@ -39,14 +39,10 @@ class Library extends StatelessWidget {
             const SizedBox(height: 10),
             InkWell(
               onTap: () {
-                Navigator.push(
-                  context,
-                  _noAnimationRoute(LikedSongs(con: con)),
-                );
+                Navigator.push(context, _noAnimationRoute(LikedSongs(con: con)));
               },
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4),
                 child: Row(
                   children: [
                     ClipRRect(
@@ -56,10 +52,7 @@ class Library extends StatelessWidget {
                         height: 60,
                         color: Colors.blue,
                         child: const Center(
-                          child: Icon(
-                            CupertinoIcons.heart_fill,
-                            color: Colors.white,
-                          ),
+                          child: Icon(CupertinoIcons.heart_fill, color: Colors.white),
                         ),
                       ),
                     ),
@@ -68,22 +61,14 @@ class Library extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Liked Songs',
-                            style: TextStyle(color: Colors.white, fontSize: 16.0),
-                          ),
+                          const Text('Liked Songs', style: TextStyle(color: Colors.white, fontSize: 16.0)),
                           const SizedBox(height: 5),
                           ValueListenableBuilder(
                             valueListenable: Hive.box('liked').listenable(),
-                            builder: (context, Box box, c) {
-                              return Text(
-                                '${box.length} Songs',
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 14.0,
-                                ),
-                              );
-                            },
+                            builder: (context, Box box, c) => Text(
+                              '${box.length} Songs',
+                              style: const TextStyle(color: Colors.grey, fontSize: 14.0),
+                            ),
                           ),
                         ],
                       ),
@@ -95,14 +80,10 @@ class Library extends StatelessWidget {
             const SizedBox(height: 10),
             InkWell(
               onTap: () {
-                Navigator.push(
-                  context,
-                  _noAnimationRoute(RecentlyPlayedSongs(con: con)),
-                );
+                Navigator.push(context, _noAnimationRoute(RecentlyPlayedSongs(con: con)));
               },
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4),
                 child: Row(
                   children: [
                     ClipRRect(
@@ -112,10 +93,7 @@ class Library extends StatelessWidget {
                         height: 60,
                         color: Colors.green,
                         child: const Center(
-                          child: Icon(
-                            CupertinoIcons.arrow_counterclockwise,
-                            color: Colors.white,
-                          ),
+                          child: Icon(CupertinoIcons.arrow_counterclockwise, color: Colors.white),
                         ),
                       ),
                     ),
@@ -124,23 +102,14 @@ class Library extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Recently played',
-                            style: TextStyle(color: Colors.white, fontSize: 16.0),
-                          ),
+                          const Text('Recently played', style: TextStyle(color: Colors.white, fontSize: 16.0)),
                           const SizedBox(height: 5),
                           ValueListenableBuilder(
-                            valueListenable:
-                                Hive.box('RecentlyPlayed').listenable(),
-                            builder: (context, Box box, c) {
-                              return Text(
-                                '${box.length} Songs',
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 14.0,
-                                ),
-                              );
-                            },
+                            valueListenable: Hive.box('RecentlyPlayed').listenable(),
+                            builder: (context, Box box, c) => Text(
+                              '${box.length} Songs',
+                              style: const TextStyle(color: Colors.grey, fontSize: 14.0),
+                            ),
                           ),
                         ],
                       ),
@@ -159,14 +128,10 @@ class Library extends StatelessWidget {
                     children: [
                       if (box.length != 0)
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 24.0, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16),
                           child: Text(
                             "Your playlists",
-                            style: Theme.of(context)
-                                .textTheme
-                                .headline4!
-                                .copyWith(fontSize: 18),
+                            style: Theme.of(context).textTheme.headline4!.copyWith(fontSize: 18),
                           ),
                         ),
                       ListView.builder(
@@ -186,10 +151,7 @@ class Library extends StatelessWidget {
                               alignment: Alignment.centerRight,
                               child: const Padding(
                                 padding: EdgeInsets.all(20.0),
-                                child: Icon(
-                                  CupertinoIcons.delete,
-                                  color: Colors.white,
-                                ),
+                                child: Icon(CupertinoIcons.delete, color: Colors.white),
                               ),
                             ),
                             child: InkWell(
@@ -206,8 +168,7 @@ class Library extends StatelessWidget {
                                 );
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20.0, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8),
                                 child: Row(
                                   children: [
                                     ClipRRect(
@@ -216,40 +177,24 @@ class Library extends StatelessWidget {
                                         imageUrl: playlists['coverImage'],
                                         width: 60,
                                         height: 60,
-                                        memCacheHeight:
-                                            (70 * devicePexelRatio).round(),
-                                        memCacheWidth:
-                                            (70 * devicePexelRatio).round(),
-                                        maxHeightDiskCache:
-                                            (70 * devicePexelRatio).round(),
-                                        maxWidthDiskCache:
-                                            (70 * devicePexelRatio).round(),
-                                        placeholder: (context, u) =>
-                                            const LoadingImage(
-                                          icon: Icon(LineIcons.user),
-                                        ),
+                                        memCacheHeight: (70 * devicePexelRatio).round(),
+                                        memCacheWidth: (70 * devicePexelRatio).round(),
+                                        maxHeightDiskCache: (70 * devicePexelRatio).round(),
+                                        maxWidthDiskCache: (70 * devicePexelRatio).round(),
+                                        placeholder: (context, u) => const LoadingImage(icon: Icon(LineIcons.user)),
                                         fit: BoxFit.cover,
                                       ),
                                     ),
                                     Padding(
                                       padding: const EdgeInsets.all(10.0),
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            playlists['name'],
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16.0,
-                                            ),
-                                          ),
+                                          Text(playlists['name'], style: const TextStyle(color: Colors.white, fontSize: 16.0)),
                                           const SizedBox(height: 4),
                                           Text(
                                             "Created by you ${'' .displayTimeAgoFromTimestamp(playlists['created'])}",
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                            ),
+                                            style: const TextStyle(color: Colors.grey),
                                           ),
                                         ],
                                       ),
@@ -274,30 +219,33 @@ class Library extends StatelessWidget {
 }
 
 class LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const LibraryAppBar({Key? key}) : super(key: key);
+  const LibraryAppBar({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: Colors.black,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 50),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Text(
-                "Your Library",
-                style: Theme.of(context).textTheme.headline4,
+      child: const SafeArea(
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20, 18, 20, 14),
+            child: Text(
+              'Your Library',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 32,
+                height: 1.0,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -1.0,
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(90);
+  Size get preferredSize => const Size.fromHeight(64);
 }
