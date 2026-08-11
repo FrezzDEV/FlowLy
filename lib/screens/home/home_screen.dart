@@ -10,10 +10,7 @@ import 'cubit/home_cubit.dart';
 class HomeScreen extends StatelessWidget {
   final MainController con;
 
-  const HomeScreen({
-    super.key,
-    required this.con,
-  });
+  const HomeScreen({super.key, required this.con});
 
   static final SongModel _demoSong = SongModel(
     songid: 'flowly-demo-player',
@@ -21,10 +18,8 @@ class HomeScreen extends StatelessWidget {
     userid: 'flowly',
     name: 'FlowLy',
     duration: '00:00',
-    // Public demo audio so the player can be tested without an account.
     trackid: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    coverImageUrl:
-        'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=900&q=80',
+    coverImageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=900&q=80',
   );
 
   List<T> _take<T>(List<T> values, int start, [int? end]) {
@@ -33,85 +28,57 @@ class HomeScreen extends StatelessWidget {
     return values.sublist(start, safeEnd);
   }
 
+  Widget _content(BuildContext context, HomeState state) {
+    final recentUsers = _take(state.users, 0, 6);
+    final bestArtists = _take(state.users, 6, 16);
+    final moreArtists = _take(state.users, 16);
+    final popularSongs = <SongModel>[_demoSong, ..._take(state.songs, 0, 10)];
+    final newReleases = _take(state.songs, 10, 20);
+
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 100),
+      children: [
+        if (recentUsers.isNotEmpty) ...[
+          RecentUsers(con: con, users: recentUsers),
+          const SizedBox(height: 12),
+        ],
+        const _SectionTitle(title: 'Popular Hits'),
+        HorizontalSongList(con: con, songs: popularSongs),
+        const SizedBox(height: 12),
+        if (bestArtists.isNotEmpty) ...[
+          const _SectionTitle(title: 'Best Picks For You'),
+          HorizontalArtistList(con: con, users: bestArtists),
+          const SizedBox(height: 12),
+        ],
+        if (newReleases.isNotEmpty) ...[
+          const _SectionTitle(title: 'New Releases'),
+          HorizontalSongList(con: con, songs: newReleases),
+          const SizedBox(height: 12),
+        ],
+        if (moreArtists.isNotEmpty) ...[
+          const _SectionTitle(title: 'You might also like'),
+          HorizontalArtistList(con: con, users: moreArtists),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => HomeCubit()..getUsers(),
+      create: (_) => HomeCubit()..getUsers(),
       child: BlocBuilder<HomeCubit, HomeState>(
         builder: (context, state) {
           if (state.status == LoadPage.loading) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
 
-          if (state.status == LoadPage.loaded) {
-            final recentUsers = _take(state.users, 0, 6);
-            final bestArtists = _take(state.users, 6, 16);
-            final moreArtists = _take(state.users, 16);
-            // Keep one guaranteed local recommendation at the front so the
-            // player can always be tested even when the recommendations API
-            // returns no songs.
-            final popularSongs = <SongModel>[
-              _demoSong,
-              ..._take(state.songs, 0, 10),
-            ];
-            final newReleases = _take(state.songs, 10, 20);
-
-            if (state.users.isEmpty && state.songs.isEmpty) {
-              return _HomeScaffold(
-                con: con,
-                body: _EmptyHome(
-                  message: 'No recommendations are available yet.',
-                  onRetry: () => context.read<HomeCubit>().getUsers(),
-                ),
-              );
-            }
-
-            return _HomeScaffold(
-              con: con,
-              body: ListView(
-                padding: const EdgeInsets.only(bottom: 100),
-                children: [
-                  if (recentUsers.isNotEmpty) ...[
-                    RecentUsers(con: con, users: recentUsers),
-                    const SizedBox(height: 12),
-                  ],
-                  const _SectionTitle(title: 'Popular Hits'),
-                  HorizontalSongList(con: con, songs: popularSongs),
-                  const SizedBox(height: 12),
-                  if (bestArtists.isNotEmpty) ...[
-                    const _SectionTitle(title: 'Best Picks For You'),
-                    HorizontalArtistList(con: con, users: bestArtists),
-                    const SizedBox(height: 12),
-                  ],
-                  if (newReleases.isNotEmpty) ...[
-                    const _SectionTitle(title: 'New Releases'),
-                    HorizontalSongList(con: con, songs: newReleases),
-                    const SizedBox(height: 12),
-                  ],
-                  if (moreArtists.isNotEmpty) ...[
-                    const _SectionTitle(title: 'You might also like'),
-                    HorizontalArtistList(con: con, users: moreArtists),
-                    const SizedBox(height: 12),
-                  ],
-                ],
-              ),
-            );
-          }
-
-          if (state.status == LoadPage.error) {
-            return _HomeScaffold(
-              con: con,
-              body: _EmptyHome(
-                message:
-                    'Unable to load recommendations.\n\n${state.errorMessage ?? 'Unknown error.'}',
-                onRetry: () => context.read<HomeCubit>().getUsers(),
-              ),
-            );
-          }
-
-          return const SizedBox.shrink();
+          // Recommendations are optional. Even if the API is unavailable,
+          // always render Home with the local Demo Player.
+          return _HomeScaffold(
+            con: con,
+            body: _content(context, state),
+          );
         },
       ),
     );
@@ -121,21 +88,14 @@ class HomeScreen extends StatelessWidget {
 class _HomeScaffold extends StatelessWidget {
   final MainController con;
   final Widget body;
-
-  const _HomeScaffold({
-    required this.con,
-    required this.body,
-  });
+  const _HomeScaffold({required this.con, required this.body});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Column(
-          children: [
-            const _FlowLyHeader(),
-            Expanded(child: body),
-          ],
+          children: [const _FlowLyHeader(), Expanded(child: body)],
         ),
       ),
     );
@@ -153,31 +113,10 @@ class _FlowLyHeader extends StatelessWidget {
         children: [
           const Icon(Icons.waves_rounded, color: Colors.white, size: 30),
           const SizedBox(width: 8),
-          const Text(
-            'FlowLy',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              height: 1.0,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1.0,
-            ),
-          ),
+          const Text('FlowLy', style: TextStyle(color: Colors.white, fontSize: 32, height: 1.0, fontWeight: FontWeight.w800, letterSpacing: -1.0)),
           const Spacer(),
-          IconButton(
-            tooltip: 'Notifications',
-            onPressed: () {},
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: Colors.white,
-              size: 27,
-            ),
-          ),
-          const SizedBox(width: 2),
-          const CircleAvatar(
-            radius: 18,
-            backgroundImage: NetworkImage('https://i.pravatar.cc/200?img=12'),
-          ),
+          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 27)),
+          const CircleAvatar(radius: 18, backgroundImage: NetworkImage('https://i.pravatar.cc/200?img=12')),
         ],
       ),
     );
@@ -186,64 +125,13 @@ class _FlowLyHeader extends StatelessWidget {
 
 class _SectionTitle extends StatelessWidget {
   final String title;
-
   const _SectionTitle({required this.title});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.headlineSmall,
-      ),
-    );
-  }
-}
-
-class _EmptyHome extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _EmptyHome({
-    required this.message,
-    required this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off, size: 56, color: Colors.white54),
-            const SizedBox(height: 16),
-            const Text(
-              'Home is unavailable',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 22, color: Colors.white),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white60),
-            ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
-                foregroundColor: Colors.white,
-              ),
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+      child: Text(title, style: Theme.of(context).textTheme.headlineSmall),
     );
   }
 }
