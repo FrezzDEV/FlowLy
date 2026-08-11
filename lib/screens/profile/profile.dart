@@ -265,6 +265,7 @@ class _SettingsView extends StatelessWidget {
             _SettingsRow(
               icon: Icons.logout_outlined,
               title: 'Выйти из аккаунта',
+              subtitle: '',
               titleColor: const Color(0xFFB52B2B),
               iconColor: const Color(0xFFB52B2B),
               iconBackground: const Color(0xFF2A1111),
