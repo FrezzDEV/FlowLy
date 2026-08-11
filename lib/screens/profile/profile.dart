@@ -1,14 +1,57 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  ProfilePageState createState() => ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class ProfilePageState extends State<ProfilePage> {
   bool _showSettings = false;
+  String? _avatarPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvatar();
+  }
+
+  void showProfile() {
+    if (_showSettings) {
+      setState(() => _showSettings = false);
+    }
+  }
+
+  Future<void> _loadAvatar() async {
+    final path = Hive.box('profile').get('avatarPath') as String?;
+    if (path != null && await File(path).exists()) {
+      if (mounted) setState(() => _avatarPath = path);
+    }
+  }
+
+  Future<void> _pickAvatar() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
+    );
+    if (image == null) return;
+
+    final directory = await getApplicationDocumentsDirectory();
+    final target = File('${directory.path}/flowly_profile_avatar.jpg');
+    await File(image.path).copy(target.path);
+    await Hive.box('profile').put('avatarPath', target.path);
+
+    if (mounted) {
+      setState(() => _avatarPath = target.path);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,12 +71,42 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
                       children: [
-                        const Center(
-                          child: CircleAvatar(
-                            radius: 52,
-                            backgroundImage: NetworkImage(
-                              'https://i.pravatar.cc/200?img=12',
-                            ),
+                        Center(
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              CircleAvatar(
+                                radius: 52,
+                                backgroundColor: const Color(0xFF202020),
+                                backgroundImage: _avatarPath == null
+                                    ? const NetworkImage(
+                                        'https://i.pravatar.cc/200?img=12',
+                                      )
+                                    : FileImage(File(_avatarPath!))
+                                        as ImageProvider,
+                              ),
+                              Positioned(
+                                right: -2,
+                                bottom: -2,
+                                child: Material(
+                                  color: Colors.white,
+                                  shape: const CircleBorder(),
+                                  child: InkWell(
+                                    customBorder: const CircleBorder(),
+                                    onTap: _pickAvatar,
+                                    child: const SizedBox(
+                                      width: 36,
+                                      height: 36,
+                                      child: Icon(
+                                        Icons.edit_outlined,
+                                        color: Colors.black,
+                                        size: 19,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -46,25 +119,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 28),
-                        _ProfileTile(
-                          icon: Icons.palette_outlined,
-                          title: 'Themes',
-                          subtitle: 'Customize your FlowLy look',
-                          onTap: () {},
-                        ),
-                        _ProfileTile(
-                          icon: Icons.settings_outlined,
-                          title: 'Settings',
-                          subtitle: 'Playback, privacy and preferences',
-                          onTap: () => setState(() => _showSettings = true),
-                        ),
-                        _ProfileTile(
-                          icon: Icons.notifications_none,
-                          title: 'Notifications',
-                          subtitle: 'Manage your alerts',
-                          onTap: () {},
                         ),
                       ],
                     ),
@@ -114,40 +168,6 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-class _ProfileTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _ProfileTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(vertical: 4),
-      leading: Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          color: const Color(0xFF181818),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Icon(icon, color: Colors.white),
-      ),
-      title: Text(title, style: const TextStyle(color: Colors.white)),
-      subtitle: Text(subtitle, style: const TextStyle(color: Colors.grey)),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-      onTap: onTap,
-    );
-  }
-}
-
 class _SettingsView extends StatelessWidget {
   final VoidCallback onBack;
 
@@ -156,7 +176,7 @@ class _SettingsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
       children: [
         Row(
           children: [
@@ -167,25 +187,25 @@ class _SettingsView extends StatelessWidget {
               icon: const Icon(
                 Icons.arrow_back_ios_new,
                 color: Colors.white,
-                size: 24,
+                size: 22,
               ),
             ),
-            const SizedBox(width: 18),
+            const SizedBox(width: 16),
             const Text(
               'Настройки',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 32,
+                fontSize: 28,
                 height: 1.0,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -1.0,
+                letterSpacing: -0.7,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 38),
+        const SizedBox(height: 30),
         const _SettingsSectionLabel('АККАУНТ'),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         _SettingsCard(
           children: [
             _SettingsRow(
@@ -205,9 +225,9 @@ class _SettingsView extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 28),
         const _SettingsSectionLabel('ПРИЛОЖЕНИЕ'),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         _SettingsCard(
           children: [
             _SettingsRow(
@@ -242,9 +262,9 @@ class _SettingsView extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 28),
         const _SettingsSectionLabel('ДРУГОЕ'),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         _SettingsCard(
           children: [
             _SettingsRow(
@@ -291,7 +311,7 @@ class _SettingsSectionLabel extends StatelessWidget {
         text,
         style: const TextStyle(
           color: Color(0xFF8A8A8A),
-          fontSize: 16,
+          fontSize: 14,
           fontWeight: FontWeight.w500,
           letterSpacing: 0.3,
         ),
@@ -310,7 +330,7 @@ class _SettingsCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF101010),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFF292929)),
       ),
       clipBehavior: Clip.antiAlias,
@@ -341,23 +361,23 @@ class _SettingsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 112),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      constraints: const BoxConstraints(minHeight: 82),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: Color(0xFF202020))),
       ),
       child: Row(
         children: [
           Container(
-            width: 64,
-            height: 64,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
               color: iconBackground,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: iconColor, size: 31),
+            child: Icon(icon, color: iconColor, size: 24),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -367,19 +387,21 @@ class _SettingsRow extends StatelessWidget {
                   title,
                   style: TextStyle(
                     color: titleColor,
-                    fontSize: 22,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFF858585),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF858585),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -387,7 +409,7 @@ class _SettingsRow extends StatelessWidget {
             const Icon(
               Icons.chevron_right,
               color: Color(0xFF858585),
-              size: 31,
+              size: 26,
             ),
         ],
       ),
