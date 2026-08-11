@@ -11,7 +11,6 @@ import '../../models/song_model.dart';
 
 class ProfilePage extends StatefulWidget {
   final MainController con;
-
   const ProfilePage({super.key, required this.con});
 
   @override
@@ -54,12 +53,8 @@ class ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _pickAvatar() async {
-    final image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 90,
-    );
+    final image = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 90);
     if (image == null) return;
-
     final dir = await getApplicationDocumentsDirectory();
     final target = File('${dir.path}/flowly_profile_avatar.jpg');
     await File(image.path).copy(target.path);
@@ -114,22 +109,22 @@ class ProfilePageState extends State<ProfilePage> {
             : ValueListenableBuilder(
                 valueListenable: Hive.box('liked').listenable(),
                 builder: (context, Box<dynamic> _, child) => ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 82),
                   children: [
                     _ProfileHeader(onSettings: () => setState(() => _showSettings = true)),
-                    const SizedBox(height: 16),
-                    _Identity(avatarPath: _avatarPath, onPickAvatar: _pickAvatar),
-                    const SizedBox(height: 22),
-                    const _Stats(),
-                    const SizedBox(height: 20),
-                    const _ImportCard(),
-                    const SizedBox(height: 26),
-                    const _Title('Топ за месяц'),
                     const SizedBox(height: 10),
+                    _Identity(avatarPath: _avatarPath, onPickAvatar: _pickAvatar),
+                    const SizedBox(height: 14),
+                    const _Stats(),
+                    const SizedBox(height: 14),
+                    const _ImportCard(),
+                    const SizedBox(height: 20),
+                    const _Title('Топ за месяц'),
+                    const SizedBox(height: 8),
                     const _TopCards(_top),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 18),
                     const _Title('Любимые треки'),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     _FavoriteTracks(tracks: _tracks(), onTap: _playTrack),
                   ],
                 ),
@@ -149,21 +144,14 @@ class _ProfileHeader extends StatelessWidget {
           const Expanded(
             child: Text(
               'Профиль',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 34,
-                height: 1,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -1.0,
-              ),
+              style: TextStyle(color: Colors.white, fontSize: 29, height: 1, fontWeight: FontWeight.w700, letterSpacing: -.6),
             ),
           ),
           IconButton(
             onPressed: onSettings,
-            tooltip: 'Настройки',
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-            icon: const Icon(Icons.settings_outlined, color: Color(0xFF8E8E8E), size: 27),
+            constraints: const BoxConstraints.tightFor(width: 34, height: 34),
+            icon: const Icon(Icons.settings_outlined, color: Color(0xFF8E8E8E), size: 25),
           ),
         ],
       );
@@ -183,15 +171,15 @@ class _Identity extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             CircleAvatar(
-              radius: 74,
+              radius: 60,
               backgroundColor: const Color(0xFF242424),
               backgroundImage: avatarPath == null
                   ? const NetworkImage('https://i.pravatar.cc/400?img=12')
                   : FileImage(File(avatarPath!)) as ImageProvider,
             ),
             Positioned(
-              right: -3,
-              bottom: -3,
+              right: -2,
+              bottom: -2,
               child: Material(
                 color: Colors.white,
                 shape: const CircleBorder(),
@@ -199,24 +187,19 @@ class _Identity extends StatelessWidget {
                   customBorder: const CircleBorder(),
                   onTap: onPickAvatar,
                   child: const SizedBox(
-                    width: 38,
-                    height: 38,
-                    child: Icon(Icons.edit_outlined, color: Colors.black, size: 19),
+                    width: 32,
+                    height: 32,
+                    child: Icon(Icons.edit_outlined, color: Colors.black, size: 16),
                   ),
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 7),
         Text(
           name,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 28,
-            height: 1,
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(color: Colors.white, fontSize: 23, height: 1, fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -231,7 +214,7 @@ class _Stats extends StatelessWidget {
         children: [
           Divider(color: Color(0xFF242424), height: 1),
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 18),
+            padding: EdgeInsets.symmetric(vertical: 12),
             child: Row(
               children: [
                 Expanded(child: _Stat('24', 'Плейлисты')),
@@ -253,9 +236,9 @@ class _Stat extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(
         children: [
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 27, height: 1, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 5),
-          Text(label, style: const TextStyle(color: Color(0xFF858585), fontSize: 15, height: 1, fontWeight: FontWeight.w500)),
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 22, height: 1, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(color: Color(0xFF858585), fontSize: 13, height: 1, fontWeight: FontWeight.w500)),
         ],
       );
 }
@@ -265,35 +248,34 @@ class _ImportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        height: 88,
+        height: 72,
         decoration: BoxDecoration(
           color: const Color(0xFF111111),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFF2A2A2A)),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Row(
           children: [
             Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-              child: const Icon(Icons.download_outlined, color: Colors.black, size: 27),
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(13)),
+              child: const Icon(Icons.download_outlined, color: Colors.black, size: 23),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             const Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Импорт музыки', style: TextStyle(color: Colors.white, fontSize: 19, height: 1.1, fontWeight: FontWeight.w700)),
-                  SizedBox(height: 4),
-                  Text('Перенести из другого сервиса', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Color(0xFF858585), fontSize: 14, height: 1.1, fontWeight: FontWeight.w500)),
+                  Text('Импорт музыки', style: TextStyle(color: Colors.white, fontSize: 17, height: 1.05, fontWeight: FontWeight.w700)),
+                  SizedBox(height: 3),
+                  Text('Перенести из другого сервиса', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Color(0xFF858585), fontSize: 12, height: 1.05, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: Color(0xFF858585), size: 27),
+            const Icon(Icons.chevron_right, color: Color(0xFF858585), size: 23),
           ],
         ),
       );
@@ -306,7 +288,7 @@ class _Title extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text,
-        style: const TextStyle(color: Colors.white, fontSize: 25, height: 1.1, fontWeight: FontWeight.w700),
+        style: const TextStyle(color: Colors.white, fontSize: 22, height: 1.05, fontWeight: FontWeight.w700),
       );
 }
 
@@ -316,29 +298,29 @@ class _TopCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 192,
+        height: 155,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 16),
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
           itemBuilder: (context, index) => SizedBox(
-            width: 190,
+            width: 160,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(13),
                   child: CachedNetworkImage(
                     imageUrl: items[index].image,
-                    width: 190,
-                    height: 150,
+                    width: 160,
+                    height: 126,
                     fit: BoxFit.cover,
                     placeholder: (_, __) => Container(color: const Color(0xFF202020)),
                     errorWidget: (_, __, ___) => Container(color: const Color(0xFF202020), child: const Icon(Icons.music_note, color: Colors.white54)),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(items[index].title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 17, height: 1.1, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                Text(items[index].title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.05, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -358,19 +340,19 @@ class _FavoriteTracks extends StatelessWidget {
             InkWell(
               onTap: () => onTap(i),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   children: [
-                    SizedBox(width: 30, child: Text('${i + 1}', style: const TextStyle(color: Color(0xFF777777), fontSize: 18, height: 1))),
-                    ClipRRect(borderRadius: BorderRadius.circular(14), child: _TrackImage(tracks[i].image)),
-                    const SizedBox(width: 14),
+                    SizedBox(width: 24, child: Text('${i + 1}', style: const TextStyle(color: Color(0xFF777777), fontSize: 16, height: 1))),
+                    ClipRRect(borderRadius: BorderRadius.circular(11), child: _TrackImage(tracks[i].image)),
+                    const SizedBox(width: 11),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(tracks[i].title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 18, height: 1.1, fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 3),
-                          Text(tracks[i].artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF858585), fontSize: 15, height: 1.1, fontWeight: FontWeight.w500)),
+                          Text(tracks[i].title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.05, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 2),
+                          Text(tracks[i].artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF858585), fontSize: 13, height: 1.05, fontWeight: FontWeight.w500)),
                         ],
                       ),
                     ),
@@ -389,15 +371,15 @@ class _TrackImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url == null || url!.isEmpty) {
-      return Container(width: 68, height: 68, color: const Color(0xFF202020), child: const Icon(Icons.music_note, color: Colors.white54));
+      return Container(width: 56, height: 56, color: const Color(0xFF202020), child: const Icon(Icons.music_note, color: Colors.white54, size: 20));
     }
     return CachedNetworkImage(
       imageUrl: url!,
-      width: 68,
-      height: 68,
+      width: 56,
+      height: 56,
       fit: BoxFit.cover,
-      placeholder: (_, __) => Container(width: 68, height: 68, color: const Color(0xFF202020)),
-      errorWidget: (_, __, ___) => Container(width: 68, height: 68, color: const Color(0xFF202020), child: const Icon(Icons.music_note, color: Colors.white54)),
+      placeholder: (_, __) => Container(width: 56, height: 56, color: const Color(0xFF202020)),
+      errorWidget: (_, __, ___) => Container(width: 56, height: 56, color: const Color(0xFF202020), child: const Icon(Icons.music_note, color: Colors.white54, size: 20)),
     );
   }
 }
@@ -454,25 +436,23 @@ class _SettingsView extends StatelessWidget {
         children: [
           Row(
             children: [
-              IconButton(onPressed: onBack, padding: EdgeInsets.zero, constraints: const BoxConstraints.tightFor(width: 36, height: 36), icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20)),
-              const SizedBox(width: 12),
-              const Text('Настройки', style: TextStyle(color: Colors.white, fontSize: 25, height: 1, fontWeight: FontWeight.w700)),
+              IconButton(onPressed: onBack, padding: EdgeInsets.zero, constraints: const BoxConstraints.tightFor(width: 34, height: 34), icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 19)),
+              const SizedBox(width: 8),
+              const Text('Настройки', style: TextStyle(color: Colors.white, fontSize: 22, height: 1, fontWeight: FontWeight.w700)),
             ],
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 16),
           for (var groupIndex = 0; groupIndex < _groups.length; groupIndex++) ...[
             _SettingsLabel(_groups[groupIndex].title),
-            const SizedBox(height: 7),
+            const SizedBox(height: 6),
             _SettingsCard(rows: _groups[groupIndex].rows),
-            if (groupIndex != _groups.length - 1) const SizedBox(height: 20),
+            if (groupIndex != _groups.length - 1) const SizedBox(height: 14),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           const _SettingsLabel('АККАУНТ'),
-          const SizedBox(height: 7),
+          const SizedBox(height: 6),
           const _SettingsCard(
-            rows: [
-              (icon: Icons.logout_outlined, title: 'Выйти из аккаунта', subtitle: ''),
-            ],
+            rows: [(icon: Icons.logout_outlined, title: 'Выйти из аккаунта', subtitle: '')],
             logout: true,
           ),
         ],
@@ -485,8 +465,8 @@ class _SettingsLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(left: 5),
-        child: Text(text, style: const TextStyle(color: Color(0xFF8A8A8A), fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: .3)),
+        padding: const EdgeInsets.only(left: 4),
+        child: Text(text, style: const TextStyle(color: Color(0xFF8A8A8A), fontSize: 11, fontWeight: FontWeight.w500, letterSpacing: .3)),
       );
 }
 
@@ -497,35 +477,35 @@ class _SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(color: const Color(0xFF101010), borderRadius: BorderRadius.circular(15), border: Border.all(color: const Color(0xFF292929))),
+        decoration: BoxDecoration(color: const Color(0xFF101010), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF292929))),
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
             for (final row in rows)
               Container(
-                constraints: const BoxConstraints(minHeight: 66),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                constraints: const BoxConstraints(minHeight: 60),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFF202020)))),
                 child: Row(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(color: logout ? const Color(0xFF2A1111) : Colors.white, shape: BoxShape.circle),
-                      child: Icon(row.icon, color: logout ? const Color(0xFFB52B2B) : Colors.black, size: 21),
+                      child: Icon(row.icon, color: logout ? const Color(0xFFB52B2B) : Colors.black, size: 20),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(row.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: logout ? const Color(0xFFB52B2B) : Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
-                          if (row.subtitle.isNotEmpty) Text(row.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF858585), fontSize: 11, fontWeight: FontWeight.w500)),
+                          Text(row.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: logout ? const Color(0xFFB52B2B) : Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                          if (row.subtitle.isNotEmpty) Text(row.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF858585), fontSize: 10, fontWeight: FontWeight.w500)),
                         ],
                       ),
                     ),
-                    if (!logout) const Icon(Icons.chevron_right, color: Color(0xFF858585), size: 21),
+                    if (!logout) const Icon(Icons.chevron_right, color: Color(0xFF858585), size: 20),
                   ],
                 ),
               ),
