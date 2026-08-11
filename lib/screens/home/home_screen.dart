@@ -40,36 +40,41 @@ class HomeScreen extends StatelessWidget {
             final newReleases = _take(state.songs, 10, 20);
 
             if (state.users.isEmpty && state.songs.isEmpty) {
-              return _EmptyHome(
-                message: 'No recommendations are available yet.',
-                onRetry: () => context.read<HomeCubit>().getUsers(),
+              return _HomeScaffold(
+                con: con,
+                body: _EmptyHome(
+                  message: 'No recommendations are available yet.',
+                  onRetry: () => context.read<HomeCubit>().getUsers(),
+                ),
               );
             }
 
-            return Scaffold(
+            return _HomeScaffold(
+              con: con,
               body: ListView(
+                padding: const EdgeInsets.only(bottom: 100),
                 children: [
                   if (recentUsers.isNotEmpty) ...[
                     RecentUsers(con: con, users: recentUsers),
                     const SizedBox(height: 12),
                   ],
                   if (popularSongs.isNotEmpty) ...[
-                    _SectionTitle(title: 'Popular Hits'),
+                    const _SectionTitle(title: 'Popular Hits'),
                     HorizontalSongList(con: con, songs: popularSongs),
                     const SizedBox(height: 12),
                   ],
                   if (bestArtists.isNotEmpty) ...[
-                    _SectionTitle(title: 'Best Picks For You'),
+                    const _SectionTitle(title: 'Best Picks For You'),
                     HorizontalArtistList(con: con, users: bestArtists),
                     const SizedBox(height: 12),
                   ],
                   if (newReleases.isNotEmpty) ...[
-                    _SectionTitle(title: 'New Releases'),
+                    const _SectionTitle(title: 'New Releases'),
                     HorizontalSongList(con: con, songs: newReleases),
                     const SizedBox(height: 12),
                   ],
                   if (moreArtists.isNotEmpty) ...[
-                    _SectionTitle(title: 'You might also like'),
+                    const _SectionTitle(title: 'You might also like'),
                     HorizontalArtistList(con: con, users: moreArtists),
                     const SizedBox(height: 12),
                   ],
@@ -79,14 +84,83 @@ class HomeScreen extends StatelessWidget {
           }
 
           if (state.status == LoadPage.error) {
-            return _EmptyHome(
-              message: 'Unable to load recommendations.\n\n${state.errorMessage ?? 'Unknown error.'}',
-              onRetry: () => context.read<HomeCubit>().getUsers(),
+            return _HomeScaffold(
+              con: con,
+              body: _EmptyHome(
+                message:
+                    'Unable to load recommendations.\n\n${state.errorMessage ?? 'Unknown error.'}',
+                onRetry: () => context.read<HomeCubit>().getUsers(),
+              ),
             );
           }
 
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+}
+
+class _HomeScaffold extends StatelessWidget {
+  final MainController con;
+  final Widget body;
+
+  const _HomeScaffold({
+    required this.con,
+    required this.body,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const _FlowLyHeader(),
+            Expanded(child: body),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FlowLyHeader extends StatelessWidget {
+  const _FlowLyHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 10, 14, 10),
+      child: Row(
+        children: [
+          const Icon(Icons.waves_rounded, color: Colors.white, size: 26),
+          const SizedBox(width: 8),
+          const Text(
+            'FlowLy',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.7,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            tooltip: 'Notifications',
+            onPressed: () {},
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: Colors.white,
+              size: 27,
+            ),
+          ),
+          const SizedBox(width: 2),
+          const CircleAvatar(
+            radius: 18,
+            backgroundImage: NetworkImage('https://i.pravatar.cc/200?img=12'),
+          ),
+        ],
       ),
     );
   }
@@ -120,34 +194,32 @@ class _EmptyHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off, size: 56, color: Colors.white54),
-              const SizedBox(height: 16),
-              const Text(
-                'Home is unavailable',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 22, color: Colors.white),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white60),
-              ),
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
-          ),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off, size: 56, color: Colors.white54),
+            const SizedBox(height: 16),
+            const Text(
+              'Home is unavailable',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 22, color: Colors.white),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white60),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
         ),
       ),
     );
