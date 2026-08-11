@@ -16,10 +16,10 @@ class GenrePage extends StatelessWidget {
   final TagsModel tag;
   final MainController con;
   const GenrePage({
-    Key? key,
+    super.key,
     required this.tag,
     required this.con,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +71,7 @@ class GenrePage extends StatelessWidget {
                                   end: Alignment.center,
                                   colors: [
                                     Colors.black,
-                                    Colors.black.withOpacity(0.5),
+                                    Colors.black.withValues(alpha: 0.5),
                                   ],
                                 ),
                               ),
@@ -84,7 +84,7 @@ class GenrePage extends StatelessWidget {
                     ),
                     title: Text(
                       tag.tag.toTitleCase(),
-                      style: Theme.of(context).textTheme.headline4,
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
                   ),
                 ),
@@ -94,7 +94,7 @@ class GenrePage extends StatelessWidget {
                         vertical: 24.0, horizontal: 16),
                     child: Text(
                       "Best Artists",
-                      style: Theme.of(context).textTheme.headline4!.copyWith(
+                      style: Theme.of(context).textTheme.headlineSmall!.copyWith(
                             fontSize: 18,
                           ),
                     ),
@@ -111,8 +111,8 @@ class GenrePage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         vertical: 24.0, horizontal: 16),
                     child: Text(
-                      tag.tag.toTitleCase() + " Songs",
-                      style: Theme.of(context).textTheme.headline4!.copyWith(
+                      "${tag.tag.toTitleCase()} Songs",
+                      style: Theme.of(context).textTheme.headlineSmall!.copyWith(
                             fontSize: 18,
                           ),
                     ),
@@ -121,8 +121,8 @@ class GenrePage extends StatelessWidget {
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (_, i) {
-                      bool isPlaying = con.player.getCurrentAudioTitle ==
-                          state.songs[i].songname;
+                      final isPlaying =
+                          con.currentSong?.songname == state.songs[i].songname;
                       return InkWell(
                         onTap: () {
                           BlocProvider.of<GenreCubit>(context)
@@ -178,7 +178,7 @@ class GenrePage extends StatelessWidget {
                                               maxLines: 1,
                                               style: Theme.of(context)
                                                   .textTheme
-                                                  .bodyText1!
+                                                  .bodyLarge!
                                                   .copyWith(
                                                       color: isPlaying
                                                           ? Colors.lightGreenAccent[
@@ -192,7 +192,7 @@ class GenrePage extends StatelessWidget {
                                               state.songs[i].duration!,
                                               style: Theme.of(context)
                                                   .textTheme
-                                                  .bodyText1!
+                                                  .bodyLarge!
                                                   .copyWith(
                                                     color: Colors.grey,
                                                   ),
