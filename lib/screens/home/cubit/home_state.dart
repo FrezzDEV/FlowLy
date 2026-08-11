@@ -4,16 +4,20 @@ class HomeState {
   final LoadPage status;
   final List<User> users;
   final List<SongModel> songs;
+  final String? errorMessage;
+
   HomeState({
     required this.status,
     required this.users,
     required this.songs,
+    this.errorMessage,
   });
+
   factory HomeState.initial() {
     return HomeState(
-      songs: [],
+      songs: const [],
       status: LoadPage.initial,
-      users: [],
+      users: const [],
     );
   }
 
@@ -21,11 +25,14 @@ class HomeState {
     LoadPage? status,
     List<User>? users,
     List<SongModel>? songs,
+    String? errorMessage,
+    bool clearError = false,
   }) {
     return HomeState(
       status: status ?? this.status,
       users: users ?? this.users,
       songs: songs ?? this.songs,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 }
