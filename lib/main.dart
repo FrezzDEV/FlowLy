@@ -12,6 +12,7 @@ Future<void> main() async {
   await Hive.openBox('RecentlyPlayed');
   await Hive.openBox('playlists');
   await Hive.openBox('profile');
+  await Hive.openBox('downloads');
   runApp(const MyApp());
 }
 
