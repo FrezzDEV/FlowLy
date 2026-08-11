@@ -24,6 +24,8 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   final PersistentTabController controller =
       PersistentTabController(initialIndex: 0);
+  final GlobalKey<ProfilePageState> _profileKey =
+      GlobalKey<ProfilePageState>();
 
   List<PersistentBottomNavBarItem> _navBarsItems() {
     return [
@@ -59,7 +61,7 @@ class _AppState extends State<App> {
       HomeScreen(con: con),
       SearchPage(con: con),
       Library(con: con),
-      const ProfilePage(),
+      ProfilePage(key: _profileKey),
     ];
   }
 
@@ -87,6 +89,11 @@ class _AppState extends State<App> {
             ),
             screens: _buildScreens(con),
             items: _navBarsItems(),
+            onItemSelected: (index) {
+              if (index == 3) {
+                _profileKey.currentState?.showProfile();
+              }
+            },
             confineInSafeArea: true,
             backgroundColor: Colors.black,
             handleAndroidBackButtonPress: true,
