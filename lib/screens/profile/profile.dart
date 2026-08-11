@@ -111,7 +111,6 @@ class _ProfileContent extends StatelessWidget {
     return Consumer<MainController>(
       builder: (context, controller, _) {
         final favorites = _loadFavorites(controller);
-        final currentSong = controller.currentSong;
         final playlistCount = Hive.box('playlists').length;
 
         return ListView(
@@ -166,7 +165,11 @@ class _ProfileContent extends StatelessWidget {
                         child: const SizedBox(
                           width: 36,
                           height: 36,
-                          child: Icon(Icons.edit_outlined, color: Colors.black, size: 19),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            color: Colors.black,
+                            size: 19,
+                          ),
                         ),
                       ),
                     ),
@@ -231,7 +234,7 @@ class _ProfileContent extends StatelessWidget {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: 3,
-                separatorBuilder: (_, index) => const SizedBox(width: 18),
+                separatorBuilder: (context, index) => const SizedBox(width: 18),
                 itemBuilder: (context, index) {
                   final song = index < controller.songs.length ? controller.songs[index] : null;
                   return _TopCard(
@@ -269,8 +272,6 @@ class _ProfileContent extends StatelessWidget {
                       onTap: () => controller.playSong(favorites, entry.key),
                     ),
                   ),
-            if (currentSong != null) const SizedBox(height: 24),
-            if (currentSong != null) _CurrentSongBar(song: currentSong, controller: controller),
           ],
         );
       },
@@ -390,8 +391,15 @@ class _ImportCard extends StatelessWidget {
               Container(
                 width: 72,
                 height: 72,
-                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                child: const Icon(Icons.download_outlined, color: Colors.black, size: 31),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.download_outlined,
+                  color: Colors.black,
+                  size: 31,
+                ),
               ),
               const SizedBox(width: 20),
               const Expanded(
@@ -421,7 +429,11 @@ class _ImportCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Color(0xFF858585), size: 30),
+              const Icon(
+                Icons.chevron_right,
+                color: Color(0xFF858585),
+                size: 30,
+              ),
             ],
           ),
         ),
@@ -454,7 +466,11 @@ class _TopCard extends StatelessWidget {
                 width: 226,
                 height: 160,
                 color: const Color(0xFF1C1C1C),
-                child: const Icon(Icons.music_note, color: Color(0xFF777777), size: 36),
+                child: const Icon(
+                  Icons.music_note,
+                  color: Color(0xFF777777),
+                  size: 36,
+                ),
               ),
             ),
           ),
@@ -499,7 +515,10 @@ class _FavoriteSongRow extends StatelessWidget {
               width: 32,
               child: Text(
                 '$index',
-                style: const TextStyle(color: Color(0xFF858585), fontSize: 17),
+                style: const TextStyle(
+                  color: Color(0xFF858585),
+                  fontSize: 17,
+                ),
               ),
             ),
             _SongCover(url: song.coverImageUrl),
@@ -565,68 +584,10 @@ class _SongCover extends StatelessWidget {
   Widget _placeholder() {
     return Container(
       color: const Color(0xFF1B1B1B),
-      child: const Icon(Icons.music_note, color: Color(0xFF777777), size: 28),
-    );
-  }
-}
-
-class _CurrentSongBar extends StatelessWidget {
-  final SongModel song;
-  final MainController controller;
-
-  const _CurrentSongBar({required this.song, required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 86,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: const BoxDecoration(
-        color: Colors.black,
-        border: Border(top: BorderSide(color: Color(0xFF202020))),
-      ),
-      child: Row(
-        children: [
-          _SongCover(url: song.coverImageUrl),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  song.songname ?? 'Без названия',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  song.name ?? song.userid ?? 'FlowLy',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Color(0xFF858585)),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: controller.previous,
-            icon: const Icon(Icons.skip_previous, color: Colors.white, size: 28),
-          ),
-          IconButton(
-            onPressed: controller.playOrPause,
-            icon: Icon(
-              controller.isPlaying ? Icons.pause : Icons.play_arrow,
-              color: Colors.white,
-              size: 30,
-            ),
-          ),
-          IconButton(
-            onPressed: controller.next,
-            icon: const Icon(Icons.skip_next, color: Colors.white, size: 28),
-          ),
-        ],
+      child: const Icon(
+        Icons.music_note,
+        color: Color(0xFF777777),
+        size: 28,
       ),
     );
   }
@@ -648,7 +609,11 @@ class _SettingsView extends StatelessWidget {
               onPressed: onBack,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 22),
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 14),
             const Text(
@@ -858,7 +823,11 @@ class _SettingsRow extends StatelessWidget {
             ),
           ),
           if (showChevron)
-            const Icon(Icons.chevron_right, color: Color(0xFF858585), size: 22),
+            const Icon(
+              Icons.chevron_right,
+              color: Color(0xFF858585),
+              size: 22,
+            ),
         ],
       ),
     );
