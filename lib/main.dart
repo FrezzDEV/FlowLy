@@ -15,13 +15,12 @@ Future<void> main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Musive',
+      title: 'FlowLy',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Proxima',
@@ -31,9 +30,16 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.black,
         splashColor: Colors.transparent,
         hoverColor: Colors.transparent,
-        progressIndicatorTheme: ProgressIndicatorThemeData(
-          circularTrackColor: Colors.greenAccent[700],
-          color: Colors.greenAccent[400],
+        colorScheme: const ColorScheme.dark(
+          surface: Colors.black,
+          primary: Colors.white,
+          onPrimary: Colors.black,
+          secondary: Colors.white,
+          onSecondary: Colors.black,
+        ),
+        progressIndicatorTheme: const ProgressIndicatorThemeData(
+          circularTrackColor: Color(0xFF2A2A2A),
+          color: Colors.white,
           linearMinHeight: 10,
         ),
         textTheme: const TextTheme(
@@ -49,15 +55,14 @@ class MyApp extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        primarySwatch: Colors.blue,
       ),
       builder: (context, child) {
         return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
           child: ScrollConfiguration(
             behavior: NoGlowBehavior(),
             child: child!,
           ),
-          data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
         );
       },
       home: const App(),
@@ -75,6 +80,3 @@ class NoGlowBehavior extends ScrollBehavior {
     return child;
   }
 }
-// ambient
-// cinematic
-// films
