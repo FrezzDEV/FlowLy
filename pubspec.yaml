@@ -33,7 +33,7 @@ flutter:
   fonts:
     - family: Proxima
       fonts:
-        - asset: fonts/Proxima-Nova-SBold.ttf
+        - asset: fonts/Proxima-Nova-Sbold.ttf
     - family: Proxima Bold
       fonts:
         - asset: fonts/Proxima-Nova-Bold.ttf
