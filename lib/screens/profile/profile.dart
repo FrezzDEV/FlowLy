@@ -112,7 +112,7 @@ class _ProfileContent extends StatelessWidget {
       builder: (context, controller, _) {
         final favorites = _loadFavorites(controller);
         final currentSong = controller.currentSong;
-        final playlists = favorites.length.clamp(0, 99);
+        final playlistCount = Hive.box('playlists').length;
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 22, 20, 112),
@@ -166,11 +166,7 @@ class _ProfileContent extends StatelessWidget {
                         child: const SizedBox(
                           width: 36,
                           height: 36,
-                          child: Icon(
-                            Icons.edit_outlined,
-                            color: Colors.black,
-                            size: 19,
-                          ),
+                          child: Icon(Icons.edit_outlined, color: Colors.black, size: 19),
                         ),
                       ),
                     ),
@@ -212,16 +208,14 @@ class _ProfileContent extends StatelessWidget {
             const Divider(color: Color(0xFF292929), height: 1),
             const SizedBox(height: 26),
             _StatsRow(
-              playlists: playlists,
+              playlists: playlistCount,
               followers: 128,
               following: 56,
             ),
             const SizedBox(height: 26),
             const Divider(color: Color(0xFF292929), height: 1),
             const SizedBox(height: 26),
-            _ImportCard(
-              onTap: () => _showImportMessage(context),
-            ),
+            _ImportCard(onTap: () => _showImportMessage(context)),
             const SizedBox(height: 46),
             const Text(
               'Топ за месяц',
@@ -237,11 +231,9 @@ class _ProfileContent extends StatelessWidget {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: 3,
-                separatorBuilder: (_, _) => const SizedBox(width: 18),
+                separatorBuilder: (_, index) => const SizedBox(width: 18),
                 itemBuilder: (context, index) {
-                  final song = index < controller.songs.length
-                      ? controller.songs[index]
-                      : null;
+                  final song = index < controller.songs.length ? controller.songs[index] : null;
                   return _TopCard(
                     title: song?.songname ?? ['Chill Vibes', 'Night Drive', 'Focus'][index],
                     imageUrl: song?.coverImageUrl?.isNotEmpty == true
@@ -306,10 +298,7 @@ class _ProfileContent extends StatelessWidget {
       }
     }
 
-    if (result.isEmpty) {
-      return controller.songs.take(5).toList();
-    }
-    return result;
+    return result.isEmpty ? controller.songs.take(5).toList() : result;
   }
 
   void _showImportMessage(BuildContext context) {
@@ -401,10 +390,7 @@ class _ImportCard extends StatelessWidget {
               Container(
                 width: 72,
                 height: 72,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                 child: const Icon(Icons.download_outlined, color: Colors.black, size: 31),
               ),
               const SizedBox(width: 20),
@@ -464,7 +450,7 @@ class _TopCard extends StatelessWidget {
               width: 226,
               height: 160,
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(
+              errorBuilder: (context, error, stackTrace) => Container(
                 width: 226,
                 height: 160,
                 color: const Color(0xFF1C1C1C),
@@ -569,7 +555,7 @@ class _SongCover extends StatelessWidget {
             ? Image.network(
                 url!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _placeholder(),
+                errorBuilder: (context, error, stackTrace) => _placeholder(),
               )
             : _placeholder(),
       ),
