@@ -6,6 +6,7 @@ import '../controllers/main_controller.dart';
 import '../models/song_model.dart';
 import '../models/user.dart';
 import '../screens/artist_profile/artist_profile.dart';
+import '../screens/current_playing/current_playing_song.dart';
 import 'loading.dart';
 
 import 'botttom_sheet_widget.dart';
@@ -19,6 +20,25 @@ class HorizontalSongList extends StatelessWidget {
     required this.con,
   }) : super(key: key);
 
+  Future<void> _openPlayer(BuildContext context, int index) async {
+    try {
+      await con.playSong(con.convertToAudio(songs), index);
+      if (!context.mounted) return;
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.black,
+        useSafeArea: true,
+        builder: (_) => CurrentPlayingSong(con: con),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Не удалось открыть плеер: $error')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final devicePexelRatio = MediaQuery.of(context).devicePixelRatio;
@@ -31,9 +51,7 @@ class HorizontalSongList extends StatelessWidget {
           itemBuilder: (context, i) {
             final song = songs[i];
             return InkWell(
-              onTap: () {
-                con.playSong(con.convertToAudio(songs), songs.indexOf(song));
-              },
+              onTap: () => _openPlayer(context, i),
               onLongPress: () {
                 showModalBottomSheet(
                     useRootNavigator: true,
@@ -56,7 +74,7 @@ class HorizontalSongList extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(5),
                         child: CachedNetworkImage(
-                          imageUrl: song.coverImageUrl!,
+                          imageUrl: song.coverImageUrl ?? '',
                           width: 150,
                           height: 150,
                           maxHeightDiskCache: (200 * devicePexelRatio).round(),
@@ -70,7 +88,7 @@ class HorizontalSongList extends StatelessWidget {
                       ),
                       const SizedBox(height: 7),
                       Text(
-                        song.songname!,
+                        song.songname ?? '',
                         maxLines: 2,
                         style: Theme.of(context)
                             .textTheme
@@ -124,7 +142,7 @@ class HorizontalArtistList extends StatelessWidget {
                     children: [
                       ClipOval(
                         child: CachedNetworkImage(
-                          imageUrl: user.avatar!,
+                          imageUrl: user.avatar ?? '',
                           width: 150,
                           height: 150,
                           maxHeightDiskCache: (200 * devicePexelRatio).round(),
@@ -144,7 +162,7 @@ class HorizontalArtistList extends StatelessWidget {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        user.name!,
+                        user.name ?? '',
                         maxLines: 2,
                         textAlign: TextAlign.center,
                         style: Theme.of(context)
