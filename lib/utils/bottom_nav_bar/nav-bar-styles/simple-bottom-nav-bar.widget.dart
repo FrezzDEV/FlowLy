@@ -11,17 +11,19 @@ class BottomNavSimple extends StatelessWidget {
   }) : super(key: key);
 
   Widget _buildItem(item, bool isSelected, double? height) {
-    return AnimatedContainer(
+    return SizedBox(
       height: height,
-      width: 100,
-      duration: const Duration(milliseconds: 1000),
-      child: IconTheme(
-        data: IconThemeData(
+      width: double.infinity,
+      child: Center(
+        child: IconTheme(
+          data: IconThemeData(
             size: item.iconSize,
             color: isSelected
                 ? (item.activeColorSecondary ?? item.activeColorPrimary)
-                : item.inactiveColorPrimary ?? item.activeColorPrimary),
-        child: isSelected ? item.icon : item.inactiveIcon ?? item.icon,
+                : item.inactiveColorPrimary ?? item.activeColorPrimary,
+          ),
+          child: isSelected ? item.icon : item.inactiveIcon ?? item.icon,
+        ),
       ),
     );
   }
@@ -31,33 +33,28 @@ class BottomNavSimple extends StatelessWidget {
     return SizedBox(
       width: MediaQuery.of(context).size.width,
       height: navBarEssentials!.navBarHeight,
-      // padding: EdgeInsets.only(
-      //     left: navBarEssentials!.padding?.left ??
-      //         MediaQuery.of(context).size.width * 0.04,
-      //     right: navBarEssentials!.padding?.right ??
-      //         MediaQuery.of(context).size.width * 0.04,
-      //     top: navBarEssentials!.padding?.top ??
-      //         navBarEssentials!.navBarHeight! * 0.15,
-      //     bottom: navBarEssentials!.padding?.bottom ??
-      //         navBarEssentials!.navBarHeight! * 0.12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: navBarEssentials!.items!.map((item) {
-          int index = navBarEssentials!.items!.indexOf(item);
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                if (navBarEssentials!.items![index].onPressed != null) {
-                  navBarEssentials!.items![index]
-                      .onPressed!(navBarEssentials!.selectedScreenBuildContext);
-                } else {
-                  navBarEssentials!.onItemSelected!(index);
-                }
-              },
-              child: _buildItem(item, navBarEssentials!.selectedIndex == index,
-                  navBarEssentials!.navBarHeight),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: navBarEssentials!.items!.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          return Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  if (item.onPressed != null) {
+                    item.onPressed!(navBarEssentials!.selectedScreenBuildContext);
+                  } else {
+                    navBarEssentials!.onItemSelected!(index);
+                  }
+                },
+                child: _buildItem(
+                  item,
+                  navBarEssentials!.selectedIndex == index,
+                  navBarEssentials!.navBarHeight,
+                ),
+              ),
             ),
           );
         }).toList(),
