@@ -62,36 +62,6 @@ jobs:
               print(path)
           PY
 
-      - name: Disable broken Android implementation of assets_audio_player_web
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import os
-          import re
-
-          root = Path(os.environ["PUB_CACHE"]) / "hosted" / "pub.dev"
-          targets = list(root.glob("assets_audio_player_web-*/pubspec.yaml")) if root.exists() else []
-
-          for path in targets:
-              text = path.read_text(encoding="utf-8")
-              # assets_audio_player already supplies the Android implementation.
-              # The assets_audio_player_web Android shim is legacy code using the
-              # removed Flutter V1 Registrar API and must not be registered on Android.
-              patched = re.sub(
-                  r"(?ms)^\s{6}android:\n(?:^\s{8}.+\n)*",
-                  "",
-                  text,
-                  count=1,
-              )
-              if patched != text:
-                  path.write_text(patched, encoding="utf-8")
-                  print(f"Disabled Android platform registration in {path}")
-
-          for path in targets:
-              print(f"--- {path} ---")
-              print(path.read_text(encoding="utf-8"))
-          PY
-
       - name: Analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
