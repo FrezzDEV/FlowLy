@@ -133,10 +133,26 @@ class _LibraryNavPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
     final centerY = size.height / 2;
-    canvas.drawLine(4, centerY - 8, 4, centerY + 8, paint);
-    canvas.drawLine(11, centerY - 5, 11, centerY + 8, paint);
-    canvas.drawLine(18, centerY - 7, 18, centerY + 8, paint);
-    canvas.drawLine(22, centerY - 7, 26, centerY + 7, paint);
+    canvas.drawLine(
+      Offset(4, centerY - 8),
+      Offset(4, centerY + 8),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(11, centerY - 5),
+      Offset(11, centerY + 8),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(18, centerY - 7),
+      Offset(18, centerY + 8),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(22, centerY - 7),
+      Offset(26, centerY + 7),
+      paint,
+    );
   }
 
   @override
