@@ -2,27 +2,34 @@ import 'package:bloc/bloc.dart';
 import '../../../models/loading_enum.dart';
 import '../../../models/song_model.dart';
 import '../../../repositories/get_home_page.dart';
-
 import '../../../models/user.dart';
 
 part 'home_state.dart';
 
 class HomeCubit extends Cubit<HomeState> {
-  final repo = GetHomePage();
+  final GetHomePage repo = GetHomePage();
+
   HomeCubit() : super(HomeState.initial());
 
-  void getUsers() async {
+  Future<void> getUsers() async {
+    emit(state.copyWith(status: LoadPage.loading, clearError: true));
+
     try {
-      emit(state.copyWith(status: LoadPage.loading));
+      final users = await repo.getUsers();
+      final songs = await repo.getSongs();
 
       emit(state.copyWith(
-        users: await repo.getUsers(),
-        songs: await repo.getSongs(),
+        users: users,
+        songs: songs,
         status: LoadPage.loaded,
+        clearError: true,
       ));
-    } catch (e) {
-      print(e.toString());
-      emit(state.copyWith(status: LoadPage.error));
+    } catch (error) {
+      final message = error.toString();
+      emit(state.copyWith(
+        status: LoadPage.error,
+        errorMessage: message,
+      ));
     }
   }
 }
