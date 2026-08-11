@@ -1,23 +1,22 @@
-// ignore: file_names
-import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
-import 'package:spotify_clone/controllers/main_controller.dart';
+
+import '../../controllers/main_controller.dart';
 
 class PlayingControls extends StatefulWidget {
   final bool isPlaying;
-  final LoopMode? loopMode;
+  final LoopModeType? loopMode;
   final bool isPlaylist;
   final MainController con;
-  final Function()? onPrevious;
-  final Function() onPlay;
-  final Function()? onNext;
-  final Function()? toggleLoop;
-  final Function()? onStop;
+  final VoidCallback? onPrevious;
+  final VoidCallback onPlay;
+  final VoidCallback? onNext;
+  final VoidCallback? toggleLoop;
+  final VoidCallback? onStop;
 
   const PlayingControls({
-    Key? key,
+    super.key,
     required this.isPlaying,
     this.loopMode,
     this.isPlaylist = false,
@@ -27,77 +26,37 @@ class PlayingControls extends StatefulWidget {
     this.onNext,
     this.toggleLoop,
     this.onStop,
-  }) : super(key: key);
+  });
 
   @override
   State<PlayingControls> createState() => _PlayingControlsState();
 }
 
 class _PlayingControlsState extends State<PlayingControls> {
-  bool isSuffled = false;
-  @override
-  void initState() {
-    setState(() {
-      isSuffled = widget.con.player.shuffle;
-    });
-    super.initState();
-  }
-
-  Icon loopIcon(BuildContext context) {
-    if (widget.loopMode == LoopMode.none) {
-      return const Icon(
-        CupertinoIcons.arrow_2_circlepath,
-        color: Colors.grey,
-        size: 24,
-      );
-    } else if (widget.loopMode == LoopMode.playlist) {
-      return const Icon(
-        CupertinoIcons.arrow_2_circlepath,
-        size: 24,
-        color: Colors.white,
-      );
-    } else {
-      return const Icon(
-        CupertinoIcons.arrow_2_circlepath,
-        size: 24,
-        color: Colors.green,
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final shuffled = widget.con.isShuffled;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            padding: const EdgeInsets.all(0),
-            splashRadius: 24,
-            onPressed: () {
-              setState(() {
-                isSuffled = !isSuffled;
-              });
-              widget.con.player.toggleShuffle();
-            },
-            icon: isSuffled
-                ? const Icon(LineIcons.random, color: Colors.green)
-                : const Icon(LineIcons.random, color: Colors.white),
+            padding: EdgeInsets.zero,
+            onPressed: widget.isPlaylist ? widget.con.toggleShuffle : null,
+            icon: Icon(
+              LineIcons.random,
+              color: shuffled ? Colors.green : Colors.white,
+            ),
           ),
           Row(
             mainAxisSize: MainAxisSize.min,
-            // mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               IconButton(
                 onPressed: widget.isPlaylist ? widget.onPrevious : null,
-                icon: const Icon(
-                  Icons.skip_previous,
-                  size: 40,
-                  color: Colors.white,
-                ),
+                icon: const Icon(Icons.skip_previous,
+                    size: 40, color: Colors.white),
               ),
               SizedBox(
                 height: 80,
@@ -115,21 +74,25 @@ class _PlayingControlsState extends State<PlayingControls> {
               ),
               IconButton(
                 onPressed: widget.isPlaylist ? widget.onNext : null,
-                icon: const Icon(
-                  Icons.skip_next,
-                  color: Colors.white,
-                  size: 40,
-                ),
+                icon: const Icon(Icons.skip_next,
+                    size: 40, color: Colors.white),
               ),
             ],
           ),
           IconButton(
-            padding: const EdgeInsets.all(0),
-            splashRadius: 24,
-            onPressed: () {
-              if (widget.toggleLoop != null) widget.toggleLoop!();
-            },
-            icon: loopIcon(context),
+            padding: EdgeInsets.zero,
+            onPressed: widget.toggleLoop,
+            icon: Icon(
+              widget.loopMode == LoopModeType.none
+                  ? CupertinoIcons.arrow_2_circlepath
+                  : widget.loopMode == LoopModeType.one
+                      ? CupertinoIcons.repeat_1
+                      : CupertinoIcons.arrow_2_circlepath,
+              color: widget.loopMode == LoopModeType.none
+                  ? Colors.grey
+                  : Colors.white,
+              size: 24,
+            ),
           ),
         ],
       ),
