@@ -36,8 +36,7 @@ class ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _pickAvatar() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(
+    final image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 90,
     );
@@ -95,12 +94,12 @@ class ProfilePageState extends State<ProfilePage> {
                                     customBorder: const CircleBorder(),
                                     onTap: _pickAvatar,
                                     child: const SizedBox(
-                                      width: 36,
-                                      height: 36,
+                                      width: 34,
+                                      height: 34,
                                       child: Icon(
                                         Icons.edit_outlined,
                                         color: Colors.black,
-                                        size: 19,
+                                        size: 18,
                                       ),
                                     ),
                                   ),
@@ -115,7 +114,7 @@ class ProfilePageState extends State<ProfilePage> {
                             'FlowLy User',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -159,7 +158,7 @@ class _ProfileHeader extends StatelessWidget {
             icon: const Icon(
               Icons.settings_outlined,
               color: Colors.white,
-              size: 28,
+              size: 26,
             ),
           ),
         ],
@@ -195,17 +194,17 @@ class _SettingsView extends StatelessWidget {
               'Настройки',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 28,
+                fontSize: 26,
                 height: 1.0,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -0.7,
+                letterSpacing: -0.6,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 30),
+        const SizedBox(height: 26),
         const _SettingsSectionLabel('АККАУНТ'),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         _SettingsCard(
           children: [
             _SettingsRow(
@@ -225,9 +224,9 @@ class _SettingsView extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
         const _SettingsSectionLabel('ПРИЛОЖЕНИЕ'),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         _SettingsCard(
           children: [
             _SettingsRow(
@@ -262,9 +261,9 @@ class _SettingsView extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
         const _SettingsSectionLabel('ДРУГОЕ'),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         _SettingsCard(
           children: [
             _SettingsRow(
@@ -311,7 +310,7 @@ class _SettingsSectionLabel extends StatelessWidget {
         text,
         style: const TextStyle(
           color: Color(0xFF8A8A8A),
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: FontWeight.w500,
           letterSpacing: 0.3,
         ),
@@ -330,7 +329,7 @@ class _SettingsCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF101010),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFF292929)),
       ),
       clipBehavior: Clip.antiAlias,
@@ -361,23 +360,23 @@ class _SettingsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 82),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      constraints: const BoxConstraints(minHeight: 70),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: Color(0xFF202020))),
       ),
       child: Row(
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               color: iconBackground,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: iconColor, size: 24),
+            child: Icon(icon, color: iconColor, size: 22),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -385,9 +384,11 @@ class _SettingsRow extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: titleColor,
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -395,9 +396,11 @@ class _SettingsRow extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xFF858585),
-                      fontSize: 14,
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -409,7 +412,7 @@ class _SettingsRow extends StatelessWidget {
             const Icon(
               Icons.chevron_right,
               color: Color(0xFF858585),
-              size: 26,
+              size: 22,
             ),
         ],
       ),
