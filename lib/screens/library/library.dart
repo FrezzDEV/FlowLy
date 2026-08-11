@@ -18,6 +18,14 @@ class Library extends StatelessWidget {
     required this.con,
   }) : super(key: key);
 
+  static Route<void> _noAnimationRoute(Widget page) {
+    return PageRouteBuilder<void>(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final devicePexelRatio = MediaQuery.of(context).devicePixelRatio;
@@ -28,17 +36,13 @@ class Library extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(
-              height: 10,
-            ),
+            const SizedBox(height: 10),
             InkWell(
-              onTap: () async {
+              onTap: () {
                 Navigator.push(
-                    context,
-                    CupertinoPageRoute(
-                        builder: (context) => LikedSongs(
-                              con: con,
-                            )));
+                  context,
+                  _noAnimationRoute(LikedSongs(con: con)),
+                );
               },
               child: Padding(
                 padding:
@@ -46,18 +50,19 @@ class Library extends StatelessWidget {
                 child: Row(
                   children: [
                     ClipRRect(
-                        borderRadius: BorderRadius.circular(5),
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          color: Colors.blue,
-                          child: const Center(
-                            child: Icon(
-                              CupertinoIcons.heart_fill,
-                              color: Colors.white,
-                            ),
+                      borderRadius: BorderRadius.circular(5),
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.blue,
+                        child: const Center(
+                          child: Icon(
+                            CupertinoIcons.heart_fill,
+                            color: Colors.white,
                           ),
-                        )),
+                        ),
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.all(10.0),
                       child: Column(
@@ -65,19 +70,21 @@ class Library extends StatelessWidget {
                         children: [
                           const Text(
                             'Liked Songs',
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 16.0),
+                            style: TextStyle(color: Colors.white, fontSize: 16.0),
                           ),
                           const SizedBox(height: 5),
                           ValueListenableBuilder(
-                              valueListenable: Hive.box('liked').listenable(),
-                              builder: (context, Box box, c) {
-                                return Text(
-                                  box.length.toString() + " Songs",
-                                  style: const TextStyle(
-                                      color: Colors.grey, fontSize: 14.0),
-                                );
-                              })
+                            valueListenable: Hive.box('liked').listenable(),
+                            builder: (context, Box box, c) {
+                              return Text(
+                                '${box.length} Songs',
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 14.0,
+                                ),
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -85,17 +92,13 @@ class Library extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(
-              height: 10,
-            ),
+            const SizedBox(height: 10),
             InkWell(
-              onTap: () async {
+              onTap: () {
                 Navigator.push(
-                    context,
-                    CupertinoPageRoute(
-                        builder: (context) => RecentlyPlayedSongs(
-                              con: con,
-                            )));
+                  context,
+                  _noAnimationRoute(RecentlyPlayedSongs(con: con)),
+                );
               },
               child: Padding(
                 padding:
@@ -103,18 +106,19 @@ class Library extends StatelessWidget {
                 child: Row(
                   children: [
                     ClipRRect(
-                        borderRadius: BorderRadius.circular(5),
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          color: Colors.green,
-                          child: const Center(
-                            child: Icon(
-                              CupertinoIcons.arrow_counterclockwise,
-                              color: Colors.white,
-                            ),
+                      borderRadius: BorderRadius.circular(5),
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.green,
+                        child: const Center(
+                          child: Icon(
+                            CupertinoIcons.arrow_counterclockwise,
+                            color: Colors.white,
                           ),
-                        )),
+                        ),
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.all(10.0),
                       child: Column(
@@ -122,20 +126,22 @@ class Library extends StatelessWidget {
                         children: [
                           const Text(
                             'Recently played',
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 16.0),
+                            style: TextStyle(color: Colors.white, fontSize: 16.0),
                           ),
                           const SizedBox(height: 5),
                           ValueListenableBuilder(
-                              valueListenable:
-                                  Hive.box('RecentlyPlayed').listenable(),
-                              builder: (context, Box box, c) {
-                                return Text(
-                                  box.length.toString() + " Songs",
-                                  style: const TextStyle(
-                                      color: Colors.grey, fontSize: 14.0),
-                                );
-                              })
+                            valueListenable:
+                                Hive.box('RecentlyPlayed').listenable(),
+                            builder: (context, Box box, c) {
+                              return Text(
+                                '${box.length} Songs',
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 14.0,
+                                ),
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -144,127 +150,122 @@ class Library extends StatelessWidget {
               ),
             ),
             ValueListenableBuilder(
-                valueListenable: Hive.box('playlists').listenable(),
-                builder: (context, Box<dynamic> box, child) {
-                  return SingleChildScrollView(
-                    physics: const NeverScrollableScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (box.length != 0)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 24.0, horizontal: 16),
-                            child: Text(
-                              "Your playlists",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headline4!
-                                  .copyWith(
-                                    fontSize: 18,
-                                  ),
-                            ),
+              valueListenable: Hive.box('playlists').listenable(),
+              builder: (context, Box<dynamic> box, child) {
+                return SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (box.length != 0)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 24.0, horizontal: 16),
+                          child: Text(
+                            "Your playlists",
+                            style: Theme.of(context)
+                                .textTheme
+                                .headline4!
+                                .copyWith(fontSize: 18),
                           ),
-                        ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: Hive.box('playlists').length,
-                            itemBuilder: (context, i) {
-                              final playlists = Hive.box('playlists').getAt(i);
-                              return Dismissible(
-                                key: Key(playlists['name'].toString()),
-                                onDismissed: (direction) {
-                                  box.deleteAt(i);
-                                  context.showSnackBar(
-                                      message: "Deleted playlist.");
-                                },
-                                direction: DismissDirection.endToStart,
-                                background: Container(
-                                  alignment: Alignment.centerRight,
-                                  child: const Padding(
-                                    padding: EdgeInsets.all(20.0),
-                                    child: Icon(
-                                      CupertinoIcons.delete,
-                                      color: Colors.white,
+                        ),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: Hive.box('playlists').length,
+                        itemBuilder: (context, i) {
+                          final playlists = Hive.box('playlists').getAt(i);
+                          return Dismissible(
+                            key: Key(playlists['name'].toString()),
+                            onDismissed: (direction) {
+                              box.deleteAt(i);
+                              context.showSnackBar(message: "Deleted playlist.");
+                            },
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              child: const Padding(
+                                padding: EdgeInsets.all(20.0),
+                                child: Icon(
+                                  CupertinoIcons.delete,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  _noAnimationRoute(
+                                    PlaylistSongs(
+                                      con: con,
+                                      name: playlists['name'],
+                                      coverImage: playlists['coverImage'],
                                     ),
                                   ),
-                                ),
-                                child: InkWell(
-                                  onTap: () async {
-                                    Navigator.push(
-                                        context,
-                                        CupertinoPageRoute(
-                                            builder: (context) => PlaylistSongs(
-                                                  con: con,
-                                                  name: playlists['name'],
-                                                  coverImage:
-                                                      playlists['coverImage'],
-                                                )));
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20.0, vertical: 8),
-                                    child: Row(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(5),
-                                          child: CachedNetworkImage(
-                                              imageUrl: playlists['coverImage'],
-                                              width: 60,
-                                              height: 60,
-                                              memCacheHeight: (70 * devicePexelRatio)
-                                                  .round(),
-                                              memCacheWidth:
-                                                  (70 * devicePexelRatio)
-                                                      .round(),
-                                              maxHeightDiskCache:
-                                                  (70 * devicePexelRatio)
-                                                      .round(),
-                                              maxWidthDiskCache:
-                                                  (70 * devicePexelRatio)
-                                                      .round(),
-                                              placeholder: (context, u) =>
-                                                  const LoadingImage(
-                                                    icon: Icon(LineIcons.user),
-                                                  ),
-                                              fit: BoxFit.cover),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20.0, vertical: 8),
+                                child: Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(5),
+                                      child: CachedNetworkImage(
+                                        imageUrl: playlists['coverImage'],
+                                        width: 60,
+                                        height: 60,
+                                        memCacheHeight:
+                                            (70 * devicePexelRatio).round(),
+                                        memCacheWidth:
+                                            (70 * devicePexelRatio).round(),
+                                        maxHeightDiskCache:
+                                            (70 * devicePexelRatio).round(),
+                                        maxWidthDiskCache:
+                                            (70 * devicePexelRatio).round(),
+                                        placeholder: (context, u) =>
+                                            const LoadingImage(
+                                          icon: Icon(LineIcons.user),
                                         ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(10.0),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                playlists['name'],
-                                                style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 16.0),
-                                              ),
-                                              const SizedBox(
-                                                height: 4,
-                                              ),
-                                              Text(
-                                                "Created by you " +
-                                                    "".displayTimeAgoFromTimestamp(
-                                                        playlists['created']),
-                                                style: const TextStyle(
-                                                    color: Colors.grey),
-                                              ),
-                                            ],
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(10.0),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            playlists['name'],
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16.0,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            "Created by you ${'' .displayTimeAgoFromTimestamp(playlists['created'])}",
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              );
-                            }),
-                      ],
-                    ),
-                  );
-                })
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -283,9 +284,7 @@ class LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(
-              height: 50,
-            ),
+            const SizedBox(height: 50),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: Text(
