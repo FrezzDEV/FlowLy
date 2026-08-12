@@ -86,7 +86,9 @@ class _AppState extends State<App> {
             screens: _buildScreens(con),
             items: _navBarsItems(),
             onItemSelected: (index) {
-              if (index == 3) _profileKey.currentState?.showProfile();
+              if (index == 3) {
+                _profileKey.currentState?.showProfile();
+              }
             },
             confineInSafeArea: true,
             backgroundColor: Colors.black,
@@ -141,5 +143,7 @@ class _LibraryNavPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _LibraryNavPainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(covariant _LibraryNavPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
 }
