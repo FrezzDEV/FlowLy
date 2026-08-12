@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:spotify_clone/utils/bottom_nav_bar/persistent-tab-view.dart';
+
 import '../../controllers/main_controller.dart';
 import '../../utils/bottom_nav_bar/persistent-tab-view.widget.dart';
+import '../../utils/bottom_play_widget.dart';
 import '../current_playing/current_playing_song.dart';
+import '../home/home_screen.dart';
 import '../library/library.dart';
 import '../profile/profile.dart';
 import '../search_page/search_page.dart';
-import '../../utils/bottom_play_widget.dart';
-import '../home/home_screen.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -20,8 +21,10 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
-  final PersistentTabController controller = PersistentTabController(initialIndex: 0);
-  final GlobalKey<ProfilePageState> _profileKey = GlobalKey<ProfilePageState>();
+  final PersistentTabController controller =
+      PersistentTabController(initialIndex: 0);
+  final GlobalKey<ProfilePageState> _profileKey =
+      GlobalKey<ProfilePageState>();
 
   List<PersistentBottomNavBarItem> _navBarsItems() {
     return [
@@ -61,6 +64,10 @@ class _AppState extends State<App> {
     ];
   }
 
+  Future<void> _openPlayer(MainController con) {
+    return PlayerRoute.open(context, con);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -73,14 +80,7 @@ class _AppState extends State<App> {
             playWidget: Material(
               child: PlayWidget(
                 con: con,
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    isDismissible: false,
-                    builder: (context) => CurrentPlayingSong(con: con),
-                  );
-                },
+                onTap: () => _openPlayer(con),
               ),
             ),
             screens: _buildScreens(con),
@@ -143,7 +143,6 @@ class _LibraryNavPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _LibraryNavPainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
+  bool shouldRepaint(covariant _LibraryNavPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
