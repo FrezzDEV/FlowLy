@@ -4,7 +4,9 @@ import 'package:line_icons/line_icons.dart';
 
 import '../../controllers/main_controller.dart';
 
-class PlayingControls extends StatefulWidget {
+enum _PlayerAction { shuffle, previous, play, next, repeat }
+
+class PlayingControls extends StatelessWidget {
   final bool isPlaying;
   final LoopModeType? loopMode;
   final bool isPlaylist;
@@ -29,72 +31,80 @@ class PlayingControls extends StatefulWidget {
   });
 
   @override
-  State<PlayingControls> createState() => _PlayingControlsState();
-}
-
-class _PlayingControlsState extends State<PlayingControls> {
-  @override
   Widget build(BuildContext context) {
-    final shuffled = widget.con.isShuffled;
+    final shuffled = con.isShuffled;
+    final activeLoop = loopMode == LoopModeType.one || loopMode == LoopModeType.all;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          IconButton(
-            padding: EdgeInsets.zero,
-            onPressed: widget.isPlaylist ? widget.con.toggleShuffle : null,
-            icon: Icon(
-              LineIcons.random,
-              color: shuffled ? Colors.green : Colors.white,
+          _controlButton(
+            icon: LineIcons.random,
+            enabled: isPlaylist,
+            color: shuffled ? Colors.white : Colors.white,
+            onPressed: isPlaylist ? con.toggleShuffle : null,
+          ),
+          _controlButton(
+            icon: Icons.skip_previous,
+            size: 40,
+            enabled: isPlaylist,
+            onPressed: isPlaylist ? onPrevious : null,
+          ),
+          SizedBox(
+            width: 92,
+            height: 92,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              onPressed: onPlay,
+              icon: Icon(
+                isPlaying
+                    ? CupertinoIcons.pause_circle_fill
+                    : CupertinoIcons.play_circle_fill,
+                color: Colors.white,
+                size: 84,
+              ),
             ),
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                onPressed: widget.isPlaylist ? widget.onPrevious : null,
-                icon: const Icon(Icons.skip_previous,
-                    size: 40, color: Colors.white),
-              ),
-              SizedBox(
-                height: 80,
-                width: 120,
-                child: IconButton(
-                  onPressed: widget.onPlay,
-                  icon: Icon(
-                    widget.isPlaying
-                        ? CupertinoIcons.pause_circle_fill
-                        : CupertinoIcons.play_circle_fill,
-                    size: 80,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: widget.isPlaylist ? widget.onNext : null,
-                icon: const Icon(Icons.skip_next,
-                    size: 40, color: Colors.white),
-              ),
-            ],
+          _controlButton(
+            icon: Icons.skip_next,
+            size: 40,
+            enabled: isPlaylist,
+            onPressed: isPlaylist ? onNext : null,
           ),
-          IconButton(
-            padding: EdgeInsets.zero,
-            onPressed: widget.toggleLoop,
-            icon: Icon(
-              widget.loopMode == LoopModeType.none
-                  ? CupertinoIcons.arrow_2_circlepath
-                  : widget.loopMode == LoopModeType.one
-                      ? CupertinoIcons.repeat_1
-                      : CupertinoIcons.arrow_2_circlepath,
-              color: widget.loopMode == LoopModeType.none
-                  ? Colors.grey
-                  : Colors.white,
-              size: 24,
-            ),
+          _controlButton(
+            icon: loopMode == LoopModeType.one
+                ? CupertinoIcons.repeat_1
+                : CupertinoIcons.arrow_2_circlepath,
+            enabled: toggleLoop != null,
+            color: activeLoop ? Colors.white : const Color(0xFF777777),
+            onPressed: toggleLoop,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _controlButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+    bool enabled = true,
+    double size = 25,
+    Color color = Colors.white,
+  }) {
+    return SizedBox(
+      width: 48,
+      height: 56,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        onPressed: enabled ? onPressed : null,
+        icon: Icon(
+          icon,
+          size: size,
+          color: enabled ? color : const Color(0xFF777777),
+        ),
       ),
     );
   }
