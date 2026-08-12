@@ -71,7 +71,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FlowLy-1.0-release-${{ github.sha }}
+          name: FlowLy-1.0.1-release-${{ github.sha }}
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
