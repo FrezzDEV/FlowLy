@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -11,6 +10,25 @@ import '../../utils/botttom_sheet_widget.dart';
 import '../../utils/play_list.dart';
 import '../../utils/player/position_seek_widget.dart';
 
+class PlayerRoute {
+  static bool _isOpen = false;
+
+  static Future<void> open(BuildContext context, MainController con) async {
+    if (_isOpen || !context.mounted) return;
+    _isOpen = true;
+    try {
+      await Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute<void>(
+          fullscreenDialog: true,
+          builder: (_) => CurrentPlayingSong(con: con),
+        ),
+      );
+    } finally {
+      _isOpen = false;
+    }
+  }
+}
+
 class CurrentPlayingSong extends StatefulWidget {
   final MainController con;
 
@@ -21,7 +39,6 @@ class CurrentPlayingSong extends StatefulWidget {
 }
 
 class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
-  bool _videoMode = false;
   bool _liked = false;
 
   @override
@@ -30,195 +47,136 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
 
     return ValueListenableBuilder<String>(
       valueListenable: AppLocale.language,
-      builder: (context, _, __) {
-        return AnimatedBuilder(
-          animation: con,
-          builder: (context, child) {
-            final song = con.currentSong;
-            if (song == null) return const SizedBox.shrink();
+      builder: (context, _, __) => AnimatedBuilder(
+        animation: con,
+        builder: (context, child) {
+          final song = con.currentSong;
+          if (song == null) return const SizedBox.shrink();
 
-            return AnnotatedRegion<SystemUiOverlayStyle>(
-              value: const SystemUiOverlayStyle(
-                statusBarColor: Color(0xFF535353),
-                statusBarIconBrightness: Brightness.light,
-                systemNavigationBarColor: Color(0xFF535353),
-                systemNavigationBarIconBrightness: Brightness.light,
-              ),
-              child: Scaffold(
-                backgroundColor: const Color(0xFF535353),
-                body: SafeArea(
-                  child: Column(
-                    children: [
-                      _TopBar(
-                        videoMode: _videoMode,
-                        onBack: () => Navigator.pop(context),
-                        onModeChanged: (value) =>
-                            setState(() => _videoMode = value),
-                        onMore: () => _showMore(context, con, song),
-                      ),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          physics: const ClampingScrollPhysics(),
-                          child: Column(
-                            children: [
-                              const SizedBox(height: 26),
-                              _ArtworkPanel(
-                                imageUrl: song.coverImageUrl,
-                                videoMode: _videoMode,
-                                onCast: () => _showMessage(
-                                  context,
-                                  AppLocale.text(
-                                    'Cast пока недоступен',
-                                    'Cast is not available yet',
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: const SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+              systemNavigationBarColor: Colors.black,
+              systemNavigationBarIconBrightness: Brightness.light,
+            ),
+            child: Scaffold(
+              backgroundColor: const Color(0xFF535353),
+              body: SafeArea(
+                bottom: false,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _Artwork(
+                              imageUrl: song.coverImageUrl,
+                              onBack: () => Navigator.of(context).pop(),
+                              onMore: () => showModalBottomSheet<void>(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.black,
+                                builder: (_) => BottomSheetWidget(
+                                  con: con,
+                                  isNext: true,
+                                  song: SongModel(
+                                    songid: song.songid,
+                                    songname: song.songname,
+                                    userid: song.userid,
+                                    trackid: song.trackid,
+                                    duration: song.duration,
+                                    coverImageUrl: song.coverImageUrl,
+                                    name: song.name,
                                   ),
                                 ),
-                                onFullscreen: () => _showMessage(
-                                  context,
-                                  AppLocale.text(
-                                    'Плеер уже открыт на весь экран',
-                                    'Player is already fullscreen',
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Text(
+                              song.songname ?? '',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.left,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                height: 1.05,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              song.name?.isNotEmpty == true ? song.name! : 'FlowLy',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.left,
+                              style: const TextStyle(
+                                color: Color(0xFFC9C9C9),
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                IconButton(
+                                  tooltip: AppLocale.text('Нравится', 'Like'),
+                                  onPressed: () => _like(song),
+                                  icon: Icon(
+                                    _liked ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined,
+                                    color: Colors.white,
+                                    size: 30,
                                   ),
                                 ),
-                                onShare: () => _copyToClipboard(
-                                  context,
-                                  song.songname ?? 'FlowLy',
-                                ),
-                                onDownload: () => _download(song.trackid),
-                                onQueue: () => Navigator.push(
-                                  context,
-                                  CupertinoPageRoute(
-                                    builder: (_) => PlayListWidget(
-                                      songs: con.songs,
-                                      con: con,
+                                IconButton(
+                                  tooltip: AppLocale.text('Комментарии', 'Comments'),
+                                  onPressed: () => _showMessage(
+                                    context,
+                                    AppLocale.text(
+                                      'Комментарии пока недоступны',
+                                      'Comments are not available yet',
                                     ),
                                   ),
+                                  icon: const Icon(
+                                    Icons.chat_bubble_outline,
+                                    color: Colors.white,
+                                    size: 30,
+                                  ),
                                 ),
-                                onRadio: () {
-                                  if (con.songs.length > 1) {
-                                    con.toggleShuffle();
-                                    con.next();
-                                  } else {
-                                    _showMessage(
-                                      context,
-                                      AppLocale.text(
-                                        'В очереди пока нет других треков',
-                                        'There are no other tracks in the queue',
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                              const SizedBox(height: 22),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 36,
+                                IconButton(
+                                  tooltip: AppLocale.text('Скачать', 'Download'),
+                                  onPressed: () => _download(song.trackid),
+                                  icon: const Icon(
+                                    Icons.download_rounded,
+                                    color: Colors.white,
+                                    size: 31,
+                                  ),
                                 ),
-                                child: Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.center,
-                                  children: [
-                                    IconButton(
-                                      tooltip: AppLocale.text('Лайк', 'Like'),
-                                      onPressed: () => _like(song),
-                                      icon: Icon(
-                                        Icons.thumb_up_alt,
-                                        color: _liked
-                                            ? Colors.white
-                                            : Colors.white70,
-                                        size: 31,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Column(
-                                        children: [
-                                          Text(
-                                            song.songname ?? '',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 25,
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            song.name ?? 'FlowLy',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              color: Color(0xFFBDBDBD),
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    IconButton(
-                                      tooltip: AppLocale.text(
-                                        'Скачать',
-                                        'Download',
-                                      ),
-                                      onPressed: () => _download(song.trackid),
-                                      icon: const Icon(
-                                        Icons.download_rounded,
-                                        color: Colors.white,
-                                        size: 31,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                ),
-                                child: PositionSeekWidget(
-                                  currentPosition: con.position,
-                                  duration: con.duration,
-                                  seekTo: con.seek,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              _ControlRow(con: con),
-                              const SizedBox(height: 22),
-                            ],
-                          ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            PositionSeekWidget(
+                              currentPosition: con.position,
+                              duration: con.duration,
+                              seekTo: con.seek,
+                            ),
+                            const SizedBox(height: 16),
+                            _ControlRow(con: con),
+                          ],
                         ),
                       ),
-                      const _BottomTabs(),
-                    ],
-                  ),
+                    ),
+                    const _BottomTabs(),
+                  ],
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showMore(BuildContext context, MainController con, dynamic song) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.black,
-      builder: (_) => BottomSheetWidget(
-        con: con,
-        isNext: true,
-        song: SongModel(
-          songid: song.songid,
-          songname: song.songname,
-          userid: song.userid,
-          trackid: song.trackid,
-          duration: song.duration,
-          coverImageUrl: song.coverImageUrl,
-          name: song.name,
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -260,14 +218,6 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
     }
   }
 
-  void _copyToClipboard(BuildContext context, String value) {
-    Clipboard.setData(ClipboardData(text: value));
-    _showMessage(
-      context,
-      AppLocale.text('Название трека скопировано', 'Track title copied'),
-    );
-  }
-
   void _showMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -279,156 +229,38 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
   }
 }
 
-class _TopBar extends StatelessWidget {
-  final bool videoMode;
+class _Artwork extends StatelessWidget {
+  final String? imageUrl;
   final VoidCallback onBack;
-  final ValueChanged<bool> onModeChanged;
   final VoidCallback onMore;
 
-  const _TopBar({
-    required this.videoMode,
+  const _Artwork({
+    required this.imageUrl,
     required this.onBack,
-    required this.onModeChanged,
     required this.onMore,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onBack,
-            icon: const Icon(
-              Icons.arrow_back_ios_new,
-              color: Colors.white,
-              size: 27,
-            ),
-          ),
-          Expanded(
-            child: Center(
-              child: Container(
-                width: 158,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => onModeChanged(false),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 160),
-                          decoration: BoxDecoration(
-                            color: videoMode
-                                ? Colors.transparent
-                                : const Color(0xFF686868),
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'Song',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => onModeChanged(true),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 160),
-                          decoration: BoxDecoration(
-                            color: videoMode
-                                ? const Color(0xFF686868)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'Video',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: onMore,
-            icon: const Icon(
-              Icons.more_vert,
-              color: Colors.white,
-              size: 30,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ArtworkPanel extends StatelessWidget {
-  final String? imageUrl;
-  final bool videoMode;
-  final VoidCallback onCast;
-  final VoidCallback onFullscreen;
-  final VoidCallback onShare;
-  final VoidCallback onDownload;
-  final VoidCallback onQueue;
-  final VoidCallback onRadio;
-
-  const _ArtworkPanel({
-    required this.imageUrl,
-    required this.videoMode,
-    required this.onCast,
-    required this.onFullscreen,
-    required this.onShare,
-    required this.onDownload,
-    required this.onQueue,
-    required this.onRadio,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 28),
-      child: AspectRatio(
-        aspectRatio: 0.82,
+    return AspectRatio(
+      aspectRatio: 0.98,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: CachedNetworkImage(
-                imageUrl: imageUrl ?? '',
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => Container(
-                  color: const Color(0xFF151515),
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.music_note,
-                    color: Colors.white54,
-                    size: 64,
-                  ),
+            CachedNetworkImage(
+              imageUrl: imageUrl ?? '',
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(color: const Color(0xFF1B1B1B)),
+              errorWidget: (_, __, ___) => Container(
+                color: const Color(0xFF151515),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.music_note,
+                  color: Colors.white54,
+                  size: 72,
                 ),
-                placeholder: (_, __) =>
-                    Container(color: const Color(0xFF1B1B1B)),
               ),
             ),
             const Positioned.fill(
@@ -437,97 +269,39 @@ class _ArtworkPanel extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Color(0xEE000000)],
-                    stops: [0.45, 1],
+                    colors: [Colors.transparent, Color(0xB0000000)],
+                    stops: [0.62, 1],
                   ),
                 ),
               ),
             ),
             Positioned(
-              top: 18,
-              right: 18,
-              child: _CircleButton(
-                icon: Icons.cast_outlined,
-                onTap: onCast,
-              ),
-            ),
-            Positioned(
-              bottom: 26,
-              left: 22,
-              right: 22,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _CircleButton(
-                    icon: Icons.ios_share_outlined,
-                    onTap: onShare,
-                  ),
-                  _CircleButton(
-                    icon: Icons.download_for_offline_rounded,
-                    onTap: onDownload,
-                  ),
-                  _CircleButton(
-                    icon: Icons.playlist_add,
-                    onTap: onQueue,
-                  ),
-                  _CircleButton(
-                    icon: Icons.radio_outlined,
-                    onTap: onRadio,
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              bottom: 10,
-              right: 10,
+              left: 2,
+              bottom: 4,
               child: IconButton(
-                onPressed: onFullscreen,
+                tooltip: 'Back',
+                onPressed: onBack,
                 icon: const Icon(
-                  Icons.fullscreen,
+                  Icons.arrow_back_ios_new,
                   color: Colors.white,
-                  size: 28,
+                  size: 30,
                 ),
               ),
             ),
-            if (videoMode)
-              Positioned.fill(
-                child: Container(
-                  color: const Color(0x55000000),
-                  alignment: Alignment.center,
-                  child: Text(
-                    AppLocale.text('Видео режим', 'Video mode'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+            Positioned(
+              right: 2,
+              bottom: 4,
+              child: IconButton(
+                tooltip: 'More',
+                onPressed: onMore,
+                icon: const Icon(
+                  Icons.more_vert,
+                  color: Colors.white,
+                  size: 32,
                 ),
               ),
+            ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CircleButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _CircleButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFF686868),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: const SizedBox(
-          width: 62,
-          height: 62,
         ),
       ),
     );
@@ -542,11 +316,12 @@ class _ControlRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 36),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
+            tooltip: 'Shuffle',
             onPressed: con.songs.length > 1 ? con.toggleShuffle : null,
             icon: Icon(
               Icons.shuffle,
@@ -555,6 +330,7 @@ class _ControlRow extends StatelessWidget {
             ),
           ),
           IconButton(
+            tooltip: 'Previous',
             onPressed: con.songs.length > 1 ? con.previous : null,
             icon: const Icon(
               Icons.skip_previous,
@@ -569,8 +345,8 @@ class _ControlRow extends StatelessWidget {
               customBorder: const CircleBorder(),
               onTap: con.playOrPause,
               child: SizedBox(
-                width: 86,
-                height: 86,
+                width: 82,
+                height: 82,
                 child: Icon(
                   con.isPlaying ? Icons.pause : Icons.play_arrow,
                   color: Colors.white,
@@ -580,6 +356,7 @@ class _ControlRow extends StatelessWidget {
             ),
           ),
           IconButton(
+            tooltip: 'Next',
             onPressed: con.songs.length > 1 ? con.next : null,
             icon: const Icon(
               Icons.skip_next,
@@ -588,14 +365,11 @@ class _ControlRow extends StatelessWidget {
             ),
           ),
           IconButton(
+            tooltip: 'Repeat',
             onPressed: con.toggleLoop,
             icon: Icon(
-              con.loopMode == LoopModeType.one
-                  ? Icons.repeat_one
-                  : Icons.repeat,
-              color: con.loopMode == LoopModeType.none
-                  ? Colors.white54
-                  : Colors.white,
+              con.loopMode == LoopModeType.one ? Icons.repeat_one : Icons.repeat,
+              color: con.loopMode == LoopModeType.none ? Colors.white54 : Colors.white,
               size: 28,
             ),
           ),
@@ -638,14 +412,12 @@ class _BottomTabLabel extends StatelessWidget {
   const _BottomTabLabel(this.text);
 
   @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        color: Color(0xFFBDBDBD),
-        fontSize: 17,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Text(
+        text,
+        style: const TextStyle(
+          color: Color(0xFFBDBDBD),
+          fontSize: 17,
+          fontWeight: FontWeight.w500,
+        ),
+      );
 }
