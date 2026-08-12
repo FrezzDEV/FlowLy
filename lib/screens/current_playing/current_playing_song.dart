@@ -53,9 +53,7 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
                   _TopBar(
                     videoMode: _videoMode,
                     onBack: () => Navigator.pop(context),
-                    onModeChanged: (video) {
-                      setState(() => _videoMode = video);
-                    },
+                    onModeChanged: (video) => setState(() => _videoMode = video),
                     onMore: () {
                       showModalBottomSheet(
                         context: context,
@@ -173,11 +171,7 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
                                       if (_thumbUp) _thumbDown = false;
                                     });
                                   },
-                                  icon: Icon(
-                                    Icons.thumb_up_alt,
-                                    color: _thumbUp ? Colors.white : Colors.white,
-                                    size: 31,
-                                  ),
+                                  icon: const Icon(Icons.thumb_up_alt, color: Colors.white, size: 31),
                                 ),
                               ],
                             ),
@@ -252,10 +246,7 @@ class _TopBar extends StatelessWidget {
               child: Container(
                 width: 158,
                 height: 46,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(28),
-                ),
+                decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(28)),
                 child: Row(
                   children: [
                     Expanded(
@@ -268,10 +259,7 @@ class _TopBar extends StatelessWidget {
                             borderRadius: BorderRadius.circular(28),
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
-                            'Song',
-                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
-                          ),
+                          child: const Text('Song', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
                         ),
                       ),
                     ),
@@ -285,10 +273,7 @@ class _TopBar extends StatelessWidget {
                             borderRadius: BorderRadius.circular(28),
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
-                            'Video',
-                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
-                          ),
+                          child: const Text('Video', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
                         ),
                       ),
                     ),
@@ -345,14 +330,15 @@ class _ArtworkPanel extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorWidget: (_, __, ___) => Container(
                   color: const Color(0xFF151515),
+                  alignment: Alignment.center,
                   child: const Icon(Icons.music_note, color: Colors.white54, size: 64),
                 ),
                 placeholder: (_, __) => Container(color: const Color(0xFF1B1B1B)),
               ),
             ),
-            Positioned.fill(
+            const Positioned.fill(
               child: DecoratedBox(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -362,11 +348,7 @@ class _ArtworkPanel extends StatelessWidget {
                 ),
               ),
             ),
-            Positioned(
-              top: 18,
-              right: 18,
-              child: _CircleButton(icon: Icons.cast_outlined, onTap: onCast),
-            ),
+            Positioned(top: 18, right: 18, child: _CircleButton(icon: Icons.cast_outlined, onTap: onCast)),
             Positioned(
               bottom: 26,
               left: 22,
@@ -382,8 +364,8 @@ class _ArtworkPanel extends StatelessWidget {
               ),
             ),
             Positioned(
-              bottom: 14,
-              right: 12,
+              bottom: 10,
+              right: 10,
               child: IconButton(
                 onPressed: onFullscreen,
                 icon: const Icon(Icons.fullscreen, color: Colors.white, size: 28),
@@ -394,10 +376,7 @@ class _ArtworkPanel extends StatelessWidget {
                 child: Container(
                   color: const Color(0x55000000),
                   alignment: Alignment.center,
-                  child: const Text(
-                    'Video mode',
-                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
-                  ),
+                  child: const Text('Video mode', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700)),
                 ),
               ),
           ],
@@ -421,10 +400,10 @@ class _CircleButton extends StatelessWidget {
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
-        child: const SizedBox(
+        child: SizedBox(
           width: 62,
           height: 62,
-          child: Icon(Icons.circle, color: Colors.transparent),
+          child: Icon(icon, color: Colors.white, size: 28),
         ),
       ),
     );
@@ -443,14 +422,8 @@ class _ControlRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            onPressed: con.songs.length > 1 ? con.toggleShuffle : null,
-            icon: Icon(Icons.shuffle, color: con.isShuffled ? Colors.white : Colors.white54, size: 28),
-          ),
-          IconButton(
-            onPressed: con.songs.length > 1 ? con.previous : null,
-            icon: const Icon(Icons.skip_previous, color: Colors.white, size: 38),
-          ),
+          IconButton(onPressed: con.songs.length > 1 ? con.toggleShuffle : null, icon: Icon(Icons.shuffle, color: con.isShuffled ? Colors.white : Colors.white54, size: 28)),
+          IconButton(onPressed: con.songs.length > 1 ? con.previous : null, icon: const Icon(Icons.skip_previous, color: Colors.white, size: 38)),
           Material(
             color: const Color(0xFF777777),
             shape: const CircleBorder(),
@@ -460,18 +433,11 @@ class _ControlRow extends StatelessWidget {
               child: SizedBox(
                 width: 86,
                 height: 86,
-                child: Icon(
-                  con.isPlaying ? Icons.pause : Icons.play_arrow,
-                  color: Colors.white,
-                  size: 42,
-                ),
+                child: Icon(con.isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 42),
               ),
             ),
           ),
-          IconButton(
-            onPressed: con.songs.length > 1 ? con.next : null,
-            icon: const Icon(Icons.skip_next, color: Colors.white, size: 38),
-          ),
+          IconButton(onPressed: con.songs.length > 1 ? con.next : null, icon: const Icon(Icons.skip_next, color: Colors.white, size: 38)),
           IconButton(
             onPressed: con.toggleLoop,
             icon: Icon(
@@ -496,14 +462,11 @@ class _BottomTabs extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(28, 10, 28, 16),
       decoration: const BoxDecoration(
         color: Color(0xFF606060),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(18),
-          topRight: Radius.circular(18),
-        ),
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(18), topRight: Radius.circular(18)),
       ),
-      child: Row(
+      child: const Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: const [
+        children: [
           _BottomTabLabel('UP NEXT'),
           _BottomTabLabel('LYRICS'),
           _BottomTabLabel('RELATED'),
@@ -519,13 +482,6 @@ class _BottomTabLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        color: Color(0xFFBDBDBD),
-        fontSize: 17,
-        fontWeight: FontWeight.w500,
-      ),
-    );
+    return Text(text, style: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 17, fontWeight: FontWeight.w500));
   }
 }
