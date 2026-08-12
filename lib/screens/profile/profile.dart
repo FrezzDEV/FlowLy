@@ -25,18 +25,18 @@ class ProfilePageState extends State<ProfilePage> {
   bool edit = false;
   String? avatar;
 
-  static const List<_CardData> cards = [
-    _CardData(
+  static const cards = [
+    (
       'Chill Vibes',
-      'https://images.unsplash.com/photo-1571266028243-d220c9c3b1f3?w=600',
+      'https://images.unsplash.com/photo-1571266028243-d220c9c3b1f3?w=600'
     ),
-    _CardData(
+    (
       'Night Drive',
-      'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=600',
+      'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=600'
     ),
-    _CardData(
+    (
       'Focus',
-      'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600',
+      'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600'
     ),
   ];
 
@@ -47,11 +47,9 @@ class ProfilePageState extends State<ProfilePage> {
   }
 
   void showProfile() {
-    if (!settings && !edit) return;
-    setState(() {
-      settings = false;
-      edit = false;
-    });
+    if (settings) {
+      setState(() => settings = false);
+    }
   }
 
   Future<void> _loadAvatar() async {
@@ -68,8 +66,8 @@ class ProfilePageState extends State<ProfilePage> {
     );
     if (image == null) return;
 
-    final directory = await getApplicationDocumentsDirectory();
-    final target = File('${directory.path}/flowly_profile_avatar.jpg');
+    final dir = await getApplicationDocumentsDirectory();
+    final target = File('${dir.path}/flowly_profile_avatar.jpg');
     await File(image.path).copy(target.path);
     await Hive.box('profile').put('avatarPath', target.path);
 
@@ -78,7 +76,7 @@ class ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  List<SongModel> _likedSongs() {
+  List<SongModel> _liked() {
     final result = <SongModel>[];
     final box = Hive.box('liked');
 
@@ -102,79 +100,20 @@ class ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _openTrack(int index) async {
-    final songs = _likedSongs();
-    if (index < 0 || index >= songs.length) return;
+    final songs = _liked();
+    if (index >= songs.length) return;
 
     await widget.con.playSong(songs, index);
     if (!mounted) return;
 
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.black,
-      builder: (_) => CurrentPlayingSong(con: widget.con),
-    );
-  }
-
-  Future<void> _chooseLanguage() async {
-    final value = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: const Color(0xFF151515),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF555555),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  AppLocale.text('Язык', 'Language'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _LanguageRow(
-                  value: 'ru',
-                  title: 'Русский',
-                  onTap: () => Navigator.pop(sheetContext, 'ru'),
-                ),
-                _LanguageRow(
-                  value: 'en',
-                  title: 'English',
-                  onTap: () => Navigator.pop(sheetContext, 'en'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (value != null) {
-      await AppLocale.setLanguage(value);
-    }
+    await PlayerRoute.open(context, widget.con);
   }
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<String>(
       valueListenable: AppLocale.language,
-      builder: (context, _, __) {
+      builder: (_, __, ___) {
         return Scaffold(
           backgroundColor: Colors.black,
           body: SafeArea(
@@ -188,13 +127,12 @@ class ProfilePageState extends State<ProfilePage> {
                     ? _Settings(
                         onBack: () => setState(() => settings = false),
                         onAccount: () => setState(() => edit = true),
-                        onLanguage: _chooseLanguage,
+                        onLanguage: _language,
                       )
-                    : ValueListenableBuilder<Box<dynamic>>(
+                    : ValueListenableBuilder(
                         valueListenable: Hive.box('liked').listenable(),
-                        builder: (context, box, child) {
-                          final songs = _likedSongs();
-                          final visibleSongs = songs.take(5).toList();
+                        builder: (_, Box<dynamic> _, __) {
+                          final songs = _liked();
 
                           return ListView(
                             padding: const EdgeInsets.fromLTRB(20, 8, 20, 88),
@@ -207,19 +145,12 @@ class ProfilePageState extends State<ProfilePage> {
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 29,
-                                        height: 1,
                                         fontWeight: FontWeight.w700,
-                                        letterSpacing: -0.6,
                                       ),
                                     ),
                                   ),
                                   IconButton(
                                     onPressed: () => setState(() => settings = true),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints.tightFor(
-                                      width: 34,
-                                      height: 34,
-                                    ),
                                     icon: const Icon(
                                       Icons.settings_outlined,
                                       color: Color(0xFF8E8E8E),
@@ -229,30 +160,25 @@ class ProfilePageState extends State<ProfilePage> {
                                 ],
                               ),
                               const SizedBox(height: 10),
-                              Center(
-                                child: CircleAvatar(
-                                  radius: 60,
-                                  backgroundColor: const Color(0xFF242424),
-                                  backgroundImage: avatar == null
-                                      ? const NetworkImage(
-                                          'https://i.pravatar.cc/400?img=12',
-                                        )
-                                      : FileImage(File(avatar!)) as ImageProvider,
-                                ),
+                              CircleAvatar(
+                                radius: 60,
+                                backgroundColor: const Color(0xFF242424),
+                                backgroundImage: avatar == null
+                                    ? const NetworkImage(
+                                        'https://i.pravatar.cc/400?img=12',
+                                      )
+                                    : FileImage(File(avatar!)) as ImageProvider,
                               ),
-                              const SizedBox(height: 7),
+                              const SizedBox(height: 8),
                               Text(
                                 Hive.box('profile').get(
-                                      'name',
-                                      defaultValue:
-                                          AppLocale.text('Алекс', 'Alex'),
-                                    )
-                                    as String,
+                                  'name',
+                                  defaultValue: AppLocale.text('Алекс', 'Alex'),
+                                ) as String,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 23,
-                                  height: 1,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -291,20 +217,67 @@ class ProfilePageState extends State<ProfilePage> {
                                 height: 1,
                               ),
                               const SizedBox(height: 14),
-                              _ImportCard(),
+                              const _ImportCard(),
                               const SizedBox(height: 20),
-                              _SectionTitle(
+                              _Title(
                                 AppLocale.text('Топ за месяц', 'Top this month'),
                               ),
                               const SizedBox(height: 8),
-                              const _TopCards(),
+                              SizedBox(
+                                height: 155,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: cards.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 12),
+                                  itemBuilder: (_, i) => SizedBox(
+                                    width: 160,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(13),
+                                          child: CachedNetworkImage(
+                                            imageUrl: cards[i].$2,
+                                            width: 160,
+                                            height: 126,
+                                            fit: BoxFit.cover,
+                                            errorWidget: (_, __, ___) => Container(
+                                              color: const Color(0xFF202020),
+                                              child: const Icon(
+                                                Icons.music_note,
+                                                color: Colors.white54,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          cards[i].$1,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                               const SizedBox(height: 18),
-                              _SectionTitle(
-                                AppLocale.text('Любимые треки', 'Favorite tracks'),
+                              _Title(
+                                AppLocale.text(
+                                  'Любимые треки',
+                                  'Favorite tracks',
+                                ),
                               ),
                               const SizedBox(height: 4),
-                              for (var i = 0; i < visibleSongs.length; i++)
-                                InkWell(
+                              ...List.generate(
+                                songs.take(5).length,
+                                (i) => InkWell(
                                   onTap: () => _openTrack(i),
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 4),
@@ -322,30 +295,25 @@ class ProfilePageState extends State<ProfilePage> {
                                         ),
                                         ClipRRect(
                                           borderRadius: BorderRadius.circular(11),
-                                          child: _SongImage(
-                                            visibleSongs[i].coverImageUrl,
-                                          ),
+                                          child: _SongImage(songs[i].coverImageUrl),
                                         ),
                                         const SizedBox(width: 11),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                visibleSongs[i].songname ?? '',
+                                                songs[i].songname ?? '',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: const TextStyle(
                                                   color: Colors.white,
                                                   fontSize: 16,
-                                                  height: 1.05,
                                                   fontWeight: FontWeight.w700,
                                                 ),
                                               ),
-                                              const SizedBox(height: 2),
                                               Text(
-                                                visibleSongs[i].name ??
+                                                songs[i].name ??
                                                     AppLocale.text(
                                                       'Неизвестный исполнитель',
                                                       'Unknown artist',
@@ -355,7 +323,6 @@ class ProfilePageState extends State<ProfilePage> {
                                                 style: const TextStyle(
                                                   color: Color(0xFF858585),
                                                   fontSize: 13,
-                                                  height: 1.05,
                                                 ),
                                               ),
                                             ],
@@ -365,6 +332,7 @@ class ProfilePageState extends State<ProfilePage> {
                                     ),
                                   ),
                                 ),
+                              ),
                               if (songs.isEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 18),
@@ -388,6 +356,50 @@ class ProfilePageState extends State<ProfilePage> {
       },
     );
   }
+
+  Future<void> _language() async {
+    final value = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF151515),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF555555),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                AppLocale.text('Язык', 'Language'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const _LanguageRow('ru', 'Русский'),
+              const _LanguageRow('en', 'English'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (value != null) {
+      await AppLocale.setLanguage(value);
+    }
+  }
 }
 
 class _Stat extends StatelessWidget {
@@ -397,173 +409,107 @@ class _Stat extends StatelessWidget {
   const _Stat(this.value, this.label);
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            height: 1,
-            fontWeight: FontWeight.w700,
+  Widget build(BuildContext context) => Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF858585),
-            fontSize: 13,
-            height: 1,
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF858585),
+              fontSize: 13,
+            ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      );
 }
 
 class _ImportCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111111),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2A2A2A)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: const Icon(
-              Icons.download_outlined,
-              color: Colors.black,
-              size: 23,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocale.text('Импорт музыки', 'Import music'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    height: 1.05,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  AppLocale.text(
-                    'Перенести из другого сервиса',
-                    'Transfer from another service',
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF858585),
-                    fontSize: 12,
-                    height: 1.05,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right, color: Color(0xFF858585)),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final String text;
-
-  const _SectionTitle(this.text);
+  const _ImportCard();
 
   @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 22,
-        height: 1.05,
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-}
-
-class _TopCards extends StatelessWidget {
-  const _TopCards();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 155,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: ProfilePageState.cards.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final card = ProfilePageState.cards[index];
-          return SizedBox(
-            width: 160,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(13),
-                  child: CachedNetworkImage(
-                    imageUrl: card.image,
-                    width: 160,
-                    height: 126,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) =>
-                        Container(color: const Color(0xFF202020)),
-                    errorWidget: (_, __, ___) => Container(
-                      color: const Color(0xFF202020),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.music_note,
-                        color: Colors.white54,
-                      ),
+  Widget build(BuildContext context) => Container(
+        height: 72,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111111),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF2A2A2A)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: const Icon(
+                Icons.download_outlined,
+                color: Colors.black,
+                size: 23,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocale.text('Импорт музыки', 'Import music'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  card.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    height: 1.05,
-                    fontWeight: FontWeight.w600,
+                  Text(
+                    AppLocale.text(
+                      'Перенести из другого сервиса',
+                      'Transfer from another service',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF858585),
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        },
-      ),
-    );
-  }
+            const Icon(
+              Icons.chevron_right,
+              color: Color(0xFF858585),
+            ),
+          ],
+        ),
+      );
+}
+
+class _Title extends StatelessWidget {
+  final String text;
+
+  const _Title(this.text);
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+        ),
+      );
 }
 
 class _SongImage extends StatelessWidget {
@@ -578,8 +524,10 @@ class _SongImage extends StatelessWidget {
         width: 56,
         height: 56,
         color: const Color(0xFF202020),
-        alignment: Alignment.center,
-        child: const Icon(Icons.music_note, color: Colors.white54),
+        child: const Icon(
+          Icons.music_note,
+          color: Colors.white54,
+        ),
       );
     }
 
@@ -588,34 +536,14 @@ class _SongImage extends StatelessWidget {
       width: 56,
       height: 56,
       fit: BoxFit.cover,
-      placeholder: (_, __) => Container(color: const Color(0xFF202020)),
-      errorWidget: (_, __, ___) => Container(
-        color: const Color(0xFF202020),
-        alignment: Alignment.center,
-        child: const Icon(Icons.music_note, color: Colors.white54),
-      ),
     );
   }
-}
-
-class _SettingsRowData {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
-
-  const _SettingsRowData({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.onTap,
-  });
 }
 
 class _Settings extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onAccount;
-  final VoidCallback onLanguage;
+  final Future<void> Function() onLanguage;
 
   const _Settings({
     required this.onBack,
@@ -625,39 +553,83 @@ class _Settings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rows = <_SettingsRowData>[
-      _SettingsRowData(
-        icon: Icons.person_outline,
-        title: AppLocale.text('Аккаунт', 'Account'),
-        subtitle: AppLocale.text(
-          'Профиль, подписка, данные',
-          'Profile, subscription, data',
-        ),
-        onTap: onAccount,
+    final groups = <({String title, List<_SettingRowData> rows})>[
+      (
+        title: AppLocale.text('АККАУНТ', 'ACCOUNT'),
+        rows: [
+          _SettingRowData(
+            Icons.person_outline,
+            AppLocale.text('Аккаунт', 'Account'),
+            AppLocale.text('Профиль, подписка, данные', 'Profile, subscription, data'),
+            onTap: onAccount,
+          ),
+          _SettingRowData(
+            Icons.shield_outlined,
+            AppLocale.text('Безопасность', 'Security'),
+            AppLocale.text('Пароль, 2FA', 'Password, 2FA'),
+          ),
+          _SettingRowData(
+            Icons.credit_card_outlined,
+            AppLocale.text('Платежи', 'Payments'),
+            AppLocale.text('Способы оплаты, история', 'Payment methods, history'),
+          ),
+        ],
       ),
-      _SettingsRowData(
-        icon: Icons.shield_outlined,
-        title: AppLocale.text('Безопасность', 'Security'),
-        subtitle: AppLocale.text('Пароль, 2FA', 'Password, 2FA'),
+      (
+        title: AppLocale.text('ПРИЛОЖЕНИЕ', 'APP'),
+        rows: [
+          _SettingRowData(
+            Icons.play_arrow_outlined,
+            AppLocale.text('Воспроизведение', 'Playback'),
+            AppLocale.text('Качество звука, кроссфейд, EQ', 'Sound quality, crossfade, EQ'),
+          ),
+          _SettingRowData(
+            Icons.download_outlined,
+            AppLocale.text('Скачивание', 'Downloads'),
+            AppLocale.text('Загрузка и хранилище', 'Downloads and storage'),
+          ),
+          _SettingRowData(
+            Icons.notifications_none,
+            AppLocale.text('Уведомления', 'Notifications'),
+            AppLocale.text('Только важные', 'Important only'),
+          ),
+          _SettingRowData(
+            Icons.palette_outlined,
+            AppLocale.text('Внешний вид', 'Appearance'),
+            AppLocale.text('Тема, цвета, стиль', 'Theme, colors, style'),
+          ),
+          _SettingRowData(
+            Icons.text_fields_outlined,
+            AppLocale.text('Текст', 'Text'),
+            AppLocale.text('Отображение текстов песен', 'Lyrics display'),
+          ),
+          _SettingRowData(
+            Icons.bolt_outlined,
+            AppLocale.text('Быстрые действия', 'Quick actions'),
+            AppLocale.text('Жесты и горячие клавиши', 'Gestures and shortcuts'),
+          ),
+        ],
       ),
-      _SettingsRowData(
-        icon: Icons.download_outlined,
-        title: AppLocale.text('Скачивание', 'Downloads'),
-        subtitle: AppLocale.text(
-          'Загрузка и хранилище',
-          'Downloads and storage',
-        ),
-      ),
-      _SettingsRowData(
-        icon: Icons.language_outlined,
-        title: AppLocale.text('Язык', 'Language'),
-        subtitle: AppLocale.isEnglish ? 'English' : 'Русский',
-        onTap: onLanguage,
-      ),
-      _SettingsRowData(
-        icon: Icons.info_outline,
-        title: AppLocale.text('О приложении', 'About'),
-        subtitle: AppLocale.text('Версия 1.0.2', 'Version 1.0.2'),
+      (
+        title: AppLocale.text('ДРУГОЕ', 'OTHER'),
+        rows: [
+          _SettingRowData(
+            Icons.language_outlined,
+            AppLocale.text('Язык', 'Language'),
+            AppLocale.isEnglish ? 'English' : 'Русский',
+            onTap: onLanguage,
+          ),
+          _SettingRowData(
+            Icons.info_outline,
+            AppLocale.text('О приложении', 'About'),
+            AppLocale.text('Версия, лицензия', 'Version, licenses'),
+          ),
+          _SettingRowData(
+            Icons.support_outlined,
+            AppLocale.text('Поддержка', 'Support'),
+            AppLocale.text('Помощь и обратная связь', 'Help and feedback'),
+          ),
+        ],
       ),
     ];
 
@@ -668,101 +640,164 @@ class _Settings extends StatelessWidget {
           children: [
             IconButton(
               onPressed: onBack,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 34, height: 34),
               icon: const Icon(
                 Icons.arrow_back_ios_new,
                 color: Colors.white,
                 size: 19,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Text(
               AppLocale.text('Настройки', 'Settings'),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 22,
-                height: 1,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        for (final row in rows) ...[
-          _SettingsRow(row: row),
+        for (var i = 0; i < groups.length; i++) ...[
+          _SettingsLabel(groups[i].title),
           const SizedBox(height: 8),
+          _SettingsCard(rows: groups[i].rows),
+          if (i != groups.length - 1) const SizedBox(height: 22),
         ],
+        const SizedBox(height: 22),
+        _SettingsCard(
+          rows: [
+            _SettingRowData(
+              Icons.logout_outlined,
+              AppLocale.text('Выйти из аккаунта', 'Log out'),
+              '',
+            ),
+          ],
+          logout: true,
+        ),
       ],
     );
   }
 }
 
-class _SettingsRow extends StatelessWidget {
-  final _SettingsRowData row;
+class _SettingRowData {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
 
-  const _SettingsRow({required this.row});
+  const _SettingRowData(
+    this.icon,
+    this.title,
+    this.subtitle, {
+    this.onTap,
+  });
+}
+
+class _SettingsLabel extends StatelessWidget {
+  final String text;
+
+  const _SettingsLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(left: 6),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Color(0xFF8A8A8A),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            letterSpacing: .3,
+          ),
+        ),
+      );
+}
+
+class _SettingsCard extends StatelessWidget {
+  final List<_SettingRowData> rows;
+  final bool logout;
+
+  const _SettingsCard({required this.rows, this.logout = false});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: row.onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 64),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF101010),
-          border: Border.all(color: const Color(0xFF292929)),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(row.icon, color: Colors.black, size: 20),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    row.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF101010),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF292929)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (final row in rows)
+            InkWell(
+              onTap: row.onTap,
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 70),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: Color(0xFF202020)),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    row.subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF858585),
-                      fontSize: 10,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: logout ? const Color(0xFF2A1111) : Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        row.icon,
+                        color: logout ? const Color(0xFFB52B2B) : Colors.black,
+                        size: 22,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            row.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: logout ? const Color(0xFFB52B2B) : Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (row.subtitle.isNotEmpty)
+                            Text(
+                              row.subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF858585),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (!logout)
+                      const Icon(
+                        Icons.chevron_right,
+                        color: Color(0xFF858585),
+                        size: 22,
+                      ),
+                  ],
+                ),
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: Color(0xFF858585),
-              size: 20,
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -771,35 +806,28 @@ class _SettingsRow extends StatelessWidget {
 class _LanguageRow extends StatelessWidget {
   final String value;
   final String title;
-  final VoidCallback onTap;
 
-  const _LanguageRow({
-    required this.value,
-    required this.title,
-    required this.onTap,
-  });
+  const _LanguageRow(this.value, this.title);
 
   @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
+  Widget build(BuildContext context) => ListTile(
+        onTap: () => Navigator.pop(context, value),
+        contentPadding: EdgeInsets.zero,
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
-      trailing: Icon(
-        AppLocale.language.value == value
-            ? Icons.radio_button_checked
-            : Icons.radio_button_off,
-        color: Colors.white,
-      ),
-    );
-  }
+        trailing: Icon(
+          AppLocale.language.value == value
+              ? Icons.radio_button_checked
+              : Icons.radio_button_off,
+          color: Colors.white,
+        ),
+      );
 }
 
 class _EditProfile extends StatefulWidget {
@@ -818,56 +846,41 @@ class _EditProfile extends StatefulWidget {
 }
 
 class _EditProfileState extends State<_EditProfile> {
-  late final TextEditingController nameController;
+  late final TextEditingController name;
 
   @override
   void initState() {
     super.initState();
-    nameController = TextEditingController(
+    name = TextEditingController(
       text: Hive.box('profile').get(
-            'name',
-            defaultValue: AppLocale.text('Алекс', 'Alex'),
-          )
-          as String,
+        'name',
+        defaultValue: AppLocale.text('Алекс', 'Alex'),
+      ) as String,
     );
   }
 
   @override
   void dispose() {
-    nameController.dispose();
+    name.dispose();
     super.dispose();
   }
 
-  Future<void> _save() async {
-    final value = nameController.text.trim();
-    if (value.isNotEmpty) {
-      await Hive.box('profile').put('name', value);
-    }
-    if (mounted) {
-      widget.onBack();
-    }
-  }
-
   @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 88),
-      children: [
-        Row(
-          children: [
-            IconButton(
-              onPressed: widget.onBack,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 34, height: 34),
-              icon: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white,
-                size: 19,
+  Widget build(BuildContext context) => ListView(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 88),
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: widget.onBack,
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 19,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
+              const SizedBox(width: 4),
+              Text(
                 AppLocale.text('Редактирование профиля', 'Edit profile'),
                 style: const TextStyle(
                   color: Colors.white,
@@ -875,81 +888,66 @@ class _EditProfileState extends State<_EditProfile> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 26),
-        Center(
-          child: CircleAvatar(
-            radius: 54,
-            backgroundColor: const Color(0xFF242424),
-            backgroundImage: widget.avatar == null
-                ? const NetworkImage('https://i.pravatar.cc/400?img=12')
-                : FileImage(File(widget.avatar!)) as ImageProvider,
+            ],
           ),
-        ),
-        const SizedBox(height: 10),
-        Center(
-          child: TextButton(
-            onPressed: widget.onPick,
-            style: TextButton.styleFrom(foregroundColor: Colors.white),
-            child: Text(
-              AppLocale.text('Изменить фото', 'Change photo'),
+          const SizedBox(height: 26),
+          Center(
+            child: CircleAvatar(
+              radius: 54,
+              backgroundColor: const Color(0xFF242424),
+              backgroundImage: widget.avatar == null
+                  ? const NetworkImage('https://i.pravatar.cc/400?img=12')
+                  : FileImage(File(widget.avatar!)) as ImageProvider,
             ),
           ),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          AppLocale.text('Имя', 'Name'),
-          style: const TextStyle(
-            color: Color(0xFF858585),
-            fontSize: 12,
-          ),
-        ),
-        const SizedBox(height: 7),
-        TextField(
-          controller: nameController,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-          cursorColor: Colors.white,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: const Color(0xFF111111),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF555555)),
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        SizedBox(
-          height: 48,
-          child: FilledButton(
-            onPressed: _save,
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 10),
+          Center(
+            child: TextButton(
+              onPressed: widget.onPick,
+              child: Text(
+                AppLocale.text('Изменить фото', 'Change photo'),
+                style: const TextStyle(color: Colors.white),
               ),
             ),
-            child: Text(
-              AppLocale.text('Сохранить', 'Save'),
-              style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            AppLocale.text('Имя', 'Name'),
+            style: const TextStyle(
+              color: Color(0xFF858585),
+              fontSize: 12,
             ),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CardData {
-  final String title;
-  final String image;
-
-  const _CardData(this.title, this.image);
+          const SizedBox(height: 7),
+          TextField(
+            controller: name,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              filled: true,
+              fillColor: Color(0xFF111111),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 48,
+            child: FilledButton(
+              onPressed: () async {
+                final trimmed = name.text.trim();
+                if (trimmed.isNotEmpty) {
+                  await Hive.box('profile').put('name', trimmed);
+                }
+                if (mounted) {
+                  widget.onBack();
+                }
+              },
+              child: Text(
+                AppLocale.text('Сохранить', 'Save'),
+              ),
+            ),
+          ),
+        ],
+      );
 }
