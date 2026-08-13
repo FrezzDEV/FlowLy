@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../controllers/main_controller.dart';
 import '../../models/song_model.dart';
@@ -16,7 +15,6 @@ class PlayerRoute {
 
   static Future<void> open(BuildContext context, MainController con) async {
     if (isOpenNotifier.value || !context.mounted) return;
-
     isOpenNotifier.value = true;
     try {
       await Navigator.of(context, rootNavigator: true).push(
@@ -49,9 +47,7 @@ class PlayerRoute {
     }
   }
 
-  static void markMinimized() {
-    isOpenNotifier.value = false;
-  }
+  static void markMinimized() => isOpenNotifier.value = false;
 }
 
 class CurrentPlayingSong extends StatefulWidget {
@@ -69,9 +65,7 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
 
   void _minimize() {
     PlayerRoute.markMinimized();
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
+    if (mounted) Navigator.of(context).pop();
   }
 
   void _handlePointerDown(PointerDownEvent event) {
@@ -82,11 +76,8 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
     final startY = _dragStartY;
     _dragStartY = null;
     if (startY == null) return;
-
     final delta = event.position.dy - startY;
-    if (startY <= 150 && delta >= 110) {
-      _minimize();
-    }
+    if (startY <= 150 && delta >= 110) _minimize();
   }
 
   @override
@@ -172,21 +163,16 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
                             Expanded(
                               child: SingleChildScrollView(
                                 physics: const ClampingScrollPhysics(),
-                                padding:
-                                    const EdgeInsets.fromLTRB(18, 8, 18, 24),
+                                padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
-                                    _Artwork(
-                                      imageUrl: song.coverImageUrl,
-                                    ),
+                                    _Artwork(imageUrl: song.coverImageUrl),
                                     const SizedBox(height: 20),
                                     Text(
                                       song.songname ?? '',
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.left,
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 28,
@@ -201,7 +187,6 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
                                           : 'FlowLy',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.left,
                                       style: const TextStyle(
                                         color: Color(0xFFC9C9C9),
                                         fontSize: 18,
@@ -212,10 +197,7 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
                                     Row(
                                       children: [
                                         IconButton(
-                                          tooltip: AppLocale.text(
-                                            'Нравится',
-                                            'Like',
-                                          ),
+                                          tooltip: AppLocale.text('Нравится', 'Like'),
                                           onPressed: () => _like(song),
                                           icon: Icon(
                                             _liked
@@ -231,7 +213,6 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
                                             'Comments',
                                           ),
                                           onPressed: () => _showMessage(
-                                            context,
                                             AppLocale.text(
                                               'Комментарии пока недоступны',
                                               'Comments are not available yet',
@@ -245,12 +226,8 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
                                         ),
                                         const Spacer(),
                                         IconButton(
-                                          tooltip: AppLocale.text(
-                                            'Скачать',
-                                            'Download',
-                                          ),
-                                          onPressed: () =>
-                                              _download(song.trackid),
+                                          tooltip: AppLocale.text('Скачать', 'Download'),
+                                          onPressed: _downloadUnavailable,
                                           icon: const Icon(
                                             Icons.download_rounded,
                                             color: Colors.white,
@@ -300,31 +277,16 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
     setState(() => _liked = !_liked);
   }
 
-  Future<void> _download(String? url) async {
-    if (url == null || url.isEmpty) {
-      _showMessage(
-        context,
-        AppLocale.text(
-          'Ссылка на загрузку отсутствует',
-          'Download link is unavailable',
-        ),
-      );
-      return;
-    }
-
-    final opened = await launchUrlString(url);
-    if (!opened && mounted) {
-      _showMessage(
-        context,
-        AppLocale.text(
-          'Не удалось открыть загрузку',
-          'Could not open download',
-        ),
-      );
-    }
+  void _downloadUnavailable() {
+    _showMessage(
+      AppLocale.text(
+        'Скачивание временно отключено: серверный API ещё не готов.',
+        'Downloads are temporarily disabled: the server API is not ready yet.',
+      ),
+    );
   }
 
-  void _showMessage(BuildContext context, String message) {
+  void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -343,9 +305,7 @@ class _BlurredArtworkBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = imageUrl ?? '';
-    if (url.isEmpty) {
-      return Container(color: const Color(0xFF111111));
-    }
+    if (url.isEmpty) return Container(color: const Color(0xFF111111));
 
     return Stack(
       fit: StackFit.expand,
@@ -364,9 +324,7 @@ class _BlurredArtworkBackground extends StatelessWidget {
             ),
           ),
         ),
-        Container(
-          color: Colors.black.withValues(alpha: 0.55),
-        ),
+        Container(color: Colors.black.withValues(alpha: 0.55)),
         const DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -457,11 +415,7 @@ class _ControlRow extends StatelessWidget {
           IconButton(
             tooltip: 'Previous',
             onPressed: con.songs.length > 1 ? con.previous : null,
-            icon: const Icon(
-              Icons.skip_previous,
-              color: Colors.white,
-              size: 38,
-            ),
+            icon: const Icon(Icons.skip_previous, color: Colors.white, size: 38),
           ),
           Material(
             color: const Color(0xFF777777),
@@ -483,19 +437,13 @@ class _ControlRow extends StatelessWidget {
           IconButton(
             tooltip: 'Next',
             onPressed: con.songs.length > 1 ? con.next : null,
-            icon: const Icon(
-              Icons.skip_next,
-              color: Colors.white,
-              size: 38,
-            ),
+            icon: const Icon(Icons.skip_next, color: Colors.white, size: 38),
           ),
           IconButton(
             tooltip: 'Repeat',
             onPressed: con.toggleLoop,
             icon: Icon(
-              con.loopMode == LoopModeType.one
-                  ? Icons.repeat_one
-                  : Icons.repeat,
+              con.loopMode == LoopModeType.one ? Icons.repeat_one : Icons.repeat,
               color: con.loopMode == LoopModeType.none
                   ? Colors.white54
                   : Colors.white,
