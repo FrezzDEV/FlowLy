@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:flowly/screens/bottom_nav_bar/bottom_nav_bar.dart';
 
 import 'utils/app_locale.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.flowly.audio.playback',
+    androidNotificationChannelName: 'FlowLy — Воспроизведение',
+    androidNotificationChannelDescription: 'Управление воспроизведением FlowLy',
+    androidNotificationOngoing: true,
+  );
+
   var dir = await getApplicationDocumentsDirectory();
   await Hive.initFlutter(dir.path);
   await Hive.openBox('liked');
