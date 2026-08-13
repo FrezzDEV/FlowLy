@@ -110,9 +110,13 @@ class MainController extends ChangeNotifier {
     }
 
     final sources = _songs.map(_toSource).toList(growable: false);
-    final playlist = ConcatenatingAudioSource(children: sources);
     _currentIndex = startIndex.clamp(0, _songs.length - 1);
-    await player.setAudioSource(playlist, initialIndex: _currentIndex);
+    await player.setAudioSources(
+      sources,
+      initialIndex: _currentIndex,
+      useLazyPreparation: true,
+      shuffleOrder: DefaultShuffleOrder(),
+    );
     await player.play();
     notifyListeners();
   }
@@ -178,48 +182,32 @@ class MainController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addToPlaylist(SongModel song) {
+  Future<void> addToPlaylist(SongModel song) async {
     _songs.add(song);
-    final source = player.audioSource;
-    if (source is ConcatenatingAudioSource) {
-      source.add(_toSource(song));
-    }
+    await player.addAudioSource(_toSource(song));
     notifyListeners();
   }
 
-  void insertToPlaylist(int index, SongModel song) {
+  Future<void> insertToPlaylist(int index, SongModel song) async {
     final safeIndex = index.clamp(0, _songs.length);
     _songs.insert(safeIndex, song);
-    final source = player.audioSource;
-    if (source is ConcatenatingAudioSource) {
-      source.insert(safeIndex, _toSource(song));
-    }
+    await player.insertAudioSource(safeIndex, _toSource(song));
     notifyListeners();
   }
 
-  void removeFromPlaylist(int index) {
+  Future<void> removeFromPlaylist(int index) async {
     if (index < 0 || index >= _songs.length) return;
     _songs.removeAt(index);
-    final source = player.audioSource;
-    if (source is ConcatenatingAudioSource && index < source.length) {
-      source.removeAt(index);
-    }
+    await player.removeAudioSourceAt(index);
     notifyListeners();
   }
 
-  void changeIndex(int newIndex, int oldIndex) {
+  Future<void> changeIndex(int newIndex, int oldIndex) async {
     if (oldIndex < 0 || oldIndex >= _songs.length) return;
     final safeNewIndex = newIndex.clamp(0, _songs.length - 1);
     final song = _songs.removeAt(oldIndex);
     _songs.insert(safeNewIndex, song);
-    final source = player.audioSource;
-    if (source is ConcatenatingAudioSource) {
-      final sourceChildren = List<AudioSource>.from(source.children);
-      final moved = sourceChildren.removeAt(oldIndex);
-      sourceChildren.insert(safeNewIndex, moved);
-      source.clear();
-      source.addAll(sourceChildren);
-    }
+    await player.moveAudioSource(oldIndex, safeNewIndex);
     notifyListeners();
   }
 
