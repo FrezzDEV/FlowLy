@@ -501,15 +501,13 @@ class _SettingsPage extends StatelessWidget {
               label: AppLocale.text('ПРИЛОЖЕНИЕ', 'APP'),
               rows: [
                 _SettingsRow(
-                  icon: Icons.play_arrow_outlined,
+                  icon: Icons.play_circle_outline,
                   title: AppLocale.text('Воспроизведение', 'Playback'),
-                  subtitle: AppLocale.text(
-                    'Качество звука, кроссфейд, EQ',
-                    'Audio quality, crossfade, EQ',
-                  ),
+                  subtitle: AppLocale.text('Качество, повтор, crossfade, EQ', 'Quality, repeat, crossfade, EQ'),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const _PlaybackSettingsPage())),
                 ),
                 _SettingsRow(
-                  icon: Icons.download_outlined,
+                  icon: Icons.file_download_outlined,
                   title: AppLocale.text('Скачивание', 'Downloads'),
                   subtitle: AppLocale.text(
                     'Папка и параметры загрузки',
@@ -518,25 +516,16 @@ class _SettingsPage extends StatelessWidget {
                   onTap: () => _openDownloadSettings(context),
                 ),
                 _SettingsRow(
-                  icon: Icons.notifications_none,
+                  icon: Icons.notifications_none_outlined,
                   title: AppLocale.text('Уведомления', 'Notifications'),
-                  subtitle: AppLocale.text(
-                    'Музыка и обновления',
-                    'Music and updates',
-                  ),
+                  subtitle: AppLocale.text('Музыка, загрузки и обновления', 'Music, downloads and updates'),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const _NotificationSettingsPage())),
                 ),
                 _SettingsRow(
                   icon: Icons.palette_outlined,
                   title: AppLocale.text('Внешний вид', 'Appearance'),
                   subtitle: AppLocale.text('Тема, цвета, стиль', 'Theme, colors, style'),
                 ),
-                _SettingsRow(
-                  icon: Icons.text_fields_outlined,
-                  title: AppLocale.text('Текст', 'Text'),
-                  subtitle: AppLocale.text(
-                    'Отображение текстов песен',
-                    'Lyrics display',
-                  ),
                 ),
                 _SettingsRow(
                   icon: Icons.bolt_outlined,
@@ -588,12 +577,10 @@ class _SettingsPage extends StatelessWidget {
                   ),
                 ),
                 _SettingsRow(
-                  icon: Icons.headset_mic_outlined,
+                  icon: Icons.support_agent_outlined,
                   title: AppLocale.text('Поддержка', 'Support'),
-                  subtitle: AppLocale.text(
-                    'Помощь и обратная связь',
-                    'Help and feedback',
-                  ),
+                  subtitle: AppLocale.text('Помощь и обратная связь', 'Help and feedback'),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const _SupportSettingsPage())),
                 ),
               ],
             ),
