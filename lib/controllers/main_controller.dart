@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 
 import '../models/song_model.dart';
 
@@ -240,6 +241,7 @@ class MainController extends ChangeNotifier {
   }
 
   List<SongModel> convertToAudio(List<SongModel> songs) => List<SongModel>.from(songs);
+
   List<SongModel> converLocalSongToAudio(List<dynamic> songs) => songs.map((audio) {
         final item = audio as Map;
         return SongModel(
@@ -264,9 +266,17 @@ class MainController extends ChangeNotifier {
     if (url == null || url.isEmpty) {
       throw ArgumentError('Song ${song.songname ?? ''} has no audio URL');
     }
+
+    final coverUri = Uri.tryParse(song.coverImageUrl ?? '');
     return AudioSource.uri(
       Uri.parse(url),
-      tag: song,
+      tag: MediaItem(
+        id: song.songid?.isNotEmpty == true ? song.songid! : url,
+        title: song.songname?.isNotEmpty == true ? song.songname! : 'FlowLy',
+        artist: song.name?.isNotEmpty == true ? song.name : song.userid,
+        album: 'FlowLy',
+        artUri: coverUri,
+      ),
     );
   }
 
