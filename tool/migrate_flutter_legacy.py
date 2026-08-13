@@ -24,5 +24,12 @@ for path in ROOT.rglob('*.dart'):
     # literal/constant opacity calls used by this legacy project.
     text = re.sub(r'\.withOpacity\(\s*([0-9.]+)\s*\)', r'.withValues(alpha: \1)', text)
 
+    # Keep the profile avatar provider type explicit for Dart's conditional
+    # expression type inference on current Flutter/Dart releases.
+    text = text.replace(
+        ': FileImage(File(_avatarPath!)),',
+        ': FileImage(File(_avatarPath!)) as ImageProvider<Object>,',
+    )
+
     if text != original:
         path.write_text(text, encoding='utf-8')
