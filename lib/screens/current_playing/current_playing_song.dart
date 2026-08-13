@@ -9,25 +9,48 @@ import '../../controllers/main_controller.dart';
 import '../../models/song_model.dart';
 import '../../utils/app_locale.dart';
 import '../../utils/botttom_sheet_widget.dart';
-import '../../utils/play_list.dart';
 import '../../utils/player/position_seek_widget.dart';
 
 class PlayerRoute {
-  static bool _isOpen = false;
+  static final ValueNotifier<bool> isOpenNotifier = ValueNotifier<bool>(false);
 
   static Future<void> open(BuildContext context, MainController con) async {
-    if (_isOpen || !context.mounted) return;
-    _isOpen = true;
+    if (isOpenNotifier.value || !context.mounted) return;
+
+    isOpenNotifier.value = true;
     try {
       await Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute<void>(
+        PageRouteBuilder<void>(
+          opaque: true,
           fullscreenDialog: true,
-          builder: (_) => CurrentPlayingSong(con: con),
+          transitionDuration: const Duration(milliseconds: 320),
+          reverseTransitionDuration: const Duration(milliseconds: 260),
+          pageBuilder: (_, __, ___) => CurrentPlayingSong(con: con),
+          transitionsBuilder: (_, animation, __, child) {
+            final curved = CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+              reverseCurve: Curves.easeInCubic,
+            );
+            return SlideTransition(
+              position: curved.drive(
+                Tween<Offset>(
+                  begin: const Offset(0, 1),
+                  end: Offset.zero,
+                ),
+              ),
+              child: child,
+            );
+          },
         ),
       );
     } finally {
-      _isOpen = false;
+      isOpenNotifier.value = false;
     }
+  }
+
+  static void markMinimized() {
+    isOpenNotifier.value = false;
   }
 }
 
@@ -42,6 +65,29 @@ class CurrentPlayingSong extends StatefulWidget {
 
 class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
   bool _liked = false;
+  double? _dragStartY;
+
+  void _minimize() {
+    PlayerRoute.markMinimized();
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  void _handlePointerDown(PointerDownEvent event) {
+    _dragStartY = event.position.dy;
+  }
+
+  void _handlePointerUp(PointerUpEvent event) {
+    final startY = _dragStartY;
+    _dragStartY = null;
+    if (startY == null) return;
+
+    final delta = event.position.dy - startY;
+    if (startY <= 150 && delta >= 110) {
+      _minimize();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,132 +101,184 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
           final song = con.currentSong;
           if (song == null) return const SizedBox.shrink();
 
-          return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: const SystemUiOverlayStyle(
-              statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
-              systemNavigationBarColor: Colors.black,
-              systemNavigationBarIconBrightness: Brightness.light,
-            ),
-            child: Scaffold(
-              backgroundColor: const Color(0xFF111111),
-              body: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _BlurredArtworkBackground(imageUrl: song.coverImageUrl),
-                  SafeArea(
-                    bottom: false,
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: SingleChildScrollView(
-                            physics: const ClampingScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _Artwork(
-                                  imageUrl: song.coverImageUrl,
-                                  onBack: () => Navigator.of(context).pop(),
-                                  onMore: () => showModalBottomSheet<void>(
-                                    context: context,
-                                    isScrollControlled: true,
-                                    backgroundColor: Colors.black,
-                                    builder: (_) => BottomSheetWidget(
-                                      con: con,
-                                      isNext: true,
-                                      song: SongModel(
-                                        songid: song.songid,
-                                        songname: song.songname,
-                                        userid: song.userid,
-                                        trackid: song.trackid,
-                                        duration: song.duration,
-                                        coverImageUrl: song.coverImageUrl,
-                                        name: song.name,
-                                      ),
+          return PopScope<void>(
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop) PlayerRoute.markMinimized();
+            },
+            child: Listener(
+              onPointerDown: _handlePointerDown,
+              onPointerUp: _handlePointerUp,
+              child: AnnotatedRegion<SystemUiOverlayStyle>(
+                value: const SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness: Brightness.light,
+                  systemNavigationBarColor: Colors.black,
+                  systemNavigationBarIconBrightness: Brightness.light,
+                ),
+                child: Scaffold(
+                  backgroundColor: const Color(0xFF111111),
+                  body: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _BlurredArtworkBackground(imageUrl: song.coverImageUrl),
+                      SafeArea(
+                        bottom: false,
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  IconButton(
+                                    tooltip: AppLocale.text('Назад', 'Back'),
+                                    onPressed: _minimize,
+                                    icon: const Icon(
+                                      Icons.arrow_back_ios_new,
+                                      color: Colors.white,
+                                      size: 25,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 18),
-                                Text(
-                                  song.songname ?? '',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.left,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    height: 1.05,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  song.name?.isNotEmpty == true ? song.name! : 'FlowLy',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.left,
-                                  style: const TextStyle(
-                                    color: Color(0xFFC9C9C9),
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      tooltip: AppLocale.text('Нравится', 'Like'),
-                                      onPressed: () => _like(song),
-                                      icon: Icon(
-                                        _liked ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined,
-                                        color: Colors.white,
-                                        size: 30,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      tooltip: AppLocale.text('Комментарии', 'Comments'),
-                                      onPressed: () => _showMessage(
-                                        context,
-                                        AppLocale.text(
-                                          'Комментарии пока недоступны',
-                                          'Comments are not available yet',
+                                  IconButton(
+                                    tooltip: AppLocale.text('Еще', 'More'),
+                                    onPressed: () => showModalBottomSheet<void>(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.black,
+                                      builder: (_) => BottomSheetWidget(
+                                        con: con,
+                                        isNext: true,
+                                        song: SongModel(
+                                          songid: song.songid,
+                                          songname: song.songname,
+                                          userid: song.userid,
+                                          trackid: song.trackid,
+                                          duration: song.duration,
+                                          coverImageUrl: song.coverImageUrl,
+                                          name: song.name,
                                         ),
                                       ),
-                                      icon: const Icon(
-                                        Icons.chat_bubble_outline,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.more_vert,
+                                      color: Colors.white,
+                                      size: 29,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                physics: const ClampingScrollPhysics(),
+                                padding:
+                                    const EdgeInsets.fromLTRB(18, 8, 18, 24),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    _Artwork(
+                                      imageUrl: song.coverImageUrl,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Text(
+                                      song.songname ?? '',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.left,
+                                      style: const TextStyle(
                                         color: Colors.white,
-                                        size: 30,
+                                        fontSize: 28,
+                                        height: 1.05,
+                                        fontWeight: FontWeight.w800,
                                       ),
                                     ),
-                                    IconButton(
-                                      tooltip: AppLocale.text('Скачать', 'Download'),
-                                      onPressed: () => _download(song.trackid),
-                                      icon: const Icon(
-                                        Icons.download_rounded,
-                                        color: Colors.white,
-                                        size: 31,
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      song.name?.isNotEmpty == true
+                                          ? song.name!
+                                          : 'FlowLy',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.left,
+                                      style: const TextStyle(
+                                        color: Color(0xFFC9C9C9),
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          tooltip: AppLocale.text(
+                                            'Нравится',
+                                            'Like',
+                                          ),
+                                          onPressed: () => _like(song),
+                                          icon: Icon(
+                                            _liked
+                                                ? Icons.thumb_up_alt
+                                                : Icons.thumb_up_alt_outlined,
+                                            color: Colors.white,
+                                            size: 29,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          tooltip: AppLocale.text(
+                                            'Комментарии',
+                                            'Comments',
+                                          ),
+                                          onPressed: () => _showMessage(
+                                            context,
+                                            AppLocale.text(
+                                              'Комментарии пока недоступны',
+                                              'Comments are not available yet',
+                                            ),
+                                          ),
+                                          icon: const Icon(
+                                            Icons.chat_bubble_outline,
+                                            color: Colors.white,
+                                            size: 29,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        IconButton(
+                                          tooltip: AppLocale.text(
+                                            'Скачать',
+                                            'Download',
+                                          ),
+                                          onPressed: () =>
+                                              _download(song.trackid),
+                                          icon: const Icon(
+                                            Icons.download_rounded,
+                                            color: Colors.white,
+                                            size: 30,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    PositionSeekWidget(
+                                      currentPosition: con.position,
+                                      duration: con.duration,
+                                      seekTo: con.seek,
+                                    ),
+                                    const SizedBox(height: 14),
+                                    _ControlRow(con: con),
+                                    const SizedBox(height: 18),
+                                    const _BottomTabs(),
                                   ],
                                 ),
-                                const SizedBox(height: 12),
-                                PositionSeekWidget(
-                                  currentPosition: con.position,
-                                  duration: con.duration,
-                                  seekTo: con.seek,
-                                ),
-                                const SizedBox(height: 16),
-                                _ControlRow(con: con),
-                              ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                        const _BottomTabs(),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           );
@@ -289,14 +387,8 @@ class _BlurredArtworkBackground extends StatelessWidget {
 
 class _Artwork extends StatelessWidget {
   final String? imageUrl;
-  final VoidCallback onBack;
-  final VoidCallback onMore;
 
-  const _Artwork({
-    required this.imageUrl,
-    required this.onBack,
-    required this.onMore,
-  });
+  const _Artwork({required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -310,7 +402,8 @@ class _Artwork extends StatelessWidget {
             CachedNetworkImage(
               imageUrl: imageUrl ?? '',
               fit: BoxFit.cover,
-              placeholder: (_, __) => Container(color: const Color(0xFF1B1B1B)),
+              placeholder: (_, __) =>
+                  Container(color: const Color(0xFF1B1B1B)),
               errorWidget: (_, __, ___) => Container(
                 color: const Color(0xFF151515),
                 alignment: Alignment.center,
@@ -330,32 +423,6 @@ class _Artwork extends StatelessWidget {
                     colors: [Colors.transparent, Color(0xB0000000)],
                     stops: [0.62, 1],
                   ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 2,
-              bottom: 4,
-              child: IconButton(
-                tooltip: 'Back',
-                onPressed: onBack,
-                icon: const Icon(
-                  Icons.arrow_back_ios_new,
-                  color: Colors.white,
-                  size: 30,
-                ),
-              ),
-            ),
-            Positioned(
-              right: 2,
-              bottom: 4,
-              child: IconButton(
-                tooltip: 'More',
-                onPressed: onMore,
-                icon: const Icon(
-                  Icons.more_vert,
-                  color: Colors.white,
-                  size: 32,
                 ),
               ),
             ),
@@ -426,8 +493,12 @@ class _ControlRow extends StatelessWidget {
             tooltip: 'Repeat',
             onPressed: con.toggleLoop,
             icon: Icon(
-              con.loopMode == LoopModeType.one ? Icons.repeat_one : Icons.repeat,
-              color: con.loopMode == LoopModeType.none ? Colors.white54 : Colors.white,
+              con.loopMode == LoopModeType.one
+                  ? Icons.repeat_one
+                  : Icons.repeat,
+              color: con.loopMode == LoopModeType.none
+                  ? Colors.white54
+                  : Colors.white,
               size: 28,
             ),
           ),
@@ -442,16 +513,8 @@ class _BottomTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(28, 10, 28, 16),
-      decoration: const BoxDecoration(
-        color: Color(0xFF606060),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(18),
-          topRight: Radius.circular(18),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -473,8 +536,8 @@ class _BottomTabLabel extends StatelessWidget {
   Widget build(BuildContext context) => Text(
         text,
         style: const TextStyle(
-          color: Color(0xFFBDBDBD),
-          fontSize: 17,
+          color: Color(0xFFD0D0D0),
+          fontSize: 15,
           fontWeight: FontWeight.w500,
         ),
       );
