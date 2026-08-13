@@ -74,32 +74,40 @@ class _AppState extends State<App> {
       create: (context) => MainController()..init(),
       child: Consumer<MainController>(
         builder: (context, con, child) {
-          return PersistentTabView(
-            context,
-            controller: controller,
-            playWidget: Material(
-              child: PlayWidget(
-                con: con,
-                onTap: () => _openPlayer(con),
-              ),
-            ),
-            screens: _buildScreens(con),
-            items: _navBarsItems(),
-            onItemSelected: (index) {
-              if (index == 3) {
-                _profileKey.currentState?.showProfile();
-              }
+          return ValueListenableBuilder<bool>(
+            valueListenable: PlayerRoute.isOpenNotifier,
+            builder: (context, playerOpen, _) {
+              return PersistentTabView(
+                context,
+                controller: controller,
+                playWidget: playerOpen
+                    ? const SizedBox.shrink()
+                    : Material(
+                        color: Colors.black,
+                        child: PlayWidget(
+                          con: con,
+                          onTap: () => _openPlayer(con),
+                        ),
+                      ),
+                screens: _buildScreens(con),
+                items: _navBarsItems(),
+                onItemSelected: (index) {
+                  if (index == 3) {
+                    _profileKey.currentState?.showProfile();
+                  }
+                },
+                confineInSafeArea: true,
+                backgroundColor: Colors.black,
+                handleAndroidBackButtonPress: true,
+                hideNavigationBarWhenKeyboardShows: true,
+                resizeToAvoidBottomInset: true,
+                popAllScreensOnTapOfSelectedTab: true,
+                popActionScreens: PopActionScreensType.all,
+                navBarStyle: NavBarStyle.simple,
+                navBarHeight: 64,
+                padding: const NavBarPadding.all(0),
+              );
             },
-            confineInSafeArea: true,
-            backgroundColor: Colors.black,
-            handleAndroidBackButtonPress: true,
-            hideNavigationBarWhenKeyboardShows: true,
-            resizeToAvoidBottomInset: true,
-            popAllScreensOnTapOfSelectedTab: true,
-            popActionScreens: PopActionScreensType.all,
-            navBarStyle: NavBarStyle.simple,
-            navBarHeight: 64,
-            padding: const NavBarPadding.all(0),
           );
         },
       ),
