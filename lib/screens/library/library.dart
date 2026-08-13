@@ -64,7 +64,7 @@ class Library extends StatelessWidget {
                     if (box.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                        child: Text('Your playlists', style: Theme.of(context).textTheme.headline4!.copyWith(fontSize: 18)),
+                        child: Text('Your playlists', style: Theme.of(context).textTheme.headlineMedium!.copyWith(fontSize: 18)),
                       ),
                     ListView.builder(
                       shrinkWrap: true,

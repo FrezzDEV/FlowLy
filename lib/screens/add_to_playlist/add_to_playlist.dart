@@ -31,7 +31,7 @@ class AddToPlaylist extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           "Add to Playlist",
-          style: Theme.of(context).textTheme.headline4,
+          style: Theme.of(context).textTheme.headlineMedium,
         ),
         backgroundColor: Colors.black,
       ),
@@ -150,7 +150,7 @@ class AddToPlaylist extends StatelessWidget {
                   const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16),
               child: Text(
                 "Your playlists",
-                style: Theme.of(context).textTheme.headline4!.copyWith(
+                style: Theme.of(context).textTheme.headlineMedium!.copyWith(
                       fontSize: 18,
                     ),
               ),

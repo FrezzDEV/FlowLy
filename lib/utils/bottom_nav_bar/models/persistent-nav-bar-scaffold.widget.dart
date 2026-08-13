@@ -228,10 +228,10 @@ class _PersistentTabScaffoldState extends State<PersistentTabScaffold> {
       decoration:
           widget.tabBar.navBarDecoration!.borderRadius != BorderRadius.zero
               ? BoxDecoration(
-                  color: CupertinoColors.black.withOpacity(0.0),
+                  color: CupertinoColors.black.withValues(alpha: 0.0),
                   borderRadius: widget.tabBar.navBarDecoration!.borderRadius,
                 )
-              : BoxDecoration(color: CupertinoColors.black.withOpacity(1.0)),
+              : BoxDecoration(color: CupertinoColors.black.withValues(alpha: 1.0)),
       child: Stack(
         children: <Widget>[
           content,

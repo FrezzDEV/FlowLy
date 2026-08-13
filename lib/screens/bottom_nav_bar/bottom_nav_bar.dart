@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:provider/provider.dart';
-import 'package:spotify_clone/utils/bottom_nav_bar/persistent-tab-view.dart';
+import 'package:flowly/utils/bottom_nav_bar/persistent-tab-view.dart';
 
 import '../../controllers/main_controller.dart';
 import '../../utils/bottom_nav_bar/persistent-tab-view.widget.dart';

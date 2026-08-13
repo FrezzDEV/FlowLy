@@ -129,7 +129,7 @@ class ProfilePageState extends State<ProfilePage> {
                               backgroundColor: const Color(0xFF202020),
                               backgroundImage: _avatarPath == null
                                   ? const NetworkImage('https://i.pravatar.cc/240?img=12')
-                                  : FileImage(File(_avatarPath!)),
+                                  : FileImage(File(_avatarPath!)) as ImageProvider<Object>,
                             ),
                           ),
                           const SizedBox(height: 18),

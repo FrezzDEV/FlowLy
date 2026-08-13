@@ -66,7 +66,7 @@ class PlaylistSongs extends StatelessWidget {
                                       end: Alignment.center,
                                       colors: [
                                         Colors.black,
-                                        Colors.black.withOpacity(0.5),
+                                        Colors.black.withValues(alpha: 0.5),
                                       ],
                                     ),
                                   ),
@@ -79,7 +79,7 @@ class PlaylistSongs extends StatelessWidget {
                         ),
                         title: Text(
                           name,
-                          style: Theme.of(context).textTheme.headline4,
+                          style: Theme.of(context).textTheme.headlineMedium,
                         ),
                       ),
                     ),

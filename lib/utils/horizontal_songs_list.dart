@@ -92,7 +92,7 @@ class HorizontalSongList extends StatelessWidget {
                         maxLines: 2,
                         style: Theme.of(context)
                             .textTheme
-                            .bodyText1!
+                            .bodyLarge!
                             .copyWith(color: Colors.grey),
                       )
                     ],
@@ -167,7 +167,7 @@ class HorizontalArtistList extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: Theme.of(context)
                             .textTheme
-                            .bodyText1!
+                            .bodyLarge!
                             .copyWith(color: Colors.grey),
                       )
                     ],

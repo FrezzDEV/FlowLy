@@ -49,7 +49,7 @@ class SearchPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 18.0),
                   child: Text(
                     "Your Top genre",
-                    style: Theme.of(context).textTheme.headline4!.copyWith(fontSize: 18),
+                    style: Theme.of(context).textTheme.headlineMedium!.copyWith(fontSize: 18),
                   ),
                 ),
                 GridView.builder(
@@ -68,7 +68,7 @@ class SearchPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 24.0),
                   child: Text(
                     "Browse all",
-                    style: Theme.of(context).textTheme.headline4!.copyWith(fontSize: 18),
+                    style: Theme.of(context).textTheme.headlineMedium!.copyWith(fontSize: 18),
                   ),
                 ),
                 GridView.builder(
@@ -187,7 +187,7 @@ class TagWidget extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
                 child: Text(
                   tag.tag.toTitleCase(),
-                  style: Theme.of(context).textTheme.bodyText1!.copyWith(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.bodyLarge!.copyWith(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -224,7 +224,7 @@ class SliverSearchAppBar extends SliverPersistentHeaderDelegate {
                   const SizedBox(width: 10),
                   Text(
                     "Songs, Artists or Genres",
-                    style: Theme.of(context).textTheme.bodyText1!.copyWith(color: Colors.grey.shade800, fontSize: 18),
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: Colors.grey.shade800, fontSize: 18),
                   ),
                 ],
               ),

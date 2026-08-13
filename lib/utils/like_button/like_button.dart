@@ -97,7 +97,7 @@ class _LikeButtonState extends State<LikeButton>
                 state.isLiked ? 'liked' : 'like',
                 style: Theme.of(context)
                     .textTheme
-                    .bodyText2!
+                    .bodyMedium!
                     .copyWith(fontSize: 20, color: Colors.white),
               ),
             );

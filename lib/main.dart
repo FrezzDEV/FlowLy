@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:spotify_clone/screens/bottom_nav_bar/bottom_nav_bar.dart';
+import 'package:flowly/screens/bottom_nav_bar/bottom_nav_bar.dart';
 
 import 'utils/app_locale.dart';
 
@@ -52,13 +52,13 @@ class MyApp extends StatelessWidget {
               linearMinHeight: 10,
             ),
             textTheme: const TextTheme(
-              headline4: TextStyle(
+              headlineMedium: TextStyle(
                 color: Colors.white,
                 fontSize: 24,
                 fontFamily: 'Proxima Bold',
                 fontWeight: FontWeight.w600,
               ),
-              bodyText1: TextStyle(
+              bodyLarge: TextStyle(
                 fontSize: 16,
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
