@@ -114,7 +114,6 @@ class MainController extends ChangeNotifier {
     await player.setAudioSources(
       sources,
       initialIndex: _currentIndex,
-      useLazyPreparation: true,
       shuffleOrder: DefaultShuffleOrder(),
     );
     await player.play();
