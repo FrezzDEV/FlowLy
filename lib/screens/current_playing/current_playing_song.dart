@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -61,118 +63,124 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
               systemNavigationBarIconBrightness: Brightness.light,
             ),
             child: Scaffold(
-              backgroundColor: const Color(0xFF535353),
-              body: SafeArea(
-                bottom: false,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        physics: const ClampingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _Artwork(
-                              imageUrl: song.coverImageUrl,
-                              onBack: () => Navigator.of(context).pop(),
-                              onMore: () => showModalBottomSheet<void>(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.black,
-                                builder: (_) => BottomSheetWidget(
-                                  con: con,
-                                  isNext: true,
-                                  song: SongModel(
-                                    songid: song.songid,
-                                    songname: song.songname,
-                                    userid: song.userid,
-                                    trackid: song.trackid,
-                                    duration: song.duration,
-                                    coverImageUrl: song.coverImageUrl,
-                                    name: song.name,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-                            Text(
-                              song.songname ?? '',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.left,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                height: 1.05,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              song.name?.isNotEmpty == true ? song.name! : 'FlowLy',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.left,
-                              style: const TextStyle(
-                                color: Color(0xFFC9C9C9),
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
+              backgroundColor: const Color(0xFF111111),
+              body: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _BlurredArtworkBackground(imageUrl: song.coverImageUrl),
+                  SafeArea(
+                    bottom: false,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            physics: const ClampingScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                IconButton(
-                                  tooltip: AppLocale.text('Нравится', 'Like'),
-                                  onPressed: () => _like(song),
-                                  icon: Icon(
-                                    _liked ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined,
-                                    color: Colors.white,
-                                    size: 30,
-                                  ),
-                                ),
-                                IconButton(
-                                  tooltip: AppLocale.text('Комментарии', 'Comments'),
-                                  onPressed: () => _showMessage(
-                                    context,
-                                    AppLocale.text(
-                                      'Комментарии пока недоступны',
-                                      'Comments are not available yet',
+                                _Artwork(
+                                  imageUrl: song.coverImageUrl,
+                                  onBack: () => Navigator.of(context).pop(),
+                                  onMore: () => showModalBottomSheet<void>(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.black,
+                                    builder: (_) => BottomSheetWidget(
+                                      con: con,
+                                      isNext: true,
+                                      song: SongModel(
+                                        songid: song.songid,
+                                        songname: song.songname,
+                                        userid: song.userid,
+                                        trackid: song.trackid,
+                                        duration: song.duration,
+                                        coverImageUrl: song.coverImageUrl,
+                                        name: song.name,
+                                      ),
                                     ),
                                   ),
-                                  icon: const Icon(
-                                    Icons.chat_bubble_outline,
+                                ),
+                                const SizedBox(height: 18),
+                                Text(
+                                  song.songname ?? '',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.left,
+                                  style: const TextStyle(
                                     color: Colors.white,
-                                    size: 30,
+                                    fontSize: 28,
+                                    height: 1.05,
+                                    fontWeight: FontWeight.w800,
                                   ),
                                 ),
-                                IconButton(
-                                  tooltip: AppLocale.text('Скачать', 'Download'),
-                                  onPressed: () => _download(song.trackid),
-                                  icon: const Icon(
-                                    Icons.download_rounded,
-                                    color: Colors.white,
-                                    size: 31,
+                                const SizedBox(height: 6),
+                                Text(
+                                  song.name?.isNotEmpty == true ? song.name! : 'FlowLy',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.left,
+                                  style: const TextStyle(
+                                    color: Color(0xFFC9C9C9),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      tooltip: AppLocale.text('Нравится', 'Like'),
+                                      onPressed: () => _like(song),
+                                      icon: Icon(
+                                        _liked ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined,
+                                        color: Colors.white,
+                                        size: 30,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      tooltip: AppLocale.text('Комментарии', 'Comments'),
+                                      onPressed: () => _showMessage(
+                                        context,
+                                        AppLocale.text(
+                                          'Комментарии пока недоступны',
+                                          'Comments are not available yet',
+                                        ),
+                                      ),
+                                      icon: const Icon(
+                                        Icons.chat_bubble_outline,
+                                        color: Colors.white,
+                                        size: 30,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      tooltip: AppLocale.text('Скачать', 'Download'),
+                                      onPressed: () => _download(song.trackid),
+                                      icon: const Icon(
+                                        Icons.download_rounded,
+                                        color: Colors.white,
+                                        size: 31,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                PositionSeekWidget(
+                                  currentPosition: con.position,
+                                  duration: con.duration,
+                                  seekTo: con.seek,
+                                ),
+                                const SizedBox(height: 16),
+                                _ControlRow(con: con),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            PositionSeekWidget(
-                              currentPosition: con.position,
-                              duration: con.duration,
-                              seekTo: con.seek,
-                            ),
-                            const SizedBox(height: 16),
-                            _ControlRow(con: con),
-                          ],
+                          ),
                         ),
-                      ),
+                        const _BottomTabs(),
+                      ],
                     ),
-                    const _BottomTabs(),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
@@ -225,6 +233,56 @@ class _CurrentPlayingSongState extends State<CurrentPlayingSong> {
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),
+    );
+  }
+}
+
+class _BlurredArtworkBackground extends StatelessWidget {
+  final String? imageUrl;
+
+  const _BlurredArtworkBackground({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final url = imageUrl ?? '';
+    if (url.isEmpty) {
+      return Container(color: const Color(0xFF111111));
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          child: Transform.scale(
+            scale: 1.14,
+            child: CachedNetworkImage(
+              imageUrl: url,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              errorWidget: (_, __, ___) => Container(
+                color: const Color(0xFF111111),
+              ),
+            ),
+          ),
+        ),
+        Container(
+          color: Colors.black.withValues(alpha: 0.55),
+        ),
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0x22111111),
+                Color(0x66111111),
+                Color(0x99111111),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
