@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -20,8 +19,8 @@ class ProfilePage extends StatefulWidget {
 }
 
 class ProfilePageState extends State<ProfilePage> {
-  bool settings = false;
-  bool edit = false;
+  bool _settings = false;
+  bool _editing = false;
   String? _avatarPath;
   String _displayName = 'Алекс';
 
@@ -32,10 +31,10 @@ class ProfilePageState extends State<ProfilePage> {
   }
 
   void showProfile() {
-    if (settings || edit) {
+    if (_settings || _editing) {
       setState(() {
-        settings = false;
-        edit = false;
+        _settings = false;
+        _editing = false;
       });
     }
   }
@@ -44,177 +43,210 @@ class ProfilePageState extends State<ProfilePage> {
     final box = Hive.box('profile');
     final path = box.get('avatarPath') as String?;
     final name = box.get('displayName') as String?;
-
     if (!mounted) return;
     setState(() {
       _displayName = name?.trim().isNotEmpty == true ? name!.trim() : 'Алекс';
+      _avatarPath = path;
     });
-
-    if (path != null && await File(path).exists() && mounted) {
-      setState(() => _avatarPath = path);
-    }
   }
 
-  Future<void> _pickAvatar() async {
-    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (image == null) return;
+  void _openSettings() => setState(() {
+        _settings = true;
+        _editing = false;
+      });
 
-    final dir = await getApplicationDocumentsDirectory();
-    final target = File('${dir.path}/flowly_profile_avatar.jpg');
+  void _openEditProfile() => setState(() {
+        _editing = true;
+        _settings = false;
+      });
+
+  Future<void> _saveName(String name) async {
+    final value = name.trim();
+    if (value.isEmpty) return;
+    await Hive.box('profile').put('displayName', value);
+    if (!mounted) return;
+    setState(() {
+      _displayName = value;
+      _editing = false;
+    });
+  }
+
+  Future<String?> _pickAvatar() async {
+    final image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 88,
+      maxWidth: 1200,
+    );
+    if (image == null) return null;
+
+    final directory = await getApplicationDocumentsDirectory();
+    final target = File('${directory.path}/flowly_profile_avatar.jpg');
     await File(image.path).copy(target.path);
     await Hive.box('profile').put('avatarPath', target.path);
 
-    if (mounted) setState(() => _avatarPath = target.path);
+    if (mounted) {
+      setState(() => _avatarPath = target.path);
+    }
+    return target.path;
   }
+
+  String _languageName() =>
+      AppLocale.isEnglish ? 'English' : 'Русский';
 
   @override
   Widget build(BuildContext context) {
+    if (_editing) {
+      return _EditProfilePage(
+        displayName: _displayName,
+        avatarPath: _avatarPath,
+        onBack: () => setState(() => _editing = false),
+        onSaveName: _saveName,
+        onPickAvatar: _pickAvatar,
+      );
+    }
+
+    if (_settings) {
+      return _SettingsPage(
+        languageName: _languageName(),
+        onBack: () => setState(() => _settings = false),
+        onAccount: _openEditProfile,
+        onLanguageChanged: () => setState(() {}),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: edit
-            ? _EditProfileView(
-                displayName: _displayName,
-                onBack: () => setState(() => edit = false),
-                onSaved: (name) {
-                  setState(() {
-                    _displayName = name;
-                    edit = false;
-                  });
-                  Hive.box('profile').put('displayName', name);
-                },
-              )
-            : settings
-                ? _Settings(
-                    onBack: () => setState(() => settings = false),
-                    onAccount: () => setState(() => edit = true),
-                    onLanguage: _language,
-                  )
-                : ValueListenableBuilder<Box<dynamic>>(
-                    valueListenable: Hive.box('liked').listenable(),
-                    builder: (context, _, __) {
-                      final songs = _liked();
+        child: ValueListenableBuilder<Box<dynamic>>(
+          valueListenable: Hive.box('liked').listenable(),
+          builder: (context, _, __) {
+            final songs = _likedSongs();
+            final avatar = _avatarPath;
 
-                      return ListView(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 88),
-                        children: [
-                          Row(
-                            children: [
-                              const Expanded(
-                                child: Text(
-                                  'Профиль',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 32,
-                                    height: 1,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -1.1,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () => setState(() => settings = true),
-                                icon: const Icon(
-                                  Icons.settings_outlined,
-                                  color: Color(0xFF858585),
-                                  size: 27,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 30),
-                          Center(
-                            child: CircleAvatar(
-                              radius: 58,
-                              backgroundColor: const Color(0xFF202020),
-                              backgroundImage: _avatarPath == null
-                                  ? const NetworkImage('https://i.pravatar.cc/240?img=12')
-                                  : FileImage(File(_avatarPath!)) as ImageProvider<Object>,
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          Center(
-                            child: Text(
-                              _displayName,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 34),
-                          const Divider(color: Color(0xFF292929), height: 1),
-                          const SizedBox(height: 26),
-                          _StatsRow(
-                            playlists: Hive.box('playlists').length,
-                            followers: 128,
-                            following: 56,
-                          ),
-                          const SizedBox(height: 26),
-                          const Divider(color: Color(0xFF292929), height: 1),
-                          const SizedBox(height: 26),
-                          _ImportCard(
-                            onTap: () => _showImportMessage(context),
-                          ),
-                          const SizedBox(height: 46),
-                          const Text(
-                            'Топ за месяц',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          const SizedBox(
-                            height: 205,
-                            child: _TopCards(),
-                          ),
-                          const SizedBox(height: 36),
-                          const Text(
-                            'Любимые треки',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          if (songs.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 24),
-                              child: Text(
-                                'Пока нет любимых треков',
-                                style: TextStyle(
-                                  color: Color(0xFF858585),
-                                  fontSize: 16,
-                                ),
-                              ),
-                            )
-                          else
-                            ...songs.take(5).toList().asMap().entries.map(
-                                  (entry) => _FavoriteSongRow(
-                                    index: entry.key + 1,
-                                    song: entry.value,
-                                    onTap: () => widget.con.playSong(
-                                      songs,
-                                      entry.key,
-                                    ),
-                                  ),
-                                ),
-                        ],
-                      );
-                    },
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 96),
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        AppLocale.text('Профиль', 'Profile'),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.6,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _openSettings,
+                      tooltip: AppLocale.text('Настройки', 'Settings'),
+                      icon: const Icon(
+                        Icons.settings_outlined,
+                        color: Color(0xFF8A8A8A),
+                        size: 25,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundColor: const Color(0xFF202020),
+                    backgroundImage: avatar == null
+                        ? const NetworkImage(
+                            'https://i.pravatar.cc/240?img=12',
+                          )
+                        : FileImage(File(avatar)) as ImageProvider<Object>,
                   ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: Text(
+                    _displayName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                const Divider(color: Color(0xFF292929), height: 1),
+                const SizedBox(height: 20),
+                _StatsRow(
+                  playlists: Hive.box('playlists').length,
+                  followers: 128,
+                  following: 56,
+                ),
+                const SizedBox(height: 22),
+                const Divider(color: Color(0xFF292929), height: 1),
+                const SizedBox(height: 18),
+                _ImportSettingsTile(
+                  onTap: () => _showMessage(
+                    context,
+                    AppLocale.text(
+                      'Импорт музыки скоро будет доступен',
+                      'Music import will be available soon',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Text(
+                  AppLocale.text('Топ за месяц', 'Top this month'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const SizedBox(height: 184, child: _TopCards()),
+                const SizedBox(height: 28),
+                Text(
+                  AppLocale.text('Любимые треки', 'Liked songs'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (songs.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      AppLocale.text(
+                        'Пока нет любимых треков',
+                        'No liked songs yet',
+                      ),
+                      style: const TextStyle(color: Color(0xFF858585)),
+                    ),
+                  )
+                else
+                  ...songs.take(5).toList().asMap().entries.map(
+                        (entry) => _FavoriteSongRow(
+                          index: entry.key + 1,
+                          song: entry.value,
+                          onTap: () => widget.con.playSong(
+                            songs,
+                            entry.key,
+                          ),
+                        ),
+                      ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
-  List<SongModel> _liked() {
+  List<SongModel> _likedSongs() {
     final box = Hive.box('liked');
     final result = <SongModel>[];
-
     for (var i = 0; i < box.length; i++) {
       final value = box.getAt(i);
       if (value is Map) {
@@ -231,23 +263,539 @@ class ProfilePageState extends State<ProfilePage> {
         );
       }
     }
-
     return result;
   }
 
-  void _language() {
-    final current = AppLocale.language.value;
-    AppLocale.setLanguage(current == 'ru' ? 'en' : 'ru');
-    setState(() {});
+  void _showMessage(BuildContext context, String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
+    );
+  }
+}
+
+class _EditProfilePage extends StatefulWidget {
+  final String displayName;
+  final String? avatarPath;
+  final VoidCallback onBack;
+  final ValueChanged<String> onSaveName;
+  final Future<String?> Function() onPickAvatar;
+
+  const _EditProfilePage({
+    required this.displayName,
+    required this.avatarPath,
+    required this.onBack,
+    required this.onSaveName,
+    required this.onPickAvatar,
+  });
+
+  @override
+  State<_EditProfilePage> createState() => _EditProfilePageState();
+}
+
+class _EditProfilePageState extends State<_EditProfilePage> {
+  late final TextEditingController _nameController;
+  String? _avatarPath;
+  bool _savingAvatar = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.displayName);
+    _avatarPath = widget.avatarPath;
   }
 
-  void _showImportMessage(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocale.text(
-            'Импорт музыки скоро будет доступен',
-            'Music import will be available soon',
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changeAvatar() async {
+    setState(() => _savingAvatar = true);
+    final path = await widget.onPickAvatar();
+    if (mounted) {
+      setState(() {
+        _avatarPath = path;
+        _savingAvatar = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAvatar = _avatarPath?.isNotEmpty == true;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  onPressed: widget.onBack,
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  AppLocale.text('Аккаунт', 'Account'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 25,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: GestureDetector(
+                onTap: _savingAvatar ? null : _changeAvatar,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 62,
+                      backgroundColor: const Color(0xFF202020),
+                      backgroundImage: hasAvatar
+                          ? FileImage(File(_avatarPath!))
+                              as ImageProvider<Object>
+                          : const NetworkImage(
+                              'https://i.pravatar.cc/240?img=12',
+                            ),
+                      child: _savingAvatar
+                          ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.edit_outlined,
+                          color: Colors.black,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 28),
+            TextField(
+              controller: _nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: AppLocale.text('Имя', 'Name'),
+                labelStyle: const TextStyle(color: Color(0xFF858585)),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Color(0xFF292929)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            FilledButton(
+              onPressed: () => widget.onSaveName(_nameController.text),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                minimumSize: const Size.fromHeight(50),
+              ),
+              child: Text(AppLocale.text('Сохранить', 'Save')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsPage extends StatelessWidget {
+  final String languageName;
+  final VoidCallback onBack;
+  final VoidCallback onAccount;
+  final VoidCallback onLanguageChanged;
+
+  const _SettingsPage({
+    required this.languageName,
+    required this.onBack,
+    required this.onAccount,
+    required this.onLanguageChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  onPressed: onBack,
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  AppLocale.text('Настройки', 'Settings'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 25,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 26),
+            _SettingsGroup(
+              label: AppLocale.text('АККАУНТ', 'ACCOUNT'),
+              rows: [
+                _SettingsRow(
+                  icon: Icons.person_outline,
+                  title: AppLocale.text('Аккаунт', 'Account'),
+                  subtitle: AppLocale.text(
+                    'Профиль, подписка, данные',
+                    'Profile, subscription, data',
+                  ),
+                  onTap: onAccount,
+                ),
+                _SettingsRow(
+                  icon: Icons.shield_outlined,
+                  title: AppLocale.text('Безопасность', 'Security'),
+                  subtitle: AppLocale.text('Пароль, 2FA', 'Password, 2FA'),
+                ),
+                _SettingsRow(
+                  icon: Icons.credit_card_outlined,
+                  title: AppLocale.text('Платежи', 'Payments'),
+                  subtitle: AppLocale.text(
+                    'Способы оплаты, история',
+                    'Payment methods, history',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            _SettingsGroup(
+              label: AppLocale.text('ПРИЛОЖЕНИЕ', 'APP'),
+              rows: [
+                _SettingsRow(
+                  icon: Icons.play_arrow_outlined,
+                  title: AppLocale.text('Воспроизведение', 'Playback'),
+                  subtitle: AppLocale.text(
+                    'Качество звука, кроссфейд, EQ',
+                    'Audio quality, crossfade, EQ',
+                  ),
+                ),
+                _SettingsRow(
+                  icon: Icons.download_outlined,
+                  title: AppLocale.text('Скачивание', 'Downloads'),
+                  subtitle: AppLocale.text(
+                    'Папка и параметры загрузки',
+                    'Folder and download options',
+                  ),
+                  onTap: () => _openDownloadSettings(context),
+                ),
+                _SettingsRow(
+                  icon: Icons.notifications_none,
+                  title: AppLocale.text('Уведомления', 'Notifications'),
+                  subtitle: AppLocale.text(
+                    'Музыка и обновления',
+                    'Music and updates',
+                  ),
+                ),
+                _SettingsRow(
+                  icon: Icons.palette_outlined,
+                  title: AppLocale.text('Внешний вид', 'Appearance'),
+                  subtitle: AppLocale.text('Тема, цвета, стиль', 'Theme, colors, style'),
+                ),
+                _SettingsRow(
+                  icon: Icons.text_fields_outlined,
+                  title: AppLocale.text('Текст', 'Text'),
+                  subtitle: AppLocale.text(
+                    'Отображение текстов песен',
+                    'Lyrics display',
+                  ),
+                ),
+                _SettingsRow(
+                  icon: Icons.bolt_outlined,
+                  title: AppLocale.text('Быстрые действия', 'Quick actions'),
+                  subtitle: AppLocale.text(
+                    'Жесты и горячие клавиши',
+                    'Gestures and shortcuts',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            _SettingsGroup(
+              label: AppLocale.text('ДРУГОЕ', 'OTHER'),
+              rows: [
+                _SettingsRow(
+                  icon: Icons.language_outlined,
+                  title: AppLocale.text('Язык', 'Language'),
+                  subtitle: languageName,
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => _LanguagePage(
+                          onChanged: onLanguageChanged,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                _SettingsRow(
+                  icon: Icons.system_update_outlined,
+                  title: AppLocale.text('Обновления', 'Updates'),
+                  subtitle: AppLocale.text(
+                    'Проверка и обновления приложения',
+                    'Check for app updates',
+                  ),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const _UpdatesPage(),
+                    ),
+                  ),
+                ),
+                _SettingsRow(
+                  icon: Icons.info_outline,
+                  title: AppLocale.text('О приложении', 'About'),
+                  subtitle: AppLocale.text(
+                    'Версия, лицензия',
+                    'Version, licenses',
+                  ),
+                ),
+                _SettingsRow(
+                  icon: Icons.headset_mic_outlined,
+                  title: AppLocale.text('Поддержка', 'Support'),
+                  subtitle: AppLocale.text(
+                    'Помощь и обратная связь',
+                    'Help and feedback',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            _SettingsGroup(
+              rows: [
+                _SettingsRow(
+                  icon: Icons.logout_outlined,
+                  title: AppLocale.text('Выйти из аккаунта', 'Sign out'),
+                  subtitle: '',
+                  danger: true,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openDownloadSettings(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const _DownloadSettingsPage(),
+      ),
+    );
+  }
+}
+
+class _SettingsGroup extends StatelessWidget {
+  final String? label;
+  final List<_SettingsRow> rows;
+
+  const _SettingsGroup({this.label, required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (label != null) ...[
+          Padding(
+            padding: const EdgeInsets.only(left: 5, bottom: 8),
+            child: Text(
+              label!,
+              style: const TextStyle(
+                color: Color(0xFF858585),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: .4,
+              ),
+            ),
+          ),
+        ],
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: const Color(0xFF101010),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF292929)),
+          ),
+          child: Column(children: rows),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+  final bool danger;
+
+  const _SettingsRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+    this.danger = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 68),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Color(0xFF202020))),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: danger ? const Color(0xFF2A1111) : Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: danger ? const Color(0xFFB52B2B) : Colors.black,
+                size: 21,
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: danger ? const Color(0xFFB52B2B) : Colors.white,
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF858585),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (onTap != null)
+              const Icon(
+                Icons.chevron_right,
+                color: Color(0xFF858585),
+                size: 21,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguagePage extends StatefulWidget {
+  final VoidCallback onChanged;
+
+  const _LanguagePage({required this.onChanged});
+
+  @override
+  State<_LanguagePage> createState() => _LanguagePageState();
+}
+
+class _LanguagePageState extends State<_LanguagePage> {
+  String _selected = AppLocale.language.value;
+
+  Future<void> _setLanguage(String value) async {
+    setState(() => _selected = value);
+    await AppLocale.setLanguage(value);
+    widget.onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(AppLocale.text('Язык', 'Language')),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF101010),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF292929)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _LanguageTile(
+                title: 'Русский',
+                value: 'ru',
+                selected: _selected == 'ru',
+                onTap: _setLanguage,
+              ),
+              _LanguageTile(
+                title: 'English',
+                value: 'en',
+                selected: _selected == 'en',
+                onTap: _setLanguage,
+              ),
+            ],
           ),
         ),
       ),
@@ -255,360 +803,168 @@ class ProfilePageState extends State<ProfilePage> {
   }
 }
 
-class _EditProfileView extends StatefulWidget {
-  final String displayName;
-  final VoidCallback onBack;
-  final ValueChanged<String> onSaved;
+class _LanguageTile extends StatelessWidget {
+  final String title;
+  final String value;
+  final bool selected;
+  final ValueChanged<String> onTap;
 
-  const _EditProfileView({
-    required this.displayName,
-    required this.onBack,
-    required this.onSaved,
-  });
-
-  @override
-  State<_EditProfileView> createState() => _EditProfileViewState();
-}
-
-class _EditProfileViewState extends State<_EditProfileView> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.displayName);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
-      children: [
-        Row(
-          children: [
-            IconButton(
-              onPressed: widget.onBack,
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Аккаунт',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 26),
-        TextField(
-          controller: _controller,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Имя',
-            labelStyle: const TextStyle(color: Colors.grey),
-            enabledBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: Color(0xFF292929)),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: Colors.white),
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-        ),
-        const SizedBox(height: 18),
-        FilledButton(
-          onPressed: () {
-            final name = _controller.text.trim();
-            if (name.isNotEmpty) widget.onSaved(name);
-          },
-          style: FilledButton.styleFrom(backgroundColor: Colors.white),
-          child: const Text(
-            'Сохранить',
-            style: TextStyle(color: Colors.black),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _Settings extends StatelessWidget {
-  final VoidCallback onBack;
-  final VoidCallback onAccount;
-  final VoidCallback onLanguage;
-
-  const _Settings({
-    required this.onBack,
-    required this.onAccount,
-    required this.onLanguage,
+  const _LanguageTile({
+    required this.title,
+    required this.value,
+    required this.selected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final language = AppLocale.language.value == 'ru' ? 'Русский' : 'English';
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
-      children: [
-        Row(
+    return InkWell(
+      onTap: () => onTap(value),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Row(
           children: [
-            IconButton(
-              onPressed: onBack,
-              icon: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white,
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
               ),
             ),
-            const SizedBox(width: 8),
-            const Text(
-              'Настройки',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-              ),
+            Radio<String>(
+              value: value,
+              groupValue: selected ? value : null,
+              onChanged: (_) => onTap(value),
+              activeColor: Colors.white,
             ),
           ],
         ),
-        const SizedBox(height: 28),
-        const _SettingsLabel('АККАУНТ'),
-        const SizedBox(height: 8),
-        _SettingsCard(
-          rows: [
-            _SettingsRowData(
-              Icons.person_outline,
-              'Аккаунт',
-              'Профиль, подписка, данные',
-              onTap: onAccount,
-            ),
-            const _SettingsRowData(
-              Icons.shield_outlined,
-              'Безопасность',
-              'Пароль, 2FA',
-            ),
-            const _SettingsRowData(
-              Icons.credit_card_outlined,
-              'Платежи',
-              'Способы оплаты, история',
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        const _SettingsLabel('ПРИЛОЖЕНИЕ'),
-        const SizedBox(height: 8),
-        const _SettingsCard(
-          rows: [
-            _SettingsRowData(
-              Icons.play_arrow_outlined,
-              'Воспроизведение',
-              'Качество звука, кроссфейд, EQ',
-            ),
-            _SettingsRowData(
-              Icons.download_outlined,
-              'Скачивание',
-              'Загрузка и хранилище',
-            ),
-            _SettingsRowData(
-              Icons.notifications_none,
-              'Уведомления',
-              'Только важные',
-            ),
-            _SettingsRowData(
-              Icons.palette_outlined,
-              'Внешний вид',
-              'Тема, цвета, стиль',
-            ),
-            _SettingsRowData(
-              Icons.text_fields_outlined,
-              'Текст',
-              'Отображение текстов песен',
-            ),
-            _SettingsRowData(
-              Icons.bolt_outlined,
-              'Быстрые действия',
-              'Жесты и горячие клавиши',
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        const _SettingsLabel('ДРУГОЕ'),
-        const SizedBox(height: 8),
-        _SettingsCard(
-          rows: [
-            _SettingsRowData(
-              Icons.language_outlined,
-              'Язык',
-              language,
-              onTap: onLanguage,
-            ),
-            const _SettingsRowData(
-              Icons.info_outline,
-              'О приложении',
-              'Версия, лицензия',
-            ),
-            const _SettingsRowData(
-              Icons.support_outlined,
-              'Поддержка',
-              'Помощь и обратная связь',
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        const _SettingsCard(
-          logout: true,
-          rows: [
-            _SettingsRowData(
-              Icons.logout_outlined,
-              'Выйти из аккаунта',
-              '',
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _SettingsLabel extends StatelessWidget {
-  final String text;
-
-  const _SettingsLabel(this.text);
+class _DownloadSettingsPage extends StatelessWidget {
+  const _DownloadSettingsPage();
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(left: 6),
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Color(0xFF8A8A8A),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            letterSpacing: .3,
+  Widget build(BuildContext context) {
+    final path = Hive.box('profile').get('downloadDirectory') as String?;
+    final location = path == null
+        ? AppLocale.text('Память приложения', 'App storage')
+        : path;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(AppLocale.text('Скачивание', 'Downloads')),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _SettingsRow(
+            icon: Icons.folder_outlined,
+            title: AppLocale.text('Папка', 'Folder'),
+            subtitle: location,
           ),
-        ),
-      );
+          const SizedBox(height: 10),
+          _SettingsRow(
+            icon: Icons.wifi_outlined,
+            title: AppLocale.text('Только Wi-Fi', 'Wi-Fi only'),
+            subtitle: AppLocale.text(
+              'Подключение к загрузочному API будет включено позже',
+              'Download API will be enabled later',
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            AppLocale.text(
+              'Скачивание пока заморожено: серверного API ещё нет. Никакие ссылки на сайт не открываются.',
+              'Downloads are temporarily frozen: the server API is not ready yet. No website links are opened.',
+            ),
+            style: const TextStyle(
+              color: Color(0xFF858585),
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _SettingsCard extends StatelessWidget {
-  final List<_SettingsRowData> rows;
-  final bool logout;
+class _UpdatesPage extends StatelessWidget {
+  const _UpdatesPage();
 
-  const _SettingsCard({
-    required this.rows,
-    this.logout = false,
-  });
+  static const currentVersion = '1.0.7+8';
 
   @override
-  Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF101010),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF292929)),
-        ),
-        clipBehavior: Clip.antiAlias,
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(AppLocale.text('Обновления', 'Updates')),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final row in rows)
-              InkWell(
-                onTap: row.onTap,
-                child: Container(
-                  constraints: const BoxConstraints(minHeight: 70),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Color(0xFF202020)),
+            Text(
+              AppLocale.text('Текущая версия', 'Current version'),
+              style: const TextStyle(color: Color(0xFF858585)),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              currentVersion,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 22),
+            FilledButton.icon(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      AppLocale.text(
+                        'Проверка обновлений будет подключена через API',
+                        'Update checks will be connected through the API',
+                      ),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: logout
-                              ? const Color(0xFF2A1111)
-                              : Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          row.icon,
-                          color: logout
-                              ? const Color(0xFFB52B2B)
-                              : Colors.black,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              row.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: logout
-                                    ? const Color(0xFFB52B2B)
-                                    : Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            if (row.subtitle.isNotEmpty)
-                              Text(
-                                row.subtitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFF858585),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      if (!logout)
-                        const Icon(
-                          Icons.chevron_right,
-                          color: Color(0xFF858585),
-                          size: 22,
-                        ),
-                    ],
-                  ),
-                ),
+                );
+              },
+              icon: const Icon(Icons.refresh),
+              label: Text(
+                AppLocale.text('Проверить обновления', 'Check for updates'),
               ),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              AppLocale.text(
+                'Когда сервер обновлений будет готов, здесь появятся changelog, уведомление о новой версии и безопасная установка обновления.',
+                'When the update server is ready, this screen will show changelog, new-version notifications and safe update installation.',
+              ),
+              style: const TextStyle(
+                color: Color(0xFF858585),
+                height: 1.4,
+              ),
+            ),
           ],
         ),
-      );
-}
-
-class _SettingsRowData {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
-
-  const _SettingsRowData(
-    this.icon,
-    this.title,
-    this.subtitle, {
-    this.onTap,
-  });
+      ),
+    );
+  }
 }
 
 class _StatsRow extends StatelessWidget {
@@ -626,9 +982,9 @@ class _StatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _Stat(value: playlists.toString(), label: 'Плейлисты'),
-        _Stat(value: followers.toString(), label: 'Подписчики'),
-        _Stat(value: following.toString(), label: 'Подписки'),
+        _Stat(playlists.toString(), AppLocale.text('Плейлисты', 'Playlists')),
+        _Stat(followers.toString(), AppLocale.text('Подписчики', 'Followers')),
+        _Stat(following.toString(), AppLocale.text('Подписки', 'Following')),
       ],
     );
   }
@@ -638,7 +994,7 @@ class _Stat extends StatelessWidget {
   final String value;
   final String label;
 
-  const _Stat({required this.value, required this.label});
+  const _Stat(this.value, this.label);
 
   @override
   Widget build(BuildContext context) {
@@ -649,16 +1005,16 @@ class _Stat extends StatelessWidget {
             value,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 28,
+              fontSize: 23,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             label,
             style: const TextStyle(
               color: Color(0xFF858585),
-              fontSize: 15,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -668,78 +1024,25 @@ class _Stat extends StatelessWidget {
   }
 }
 
-class _ImportCard extends StatelessWidget {
+class _ImportSettingsTile extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _ImportCard({required this.onTap});
+  const _ImportSettingsTile({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFF101010),
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          height: 128,
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF292929)),
+    return _SettingsGroup(
+      rows: [
+        _SettingsRow(
+          icon: Icons.library_music_outlined,
+          title: AppLocale.text('Импорт музыки', 'Import music'),
+          subtitle: AppLocale.text(
+            'Перенести музыку из другого сервиса',
+            'Move music from another service',
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.download_outlined,
-                  color: Colors.black,
-                  size: 31,
-                ),
-              ),
-              const SizedBox(width: 20),
-              const Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Импорт музыки',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Перенести из другого сервиса',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Color(0xFF858585),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right,
-                color: Color(0xFF858585),
-                size: 30,
-              ),
-            ],
-          ),
+          onTap: onTap,
         ),
-      ),
+      ],
     );
   }
 }
@@ -747,32 +1050,41 @@ class _ImportCard extends StatelessWidget {
 class _TopCards extends StatelessWidget {
   const _TopCards();
 
-  static const _items = [
-    ('Chill Vibes', 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600'),
-    ('Night Drive', 'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=600'),
-    ('Focus', 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600'),
+  static const items = [
+    (
+      'Chill Vibes',
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600'
+    ),
+    (
+      'Night Drive',
+      'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=600'
+    ),
+    (
+      'Focus',
+      'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600'
+    ),
   ];
 
   @override
   Widget build(BuildContext context) => ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 18),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 14),
         itemBuilder: (context, index) => SizedBox(
-          width: 226,
+          width: 190,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(14),
                 child: Image.network(
-                  _items[index].$2,
-                  width: 226,
-                  height: 160,
+                  items[index].$2,
+                  width: 190,
+                  height: 138,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
-                    width: 226,
-                    height: 160,
+                    width: 190,
+                    height: 138,
                     color: const Color(0xFF1C1C1C),
                     child: const Icon(
                       Icons.music_note,
@@ -781,14 +1093,14 @@ class _TopCards extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 7),
               Text(
-                _items[index].$1,
+                items[index].$1,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -815,24 +1127,24 @@ class _FavoriteSongRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 7),
         child: Row(
           children: [
             SizedBox(
-              width: 32,
+              width: 28,
               child: Text(
                 '$index',
                 style: const TextStyle(
                   color: Color(0xFF858585),
-                  fontSize: 17,
+                  fontSize: 15,
                 ),
               ),
             ),
             ClipRRect(
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(12),
               child: SizedBox(
-                width: 78,
-                height: 78,
+                width: 64,
+                height: 64,
                 child: song.coverImageUrl?.isNotEmpty == true
                     ? Image.network(
                         song.coverImageUrl!,
@@ -842,18 +1154,18 @@ class _FavoriteSongRow extends StatelessWidget {
                     : const _SongPlaceholder(),
               ),
             ),
-            const SizedBox(width: 18),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    song.songname ?? 'Без названия',
+                    song.songname ?? AppLocale.text('Без названия', 'Untitled'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 17,
+                      fontSize: 15,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -864,8 +1176,7 @@ class _FavoriteSongRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xFF858585),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
                     ),
                   ),
                 ],
@@ -888,7 +1199,7 @@ class _SongPlaceholder extends StatelessWidget {
       child: const Icon(
         Icons.music_note,
         color: Color(0xFF777777),
-        size: 28,
+        size: 24,
       ),
     );
   }
