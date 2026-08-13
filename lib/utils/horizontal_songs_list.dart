@@ -8,29 +8,18 @@ import '../models/user.dart';
 import '../screens/artist_profile/artist_profile.dart';
 import '../screens/current_playing/current_playing_song.dart';
 import 'loading.dart';
-
 import 'botttom_sheet_widget.dart';
 
 class HorizontalSongList extends StatelessWidget {
   final List<SongModel> songs;
   final MainController con;
-  const HorizontalSongList({
-    Key? key,
-    required this.songs,
-    required this.con,
-  }) : super(key: key);
+  const HorizontalSongList({super.key, required this.songs, required this.con});
 
   Future<void> _openPlayer(BuildContext context, int index) async {
     try {
       await con.playSong(con.convertToAudio(songs), index);
       if (!context.mounted) return;
-      await showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.black,
-        useSafeArea: true,
-        builder: (_) => CurrentPlayingSong(con: con),
-      );
+      await PlayerRoute.open(context, con);
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -42,65 +31,58 @@ class HorizontalSongList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final devicePexelRatio = MediaQuery.of(context).devicePixelRatio;
-
     return SizedBox(
       height: 210,
       child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: songs.length,
-          itemBuilder: (context, i) {
-            final song = songs[i];
-            return InkWell(
-              onTap: () => _openPlayer(context, i),
-              onLongPress: () {
-                showModalBottomSheet(
-                    useRootNavigator: true,
-                    isScrollControlled: true,
-                    elevation: 100,
-                    backgroundColor: Colors.black38,
-                    context: context,
-                    builder: (context) {
-                      return BottomSheetWidget(con: con, song: song);
-                    });
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: SizedBox(
-                  width: 150,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(5),
-                        child: CachedNetworkImage(
-                          imageUrl: song.coverImageUrl ?? '',
-                          width: 150,
-                          height: 150,
-                          maxHeightDiskCache: (200 * devicePexelRatio).round(),
-                          maxWidthDiskCache: (200 * devicePexelRatio).round(),
-                          memCacheHeight: (200 * devicePexelRatio).round(),
-                          memCacheWidth: (200 * devicePexelRatio).round(),
-                          progressIndicatorBuilder: (context, url, l) =>
-                              const LoadingImage(size: 80),
-                          fit: BoxFit.cover,
-                        ),
+        scrollDirection: Axis.horizontal,
+        itemCount: songs.length,
+        itemBuilder: (context, i) {
+          final song = songs[i];
+          return InkWell(
+            onTap: () => _openPlayer(context, i),
+            onLongPress: () => showModalBottomSheet(
+              useRootNavigator: true,
+              isScrollControlled: true,
+              elevation: 100,
+              backgroundColor: Colors.black38,
+              context: context,
+              builder: (_) => BottomSheetWidget(con: con, song: song),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SizedBox(
+                width: 150,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(5),
+                      child: CachedNetworkImage(
+                        imageUrl: song.coverImageUrl ?? '',
+                        width: 150,
+                        height: 150,
+                        maxHeightDiskCache: (200 * devicePexelRatio).round(),
+                        maxWidthDiskCache: (200 * devicePexelRatio).round(),
+                        memCacheHeight: (200 * devicePexelRatio).round(),
+                        memCacheWidth: (200 * devicePexelRatio).round(),
+                        progressIndicatorBuilder: (context, url, l) => const LoadingImage(size: 80),
+                        fit: BoxFit.cover,
                       ),
-                      const SizedBox(height: 7),
-                      Text(
-                        song.songname ?? '',
-                        maxLines: 2,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyLarge!
-                            .copyWith(color: Colors.grey),
-                      )
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      song.songname ?? '',
+                      maxLines: 2,
+                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: Colors.grey),
+                    ),
+                  ],
                 ),
               ),
-            );
-          }),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -108,74 +90,62 @@ class HorizontalSongList extends StatelessWidget {
 class HorizontalArtistList extends StatelessWidget {
   final List<User> users;
   final MainController con;
-  const HorizontalArtistList({
-    Key? key,
-    required this.users,
-    required this.con,
-  }) : super(key: key);
+  const HorizontalArtistList({super.key, required this.users, required this.con});
 
   @override
   Widget build(BuildContext context) {
     final devicePexelRatio = MediaQuery.of(context).devicePixelRatio;
-
     return SizedBox(
       height: 210,
       child: ListView.builder(
-          itemCount: users.length,
-          scrollDirection: Axis.horizontal,
-          itemBuilder: (context, i) {
-            final user = users[i];
-            return InkWell(
-              onTap: () {
-                Navigator.push(
-                    context,
-                    CupertinoPageRoute(
-                        builder: (context) =>
-                            ArtistProfile(username: user.username!, con: con)));
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: SizedBox(
-                  width: 150,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ClipOval(
-                        child: CachedNetworkImage(
-                          imageUrl: user.avatar ?? '',
-                          width: 150,
-                          height: 150,
-                          maxHeightDiskCache: (200 * devicePexelRatio).round(),
-                          maxWidthDiskCache: (200 * devicePexelRatio).round(),
-                          memCacheHeight: (200 * devicePexelRatio).round(),
-                          memCacheWidth: (200 * devicePexelRatio).round(),
-                          progressIndicatorBuilder: (context, url, l) =>
-                              const LoadingImage(
-                            size: 80,
-                            icon: Icon(
-                              LineIcons.user,
-                              size: 80,
-                            ),
-                          ),
-                          fit: BoxFit.cover,
+        itemCount: users.length,
+        scrollDirection: Axis.horizontal,
+        itemBuilder: (context, i) {
+          final user = users[i];
+          return InkWell(
+            onTap: () => Navigator.push(
+              context,
+              CupertinoPageRoute(
+                builder: (context) => ArtistProfile(username: user.username!, con: con),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SizedBox(
+                width: 150,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipOval(
+                      child: CachedNetworkImage(
+                        imageUrl: user.avatar ?? '',
+                        width: 150,
+                        height: 150,
+                        maxHeightDiskCache: (200 * devicePexelRatio).round(),
+                        maxWidthDiskCache: (200 * devicePexelRatio).round(),
+                        memCacheHeight: (200 * devicePexelRatio).round(),
+                        memCacheWidth: (200 * devicePexelRatio).round(),
+                        progressIndicatorBuilder: (context, url, l) => const LoadingImage(
+                          size: 80,
+                          icon: Icon(LineIcons.user, size: 80),
                         ),
+                        fit: BoxFit.cover,
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        user.name ?? '',
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyLarge!
-                            .copyWith(color: Colors.grey),
-                      )
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      user.name ?? '',
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: Colors.grey),
+                    ),
+                  ],
                 ),
               ),
-            );
-          }),
+            ),
+          );
+        },
+      ),
     );
   }
 }
