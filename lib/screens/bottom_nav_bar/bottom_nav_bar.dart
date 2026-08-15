@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flowly/utils/bottom_nav_bar/persistent-tab-view.dart';
 
 import '../../controllers/main_controller.dart';
+import '../../services/settings_service.dart';
 import '../../utils/bottom_nav_bar/persistent-tab-view.widget.dart';
 import '../../utils/bottom_play_widget.dart';
 import '../current_playing/current_playing_song.dart';
@@ -25,6 +26,7 @@ class _AppState extends State<App> {
       PersistentTabController(initialIndex: 0);
   final GlobalKey<ProfilePageState> _profileKey =
       GlobalKey<ProfilePageState>();
+  double? _horizontalDragStartX;
 
   List<PersistentBottomNavBarItem> _navBarsItems() {
     return [
@@ -68,6 +70,29 @@ class _AppState extends State<App> {
     return PlayerRoute.open(context, con);
   }
 
+  void _handleMainMenuSwipeEnd(DragEndDetails details) {
+    if (!SettingsService.swipeNavigationEnabled) return;
+    final velocity = details.primaryVelocity;
+    if (velocity == null || velocity.abs() < 260) return;
+
+    final current = controller.index;
+    final nextIndex = velocity < 0
+        ? (current + 1) % 4
+        : (current - 1 + 4) % 4;
+    controller.jumpToTab(nextIndex);
+    if (nextIndex == 3) {
+      _profileKey.currentState?.showProfile();
+    }
+  }
+
+  void _handleMainMenuSwipeStart(DragStartDetails details) {
+    _horizontalDragStartX = details.globalPosition.dx;
+  }
+
+  void _handleMainMenuSwipeUpdate(DragUpdateDetails details) {
+    _horizontalDragStartX ??= details.globalPosition.dx;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -77,35 +102,44 @@ class _AppState extends State<App> {
           return ValueListenableBuilder<bool>(
             valueListenable: PlayerRoute.isOpenNotifier,
             builder: (context, playerOpen, _) {
-              return PersistentTabView(
-                context,
-                controller: controller,
-                playWidget: playerOpen
-                    ? const SizedBox.shrink()
-                    : Material(
-                        color: Colors.black,
-                        child: PlayWidget(
-                          con: con,
-                          onTap: () => _openPlayer(con),
-                        ),
-                      ),
-                screens: _buildScreens(con),
-                items: _navBarsItems(),
-                onItemSelected: (index) {
-                  if (index == 3) {
-                    _profileKey.currentState?.showProfile();
-                  }
+              return GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragStart: _handleMainMenuSwipeStart,
+                onHorizontalDragUpdate: _handleMainMenuSwipeUpdate,
+                onHorizontalDragEnd: (details) {
+                  _handleMainMenuSwipeEnd(details);
+                  _horizontalDragStartX = null;
                 },
-                confineInSafeArea: true,
-                backgroundColor: Colors.black,
-                handleAndroidBackButtonPress: true,
-                hideNavigationBarWhenKeyboardShows: true,
-                resizeToAvoidBottomInset: true,
-                popAllScreensOnTapOfSelectedTab: true,
-                popActionScreens: PopActionScreensType.all,
-                navBarStyle: NavBarStyle.simple,
-                navBarHeight: 64,
-                padding: const NavBarPadding.all(0),
+                child: PersistentTabView(
+                  context,
+                  controller: controller,
+                  playWidget: playerOpen
+                      ? const SizedBox.shrink()
+                      : Material(
+                          color: Colors.black,
+                          child: PlayWidget(
+                            con: con,
+                            onTap: () => _openPlayer(con),
+                          ),
+                        ),
+                  screens: _buildScreens(con),
+                  items: _navBarsItems(),
+                  onItemSelected: (index) {
+                    if (index == 3) {
+                      _profileKey.currentState?.showProfile();
+                    }
+                  },
+                  confineInSafeArea: true,
+                  backgroundColor: Colors.black,
+                  handleAndroidBackButtonPress: true,
+                  hideNavigationBarWhenKeyboardShows: true,
+                  resizeToAvoidBottomInset: true,
+                  popAllScreensOnTapOfSelectedTab: true,
+                  popActionScreens: PopActionScreensType.all,
+                  navBarStyle: NavBarStyle.simple,
+                  navBarHeight: 64,
+                  padding: const NavBarPadding.all(0),
+                ),
               );
             },
           );
