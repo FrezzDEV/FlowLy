@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:flowly/screens/bottom_nav_bar/bottom_nav_bar.dart';
 
+import 'services/crash_reporting_service.dart';
 import 'utils/app_locale.dart';
 
 Future<void> main() async {
+  await CrashReportingService.run(_bootstrap);
+}
+
+Future<void> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
   await JustAudioBackground.init(
     androidNotificationChannelId: 'com.flowly.audio.playback',
@@ -23,6 +29,7 @@ Future<void> main() async {
   await Hive.openBox('playlists');
   await Hive.openBox('profile');
   await Hive.openBox('downloads');
+  await Hive.openBox('app_settings');
   await AppLocale.init();
   runApp(const MyApp());
 }
@@ -38,6 +45,15 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'FlowLy',
           locale: Locale(language),
+          supportedLocales: const [
+            Locale('ru'),
+            Locale('en'),
+          ],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             fontFamily: 'Proxima',
