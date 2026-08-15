@@ -6,6 +6,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'package:flowly/screens/bottom_nav_bar/bottom_nav_bar.dart';
 
 import 'services/crash_reporting_service.dart';
+import 'services/settings_service.dart';
 import 'utils/app_locale.dart';
 
 Future<void> main() async {
@@ -21,7 +22,7 @@ Future<void> _bootstrap() async {
     androidNotificationOngoing: true,
   );
 
-  var dir = await getApplicationDocumentsDirectory();
+  final dir = await getApplicationDocumentsDirectory();
   await Hive.initFlutter(dir.path);
   await Hive.openBox('liked');
   await Hive.openBox('Recentsearch');
@@ -30,6 +31,7 @@ Future<void> _bootstrap() async {
   await Hive.openBox('profile');
   await Hive.openBox('downloads');
   await Hive.openBox('app_settings');
+  await SettingsService.init();
   await AppLocale.init();
   runApp(const MyApp());
 }
@@ -90,11 +92,14 @@ class MyApp extends StatelessWidget {
             ),
           ),
           builder: (context, child) {
+            final mediaQuery = MediaQuery.of(context);
             return MediaQuery(
-              data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+              data: mediaQuery.copyWith(
+                textScaler: const TextScaler.linear(1.0),
+              ),
               child: ScrollConfiguration(
-                behavior: NoGlowBehavior(),
-                child: child!,
+                behavior: const ScrollBehavior().copyWith(overscroll: false),
+                child: child ?? const SizedBox.shrink(),
               ),
             );
           },
@@ -102,16 +107,5 @@ class MyApp extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-class NoGlowBehavior extends ScrollBehavior {
-  @override
-  Widget buildViewportChrome(
-    BuildContext context,
-    Widget child,
-    AxisDirection axisDirection,
-  ) {
-    return child;
   }
 }
