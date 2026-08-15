@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../controllers/main_controller.dart';
 import '../../models/song_model.dart';
 import '../../utils/app_locale.dart';
+import 'settings_pages.dart';
 
 class ProfilePage extends StatefulWidget {
   final MainController con;
@@ -504,7 +505,7 @@ class _SettingsPage extends StatelessWidget {
                   icon: Icons.play_circle_outline,
                   title: AppLocale.text('Воспроизведение', 'Playback'),
                   subtitle: AppLocale.text('Качество, повтор, crossfade, EQ', 'Quality, repeat, crossfade, EQ'),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const _PlaybackSettingsPage())),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PlaybackSettingsPage())),
                 ),
                 _SettingsRow(
                   icon: Icons.file_download_outlined,
@@ -519,13 +520,12 @@ class _SettingsPage extends StatelessWidget {
                   icon: Icons.notifications_none_outlined,
                   title: AppLocale.text('Уведомления', 'Notifications'),
                   subtitle: AppLocale.text('Музыка, загрузки и обновления', 'Music, downloads and updates'),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const _NotificationSettingsPage())),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const NotificationSettingsPage())),
                 ),
                 _SettingsRow(
                   icon: Icons.palette_outlined,
                   title: AppLocale.text('Внешний вид', 'Appearance'),
                   subtitle: AppLocale.text('Тема, цвета, стиль', 'Theme, colors, style'),
-                ),
                 ),
                 _SettingsRow(
                   icon: Icons.bolt_outlined,
@@ -580,7 +580,7 @@ class _SettingsPage extends StatelessWidget {
                   icon: Icons.support_agent_outlined,
                   title: AppLocale.text('Поддержка', 'Support'),
                   subtitle: AppLocale.text('Помощь и обратная связь', 'Help and feedback'),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const _SupportSettingsPage())),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SupportSettingsPage())),
                 ),
               ],
             ),
