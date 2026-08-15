@@ -4,7 +4,9 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:flowly/screens/bottom_nav_bar/bottom_nav_bar.dart';
+import 'package:flowly/screens/welcome/welcome_page.dart';
 
+import 'controllers/main_controller.dart';
 import 'services/crash_reporting_service.dart';
 import 'services/settings_service.dart';
 import 'utils/app_locale.dart';
@@ -39,6 +41,10 @@ Future<void> _bootstrap() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  bool _needsWelcome() {
+    return Hive.box('profile').get('has_seen_welcome', defaultValue: false) != true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<String>(
@@ -50,6 +56,10 @@ class MyApp extends StatelessWidget {
           supportedLocales: const [
             Locale('ru'),
             Locale('en'),
+            Locale('es'),
+            Locale('de'),
+            Locale('fr'),
+            Locale('tr'),
           ],
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
@@ -103,9 +113,41 @@ class MyApp extends StatelessWidget {
               ),
             );
           },
-          home: const App(),
+          home: _needsWelcome() ? _WelcomeHost() : const App(),
         );
       },
+    );
+  }
+}
+
+class _WelcomeHost extends StatefulWidget {
+  @override
+  State<_WelcomeHost> createState() => _WelcomeHostState();
+}
+
+class _WelcomeHostState extends State<_WelcomeHost> {
+  late final MainController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = MainController()..init();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (Hive.box('profile').get('has_seen_welcome', defaultValue: false) == true) {
+      return const App();
+    }
+    return WelcomePage(
+      controller: _controller,
+      onFinished: () => setState(() {}),
     );
   }
 }
