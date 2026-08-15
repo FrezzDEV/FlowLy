@@ -15,24 +15,26 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// Keep legacy Android plugins compatible with the JVM target used by the
-// current Android Gradle Plugin and Kotlin Gradle Plugin.
-//
-// Do not set compileSdk or namespace here: modern AGP may have already read
-// those values before the root project is evaluated. Legacy plugin SDK fixes
-// are applied in CI before Gradle starts.
+// Keep every Android/Kotlin module on the same JVM target. This is especially
+// important for third-party plugins such as sentry_flutter, whose Java task
+// may otherwise default to 1.8 while Kotlin compiles for JVM 17.
 subprojects {
+    tasks.withType(JavaCompile).configureEach {
+        sourceCompatibility = JavaVersion.VERSION_17.toString()
+        targetCompatibility = JavaVersion.VERSION_17.toString()
+    }
+
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
+
     pluginManager.withPlugin("com.android.library") {
         android {
             compileOptions {
                 sourceCompatibility JavaVersion.VERSION_17
                 targetCompatibility JavaVersion.VERSION_17
-            }
-        }
-
-        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-            compilerOptions {
-                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
             }
         }
     }
