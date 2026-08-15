@@ -31,6 +31,23 @@ class SettingsService {
   static Future<void> setDownloadWifiOnly(bool value) =>
       _box.put('download_wifi_only', value);
 
+  static String? get downloadDirectory =>
+      _box.get('download_directory') as String?;
+
+  static Future<void> setDownloadDirectory(String? value) async {
+    if (value == null || value.isEmpty) {
+      await _box.delete('download_directory');
+    } else {
+      await _box.put('download_directory', value);
+    }
+  }
+
+  static bool get autoDownloadFavorites =>
+      (_box.get('auto_download_favorites', defaultValue: false) as bool?) ?? false;
+
+  static Future<void> setAutoDownloadFavorites(bool value) =>
+      _box.put('auto_download_favorites', value);
+
   static bool get autoplay =>
       (_box.get('autoplay', defaultValue: true) as bool?) ?? true;
 
@@ -59,6 +76,19 @@ class SettingsService {
 
   static Future<void> setNotificationDownloads(bool value) =>
       _box.put('notification_downloads', value);
+
+  static bool get diagnosticsEnabled =>
+      (_box.get('diagnostics_enabled', defaultValue: true) as bool?) ?? true;
+
+  static Future<void> setDiagnosticsEnabled(bool value) =>
+      _box.put('diagnostics_enabled', value);
+
+  static String get themePreset =>
+      (_box.get('theme_preset', defaultValue: 'flowly_default') as String?) ??
+      'flowly_default';
+
+  static Future<void> setThemePreset(String value) =>
+      _box.put('theme_preset', value);
 
   static ValueListenable<Box<dynamic>> get listenable => _box.listenable();
 }
