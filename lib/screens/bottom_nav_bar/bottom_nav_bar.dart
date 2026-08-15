@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flowly/utils/bottom_nav_bar/persistent-tab-view.dart';
 
 import '../../controllers/main_controller.dart';
+import '../../services/global_gesture_service.dart';
 import '../../services/settings_service.dart';
 import '../../utils/bottom_nav_bar/persistent-tab-view.widget.dart';
 import '../../utils/bottom_play_widget.dart';
@@ -99,6 +100,7 @@ class _AppState extends State<App> {
       create: (context) => MainController()..init(),
       child: Consumer<MainController>(
         builder: (context, con, child) {
+          GlobalGestureService.attach(con);
           return ValueListenableBuilder<bool>(
             valueListenable: PlayerRoute.isOpenNotifier,
             builder: (context, playerOpen, _) {
