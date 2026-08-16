@@ -22,7 +22,6 @@ class CrashReportingService {
         options.sendDefaultPii = false;
         options.attachScreenshot = false;
         options.tracesSampleRate = 0.0;
-        options.profilesSampleRate = 0.0;
       },
       appRunner: appRunner,
     );
