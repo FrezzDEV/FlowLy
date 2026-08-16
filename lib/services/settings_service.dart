@@ -14,7 +14,8 @@ class SettingsService {
   static Box<dynamic> get _box => Hive.box<dynamic>(_boxName);
 
   static bool get swipeNavigationEnabled =>
-      (_box.get('swipe_navigation_enabled', defaultValue: true) as bool?) ?? true;
+      (_box.get('swipe_navigation_enabled', defaultValue: false) as bool?) ??
+      false;
 
   static Future<void> setSwipeNavigationEnabled(bool value) =>
       _box.put('swipe_navigation_enabled', value);
