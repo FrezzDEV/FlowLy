@@ -79,121 +79,175 @@ class _PlayerSheetState extends State<PlayerSheet>
     });
   }
 
-  Future<void> _snapTo(bool expanded) async {
+  double _dragDistance(Size size, EdgeInsets padding) {
+    final layout = PlayerSheetLayout(
+      progress: controller.progress,
+      screenSize: size,
+      topSafeArea: padding.top,
+      bottomSafeArea: padding.bottom,
+      bottomOffset: widget.bottomOffset,
+    );
+    return layout.dragDistance;
+  }
+
+  Future<void> _snapTo({
+    required bool expanded,
+    double initialVelocity = 0,
+  }) async {
     final target = expanded ? 1.0 : 0.0;
     snapController.stop();
     snapController.value = controller.progress;
-    await snapController.animateWith(
-      SpringSimulation(
-        const SpringDescription(
-          mass: 1.0,
-          stiffness: 360.0,
-          damping: 34.0,
-        ),
-        controller.progress,
-        target,
-        0,
+
+    final simulation = SpringSimulation(
+      const SpringDescription(
+        mass: 1.0,
+        stiffness: 380.0,
+        damping: 36.0,
       ),
+      controller.progress,
+      target,
+      initialVelocity,
     );
+
+    await snapController.animateWith(simulation);
+    if (!mounted) return;
+
     controller.setProgress(target);
-    if (!expanded && !_closing && mounted) {
+
+    if (!expanded && !_closing) {
       _closing = true;
       widget.onClose?.call();
     }
   }
 
-  @override
-  void dispose() {
-    snapController.dispose();
-    controller.dispose();
-    super.dispose();
+  void _handleDragStart(DragStartDetails details) {
+    snapController.stop();
+    _closing = false;
+    controller.beginDrag(details.globalPosition.dy);
+  }
+
+  void _handleDragUpdate(
+    DragUpdateDetails details,
+    Size size,
+    EdgeInsets padding,
+  ) {
+    controller.updateDrag(
+      globalY: details.globalPosition.dy,
+      dragDistance: _dragDistance(size, padding),
+    );
+  }
+
+  void _handleDragEnd(
+    DragEndDetails details,
+    Size size,
+    EdgeInsets padding,
+  ) {
+    final expanded = controller.endDrag(
+      velocityY: details.primaryVelocity ?? 0,
+    );
+
+    final velocity = controller.velocityToProgress(
+      velocityY: details.primaryVelocity ?? 0,
+      dragDistance: _dragDistance(size, padding),
+    );
+
+    _snapTo(
+      expanded: expanded,
+      initialVelocity: velocity,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final size = constraints.biggest;
         final media = MediaQuery.of(context);
 
-        return GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onVerticalDragStart: (details) {
-            snapController.stop();
-            _closing = false;
-            controller.beginDrag(details.globalPosition.dy);
-          },
-          onVerticalDragUpdate: (details) {
-            controller.updateDrag(
-              globalY: details.globalPosition.dy,
-              availableHeight: constraints.maxHeight,
+        return AnimatedBuilder(
+          animation: controller,
+          builder: (context, _) {
+            final layout = PlayerSheetLayout(
+              progress: controller.progress,
+              screenSize: size,
+              topSafeArea: media.padding.top,
+              bottomSafeArea: media.padding.bottom,
+              bottomOffset: widget.bottomOffset,
             );
-          },
-          onVerticalDragEnd: (details) {
-            final expanded = controller.endDrag(
-              velocityY: details.primaryVelocity ?? 0,
-            );
-            _snapTo(expanded);
-          },
-          child: AnimatedBuilder(
-            animation: controller,
-            builder: (context, _) {
-              final layout = PlayerSheetLayout(
-                progress: controller.progress,
-                screenSize: constraints.biggest,
-                topSafeArea: media.padding.top,
-                bottomSafeArea: media.padding.bottom,
-                bottomOffset: widget.bottomOffset,
-              );
 
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (layout.scrimOpacity > 0)
-                    IgnorePointer(
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                if (layout.scrimOpacity > 0.001)
+                  Positioned.fill(
+                    child: IgnorePointer(
                       child: ColoredBox(
                         color: Colors.black.withValues(
                           alpha: layout.scrimOpacity,
                         ),
                       ),
                     ),
-                  _sheet(layout),
-                ],
-              );
-            },
-          ),
+                  ),
+                _buildPlayerSurface(layout, size, media.padding),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  Widget _sheet(PlayerSheetLayout layout) {
+  Widget _buildPlayerSurface(
+    PlayerSheetLayout layout,
+    Size size,
+    EdgeInsets padding,
+  ) {
     return Positioned(
       left: 0,
       right: 0,
       top: layout.sheetTop,
       height: layout.sheetHeight,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onVerticalDragStart: _handleDragStart,
+        onVerticalDragUpdate: (details) =>
+            _handleDragUpdate(details, size, padding),
+        onVerticalDragEnd: (details) =>
+            _handleDragEnd(details, size, padding),
+        child: Material(
           color: const Color(0xFF101010),
+          clipBehavior: Clip.hardEdge,
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(layout.lerp(14, 0)),
           ),
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            RepaintBoundary(child: _artwork(layout)),
-            _miniContent(layout),
-            _expandedContent(layout),
-            if (layout.p > 0.85) _dragHandle(layout),
-          ],
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
+            children: [
+              RepaintBoundary(child: _artwork(layout)),
+              if (layout.isMini)
+                _miniTapTarget(),
+              _miniContent(layout),
+              _expandedContent(layout),
+              _dragHandle(layout),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  Widget _miniTapTarget() {
+    return Positioned.fill(
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => _snapTo(expanded: true),
+      ),
+    );
+  }
+
   Widget _artwork(PlayerSheetLayout layout) {
-    final cacheSize = (layout.expandedArtworkSize * 2).round().clamp(256, 1600);
+    final cacheSize =
+        (layout.expandedArtworkSize * 2).round().clamp(256, 1600);
 
     return Positioned(
       left: layout.artworkLeft,
@@ -261,6 +315,30 @@ class _PlayerSheetState extends State<PlayerSheet>
           opacity: layout.expandedOpacity,
           child: Stack(
             children: [
+              Positioned(
+                top: 10,
+                left: 4,
+                child: IconButton(
+                  onPressed: () => _snapTo(expanded: false),
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 10,
+                right: 4,
+                child: IconButton(
+                  onPressed: widget.onMore,
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
               Positioned(
                 left: 24,
                 right: 24,
@@ -388,13 +466,25 @@ class _PlayerSheetState extends State<PlayerSheet>
     return Row(
       children: [
         Expanded(
-          child: _textAction('UP NEXT', Icons.queue_music_rounded, widget.onUpNext),
+          child: _textAction(
+            'UP NEXT',
+            Icons.queue_music_rounded,
+            widget.onUpNext,
+          ),
         ),
         Expanded(
-          child: _textAction('LYRICS', Icons.lyrics_outlined, widget.onLyrics),
+          child: _textAction(
+            'LYRICS',
+            Icons.lyrics_outlined,
+            widget.onLyrics,
+          ),
         ),
         Expanded(
-          child: _textAction('RELATED', Icons.graphic_eq_rounded, widget.onRelated),
+          child: _textAction(
+            'RELATED',
+            Icons.graphic_eq_rounded,
+            widget.onRelated,
+          ),
         ),
       ],
     );
@@ -475,8 +565,10 @@ class _PlayerSheetState extends State<PlayerSheet>
   }
 
   Widget _dragHandle(PlayerSheetLayout layout) {
+    if (layout.p < 0.02) return const SizedBox.shrink();
+
     return Positioned(
-      top: 10,
+      top: 8,
       left: (layout.screenSize.width - 38) / 2,
       child: Container(
         width: 38,
