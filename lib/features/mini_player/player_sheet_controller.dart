@@ -76,12 +76,9 @@ class PlayerSheetController extends ChangeNotifier {
     return from + ((to - from) * _progress);
   }
 
-  double lerpCurve(
-    double from,
-    double to, {
-    Curve curve = Curves.easeOutCubic,
-  }) {
-    return from + ((to - from) * curve.transform(_progress));
+  double lerpWith(double from, double to, double Function(double) transform) {
+    final transformedProgress = transform(_progress).clamp(0.0, 1.0);
+    return from + ((to - from) * transformedProgress);
   }
 
   double get dragResistance {
