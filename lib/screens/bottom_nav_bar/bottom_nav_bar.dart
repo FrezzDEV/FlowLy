@@ -6,8 +6,11 @@ import 'package:flowly/utils/bottom_nav_bar/persistent-tab-view.dart';
 
 import '../../controllers/main_controller.dart';
 import '../../features/mini_player/player_sheet.dart';
+import '../../models/song_model.dart';
 import '../../services/global_gesture_service.dart';
 import '../../services/settings_service.dart';
+import '../../utils/app_locale.dart';
+import '../../utils/botttom_sheet_widget.dart';
 import '../home/home_screen.dart';
 import '../library/library.dart';
 import '../profile/profile.dart';
@@ -21,11 +24,12 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
+  static const double _navBarHeight = 64;
+
   final PersistentTabController controller =
       PersistentTabController(initialIndex: 0);
   final GlobalKey<ProfilePageState> _profileKey =
       GlobalKey<ProfilePageState>();
-  double? _horizontalDragStartX;
 
   List<PersistentBottomNavBarItem> _navBarsItems() {
     return [
@@ -80,12 +84,38 @@ class _AppState extends State<App> {
     }
   }
 
-  void _handleMainMenuSwipeStart(DragStartDetails details) {
-    _horizontalDragStartX = details.globalPosition.dx;
+  void _showUnavailable(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
-  void _handleMainMenuSwipeUpdate(DragUpdateDetails details) {
-    _horizontalDragStartX ??= details.globalPosition.dx;
+  void _openMore(BuildContext context, MainController con, SongModel song) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.black,
+      builder: (_) => BottomSheetWidget(
+        con: con,
+        isNext: true,
+        song: song,
+      ),
+    );
+  }
+
+  void _toggleFavorite(MainController con, SongModel song) {
+    if (song.trackid == null || song.trackid!.isEmpty) return;
+    con.addToFavorite(
+      name: song.songname ?? '',
+      fullname: song.name ?? '',
+      username: song.userid ?? '',
+      cover: song.coverImageUrl ?? '',
+      track: song.trackid ?? '',
+    );
   }
 
   @override
@@ -100,8 +130,6 @@ class _AppState extends State<App> {
 
           return GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onHorizontalDragStart: _handleMainMenuSwipeStart,
-            onHorizontalDragUpdate: _handleMainMenuSwipeUpdate,
             onHorizontalDragEnd: _handleMainMenuSwipeEnd,
             child: Stack(
               fit: StackFit.expand,
@@ -125,7 +153,7 @@ class _AppState extends State<App> {
                   popAllScreensOnTapOfSelectedTab: true,
                   popActionScreens: PopActionScreensType.all,
                   navBarStyle: NavBarStyle.simple,
-                  navBarHeight: 64,
+                  navBarHeight: _navBarHeight,
                   padding: const NavBarPadding.all(0),
                 ),
                 if (song != null &&
@@ -136,16 +164,85 @@ class _AppState extends State<App> {
                     title: song.songname ?? 'FlowLy',
                     artist: song.name ?? song.userid,
                     isPlaying: con.isPlaying,
+                    isLiked: false,
+                    bottomOffset: _navBarHeight,
                     progressValue: con.duration.inMilliseconds > 0
-                        ? con.position.inMilliseconds /
-                            con.duration.inMilliseconds
+                        ? (con.position.inMilliseconds /
+                                con.duration.inMilliseconds)
+                            .clamp(0.0, 1.0)
                         : 0,
                     position: con.position,
                     duration: con.duration,
                     onPlayPause: con.playOrPause,
-                    onPrevious: con.previous,
-                    onNext: con.next,
+                    onPrevious: con.songs.length > 1 ? con.previous : null,
+                    onNext: con.songs.length > 1 ? con.next : null,
                     onSeek: con.seek,
+                    onLike: () => _toggleFavorite(
+                      con,
+                      SongModel(
+                        songid: song.songid,
+                        songname: song.songname,
+                        userid: song.userid,
+                        trackid: song.trackid,
+                        duration: song.duration,
+                        coverImageUrl: song.coverImageUrl,
+                        name: song.name,
+                      ),
+                    ),
+                    onComment: () => _showUnavailable(
+                      context,
+                      AppLocale.text(
+                        'Комментарии пока недоступны',
+                        'Comments are not available yet',
+                      ),
+                    ),
+                    onDownload: () => _showUnavailable(
+                      context,
+                      AppLocale.text(
+                        'Скачивание временно отключено',
+                        'Downloads are temporarily disabled',
+                      ),
+                    ),
+                    onMore: () => _openMore(
+                      context,
+                      con,
+                      SongModel(
+                        songid: song.songid,
+                        songname: song.songname,
+                        userid: song.userid,
+                        trackid: song.trackid,
+                        duration: song.duration,
+                        coverImageUrl: song.coverImageUrl,
+                        name: song.name,
+                      ),
+                    ),
+                    onUpNext: () => _openMore(
+                      context,
+                      con,
+                      SongModel(
+                        songid: song.songid,
+                        songname: song.songname,
+                        userid: song.userid,
+                        trackid: song.trackid,
+                        duration: song.duration,
+                        coverImageUrl: song.coverImageUrl,
+                        name: song.name,
+                      ),
+                    ),
+                    onLyrics: () => _showUnavailable(
+                      context,
+                      AppLocale.text(
+                        'Текст песни пока недоступен',
+                        'Lyrics are not available yet',
+                      ),
+                    ),
+                    onRelated: () => _showUnavailable(
+                      context,
+                      AppLocale.text(
+                        'Похожие треки пока недоступны',
+                        'Related tracks are not available yet',
+                      ),
+                    ),
                   ),
               ],
             ),
