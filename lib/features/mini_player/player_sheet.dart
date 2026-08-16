@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 
 import 'player_sheet_controller.dart';
 import 'player_sheet_layout.dart';
@@ -43,7 +44,6 @@ class _PlayerSheetState extends State<PlayerSheet>
     with SingleTickerProviderStateMixin {
   late final PlayerSheetController controller;
   late final AnimationController snapController;
-  Animation<double>? snapAnimation;
 
   @override
   void initState() {
@@ -52,29 +52,34 @@ class _PlayerSheetState extends State<PlayerSheet>
       expandThreshold: widget.expandThreshold,
       velocityThreshold: widget.velocityThreshold,
     );
-    snapController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 320),
-    );
+    snapController = AnimationController(vsync: this);
     snapController.addListener(() {
-      final animation = snapAnimation;
-      if (animation != null) controller.setProgress(animation.value);
+      controller.setProgress(snapController.value);
     });
   }
 
   void _snapTo(bool expanded) {
     final target = expanded ? 1.0 : 0.0;
     snapController.stop();
-    snapAnimation = Tween<double>(
-      begin: controller.progress,
-      end: target,
-    ).animate(
-      CurvedAnimation(
-        parent: snapController,
-        curve: Curves.easeOutCubic,
+    snapController.value = controller.progress;
+    snapController.animateWith(
+      SpringSimulation(
+        const SpringDescription(
+          mass: 1,
+          stiffness: 420,
+          damping: 36,
+        ),
+        controller.progress,
+        target,
+        0,
       ),
     );
-    snapController.forward(from: 0);
+  }
+
+  void _handleTap() {
+    if (controller.progress < 0.2) {
+      _snapTo(true);
+    }
   }
 
   @override
@@ -98,6 +103,7 @@ class _PlayerSheetState extends State<PlayerSheet>
 
         return GestureDetector(
           behavior: HitTestBehavior.translucent,
+          onTap: _handleTap,
           onVerticalDragStart: (details) {
             snapController.stop();
             controller.beginDrag(details.globalPosition.dy);
@@ -107,7 +113,6 @@ class _PlayerSheetState extends State<PlayerSheet>
               globalY: details.globalPosition.dy,
               availableHeight: constraints.maxHeight,
             );
-            setState(() {});
           },
           onVerticalDragEnd: (details) {
             final expanded = controller.endDrag(
@@ -123,7 +128,6 @@ class _PlayerSheetState extends State<PlayerSheet>
               children: [
                 if (layout.scrimOpacity > 0)
                   IgnorePointer(
-                    ignoring: true,
                     child: ColoredBox(
                       color: Colors.black.withValues(
                         alpha: layout.scrimOpacity,
@@ -352,12 +356,15 @@ class _PlayerSheetState extends State<PlayerSheet>
     return Positioned(
       top: 10,
       left: (layout.screenSize.width - 38) / 2,
-      child: Container(
-        width: 38,
-        height: 4,
-        decoration: BoxDecoration(
-          color: Colors.white24,
-          borderRadius: BorderRadius.circular(2),
+      child: Semantics(
+        label: 'Player drag handle',
+        child: Container(
+          width: 38,
+          height: 4,
+          decoration: BoxDecoration(
+            color: Colors.white24,
+            borderRadius: BorderRadius.circular(2),
+          ),
         ),
       ),
     );
