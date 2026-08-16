@@ -13,12 +13,25 @@ class SettingsService {
 
   static Box<dynamic> get _box => Hive.box<dynamic>(_boxName);
 
-  static bool get swipeNavigationEnabled =>
-      (_box.get('swipe_navigation_enabled', defaultValue: false) as bool?) ??
-      false;
+  static bool get swipeNavigationEnabled {
+    final stored = _box.get('swipe_navigation_enabled');
+    if (stored is bool) return stored;
 
-  static Future<void> setSwipeNavigationEnabled(bool value) =>
-      _box.put('swipe_navigation_enabled', value);
+    final profile = Hive.isBoxOpen('profile')
+        ? Hive.box<dynamic>('profile').get(
+            'quickNavigationSwipe',
+            defaultValue: false,
+          )
+        : false;
+    return profile is bool ? profile : false;
+  }
+
+  static Future<void> setSwipeNavigationEnabled(bool value) async {
+    await _box.put('swipe_navigation_enabled', value);
+    if (Hive.isBoxOpen('profile')) {
+      await Hive.box<dynamic>('profile').put('quickNavigationSwipe', value);
+    }
+  }
 
   static String get downloadQuality =>
       (_box.get('download_quality', defaultValue: 'high') as String?) ?? 'high';
