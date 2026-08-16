@@ -15,18 +15,18 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// Keep every Android module on the same JVM 17 target.
-// Configure after evaluation so Android/Flutter plugins cannot leave
-// their Java tasks at 1.8 while Kotlin targets JVM 17.
-subprojects {
-    afterEvaluate { project ->
-        if (project.plugins.hasPlugin("com.android.application") ||
-            project.plugins.hasPlugin("com.android.library")) {
-            project.android {
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_17
-                    targetCompatibility JavaVersion.VERSION_17
-                }
+// Keep Android app/library modules on the same JVM 17 target.
+// Android modules must use sourceCompatibility/targetCompatibility rather
+// than JavaCompile --release, because AGP supplies the Android bootclasspath.
+// Apply the final values after every subproject has been evaluated so plugins
+// such as sentry_flutter cannot leave Java at 1.8 while Kotlin uses 17.
+gradle.projectsEvaluated {
+    subprojects.each { project ->
+        if (project.plugins.hasPlugin('com.android.application') ||
+            project.plugins.hasPlugin('com.android.library')) {
+            project.android.compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
             }
         }
 
