@@ -2,7 +2,7 @@ name: Build FlowLy APK
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "backup/fc3be491"]
   workflow_dispatch:
 
 permissions:
@@ -65,7 +65,37 @@ jobs:
       - name: Build FlowLy APK
         run: flutter build apk --release
 
+      - name: Publish backup APK
+        if: github.ref == 'refs/heads/backup/fc3be491'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="backup-fc3be491"
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          NAME="flowly-backup-fc3be491.apk"
+
+          test -s "$APK"
+          cp "$APK" "$NAME"
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$NAME" --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "FlowLy backup fc3be491" \
+              --notes "Test build from backup/fc3be491. This is not a production release." \
+              --prerelease
+          else
+            gh release create "$TAG" "$NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "FlowLy backup fc3be491" \
+              --notes "Test build from backup/fc3be491. This is not a production release." \
+              --prerelease
+          fi
+
       - name: Publish APK as GitHub release asset
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -73,6 +103,7 @@ jobs:
           TAG="v${VERSION%%+*}"
           APK="build/app/outputs/flutter-apk/app-release.apk"
 
+          test -s "$APK"
           echo "Publishing FlowLy ${VERSION} from ${APK}"
 
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
