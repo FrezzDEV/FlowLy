@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: flowly-apk-${{ github.ref }}
@@ -64,10 +64,42 @@ jobs:
       - name: Build test APK
         run: flutter build apk --release
 
+      - name: Prepare test APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk flowly-test.apk
+
+      - name: Publish latest test APK to GitHub pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          TAG="test-latest"
+          TITLE="FlowLy Test Build"
+          NOTES="Automated test APK from commit ${GITHUB_SHA}. GitHub Actions run #${GITHUB_RUN_NUMBER}.\n\nThis is a test build, not a production release. It is signed with the temporary test/debug signing configuration."
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" flowly-test.apk \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+
+            gh release edit "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" \
+              --notes "$NOTES" \
+              --prerelease
+          else
+            gh release create "$TAG" flowly-test.apk \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "$TITLE" \
+              --notes "$NOTES" \
+              --prerelease
+          fi
+
       - name: Upload test APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: flowly-test-apk-${{ github.run_number }}
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: flowly-test.apk
           if-no-files-found: error
           retention-days: 14
