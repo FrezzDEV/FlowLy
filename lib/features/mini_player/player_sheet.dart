@@ -203,10 +203,12 @@ class _PlayerSheetState extends State<PlayerSheet>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(layout.artworkRadius),
         child: Image(
-          image: widget.cover,
+          image: ResizeImage(
+            widget.cover,
+            width: cacheSize,
+            height: cacheSize,
+          ),
           fit: BoxFit.cover,
-          cacheWidth: cacheSize,
-          cacheHeight: cacheSize,
           filterQuality: FilterQuality.low,
         ),
       ),
@@ -366,9 +368,7 @@ class _PlayerSheetState extends State<PlayerSheet>
               width: 82,
               height: 82,
               child: Icon(
-                widget.isPlaying
-                    ? Icons.pause
-                    : Icons.play_arrow,
+                widget.isPlaying ? Icons.pause : Icons.play_arrow,
                 color: Colors.white,
                 size: 44,
               ),
@@ -388,25 +388,13 @@ class _PlayerSheetState extends State<PlayerSheet>
     return Row(
       children: [
         Expanded(
-          child: _textAction(
-            'UP NEXT',
-            Icons.queue_music_rounded,
-            widget.onUpNext,
-          ),
+          child: _textAction('UP NEXT', Icons.queue_music_rounded, widget.onUpNext),
         ),
         Expanded(
-          child: _textAction(
-            'LYRICS',
-            Icons.lyrics_outlined,
-            widget.onLyrics,
-          ),
+          child: _textAction('LYRICS', Icons.lyrics_outlined, widget.onLyrics),
         ),
         Expanded(
-          child: _textAction(
-            'RELATED',
-            Icons.graphic_eq_rounded,
-            widget.onRelated,
-          ),
+          child: _textAction('RELATED', Icons.graphic_eq_rounded, widget.onRelated),
         ),
       ],
     );
@@ -462,8 +450,7 @@ class _PlayerSheetState extends State<PlayerSheet>
                   minHeight: 4,
                   value: value,
                   backgroundColor: const Color(0xFF3A3A3A),
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),
             ),
@@ -471,10 +458,14 @@ class _PlayerSheetState extends State<PlayerSheet>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(_format(widget.position),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                Text(_format(widget.duration),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                Text(
+                  _format(widget.position),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                Text(
+                  _format(widget.duration),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
               ],
             ),
           ],
