@@ -7,9 +7,7 @@ import 'package:flowly/utils/bottom_nav_bar/persistent-tab-view.dart';
 import '../../controllers/main_controller.dart';
 import '../../services/global_gesture_service.dart';
 import '../../services/settings_service.dart';
-import '../../utils/bottom_nav_bar/persistent-tab-view.widget.dart';
 import '../../utils/bottom_play_widget.dart';
-import '../current_playing/current_playing_song.dart';
 import '../home/home_screen.dart';
 import '../library/library.dart';
 import '../profile/profile.dart';
@@ -27,7 +25,6 @@ class _AppState extends State<App> {
       PersistentTabController(initialIndex: 0);
   final GlobalKey<ProfilePageState> _profileKey =
       GlobalKey<ProfilePageState>();
-  double? _horizontalDragStartX;
 
   List<PersistentBottomNavBarItem> _navBarsItems() {
     return [
@@ -67,10 +64,6 @@ class _AppState extends State<App> {
     ];
   }
 
-  Future<void> _openPlayer(MainController con) {
-    return PlayerRoute.open(context, con);
-  }
-
   void _handleMainMenuSwipeEnd(DragEndDetails details) {
     if (!SettingsService.swipeNavigationEnabled) return;
     final velocity = details.primaryVelocity;
@@ -86,66 +79,66 @@ class _AppState extends State<App> {
     }
   }
 
-  void _handleMainMenuSwipeStart(DragStartDetails details) {
-    _horizontalDragStartX = details.globalPosition.dx;
-  }
-
-  void _handleMainMenuSwipeUpdate(DragUpdateDetails details) {
-    _horizontalDragStartX ??= details.globalPosition.dx;
-  }
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => MainController()..init(),
-      child: Consumer<MainController>(
-        builder: (context, con, child) {
-          GlobalGestureService.attach(con);
-          return ValueListenableBuilder<bool>(
-            valueListenable: PlayerRoute.isOpenNotifier,
-            builder: (context, playerOpen, _) {
-              return GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onHorizontalDragStart: _handleMainMenuSwipeStart,
-                onHorizontalDragUpdate: _handleMainMenuSwipeUpdate,
-                onHorizontalDragEnd: (details) {
-                  _handleMainMenuSwipeEnd(details);
-                  _horizontalDragStartX = null;
-                },
-                child: PersistentTabView(
-                  context,
-                  controller: controller,
-                  playWidget: playerOpen
-                      ? const SizedBox.shrink()
-                      : Material(
-                          color: Colors.black,
-                          child: PlayWidget(
-                            con: con,
-                            onTap: () => _openPlayer(con),
-                          ),
-                        ),
-                  screens: _buildScreens(con),
-                  items: _navBarsItems(),
-                  onItemSelected: (index) {
-                    if (index == 3) {
-                      _profileKey.currentState?.showProfile();
-                    }
-                  },
-                  confineInSafeArea: true,
-                  backgroundColor: Colors.black,
-                  handleAndroidBackButtonPress: true,
-                  hideNavigationBarWhenKeyboardShows: true,
-                  resizeToAvoidBottomInset: true,
-                  popAllScreensOnTapOfSelectedTab: true,
-                  popActionScreens: PopActionScreensType.all,
-                  navBarStyle: NavBarStyle.simple,
-                  navBarHeight: 64,
-                  padding: const NavBarPadding.all(0),
-                ),
-              );
+      child: const _AppContent(),
+    );
+  }
+}
+
+class _AppContent extends StatelessWidget {
+  const _AppContent();
+
+  static const double navBarHeight = 64;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.findAncestorStateOfType<_AppState>();
+    final con = context.read<MainController>();
+
+    GlobalGestureService.attach(con);
+
+    final profileKey = state!._profileKey;
+    final tabController = state.controller;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragEnd: state._handleMainMenuSwipeEnd,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          PersistentTabView(
+            context,
+            controller: tabController,
+            playWidget: const SizedBox.shrink(),
+            screens: state._buildScreens(con),
+            items: state._navBarsItems(),
+            onItemSelected: (index) {
+              if (index == 3) {
+                profileKey.currentState?.showProfile();
+              }
             },
-          );
-        },
+            confineInSafeArea: true,
+            backgroundColor: Colors.black,
+            handleAndroidBackButtonPress: true,
+            hideNavigationBarWhenKeyboardShows: true,
+            resizeToAvoidBottomInset: true,
+            popAllScreensOnTapOfSelectedTab: true,
+            popActionScreens: PopActionScreensType.all,
+            navBarStyle: NavBarStyle.simple,
+            navBarHeight: navBarHeight,
+            padding: const NavBarPadding.all(0),
+          ),
+          Positioned.fill(
+            child: BottomPlayWidget(
+              key: const ValueKey('global-flowly-player'),
+              con: con,
+              navBarHeight: navBarHeight,
+            ),
+          ),
+        ],
       ),
     );
   }
