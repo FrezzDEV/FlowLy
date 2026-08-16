@@ -16,8 +16,8 @@ subprojects {
 }
 
 // Keep Android app/library modules on the same JVM 17 target.
-// Do NOT set JavaCompile.options.release for Android modules: AGP needs
-// android.jar as the bootclasspath and rejects --release for Android builds.
+// Android modules must use sourceCompatibility/targetCompatibility rather
+// than JavaCompile --release, because AGP supplies the Android bootclasspath.
 subprojects {
     pluginManager.withPlugin("com.android.application") {
         android {
@@ -30,7 +30,6 @@ subprojects {
         tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
             sourceCompatibility = JavaVersion.VERSION_17.toString()
             targetCompatibility = JavaVersion.VERSION_17.toString()
-            options.release.set(null)
         }
 
         tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
@@ -51,7 +50,6 @@ subprojects {
         tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
             sourceCompatibility = JavaVersion.VERSION_17.toString()
             targetCompatibility = JavaVersion.VERSION_17.toString()
-            options.release.set(null)
         }
 
         tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
