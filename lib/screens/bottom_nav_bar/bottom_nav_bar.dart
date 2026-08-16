@@ -7,7 +7,6 @@ import 'package:flowly/utils/bottom_nav_bar/persistent-tab-view.dart';
 import '../../controllers/main_controller.dart';
 import '../../features/mini_player/player_sheet.dart';
 import '../../models/song_model.dart';
-import '../../services/global_gesture_service.dart';
 import '../../services/settings_service.dart';
 import '../../utils/app_locale.dart';
 import '../../utils/botttom_sheet_widget.dart';
