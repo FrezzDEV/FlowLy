@@ -44,14 +44,31 @@ jobs:
           test -n "$FLOWLY_KEYSTORE_BASE64"
           test -n "$FLOWLY_KEYSTORE_PASSWORD"
           test -n "$FLOWLY_KEY_ALIAS"
-          test -n "$FLOWLY_KEY_PASSWORD"
 
           printf '%s' "$FLOWLY_KEYSTORE_BASE64" | base64 --decode > android/flowly-release.jks
           test -s android/flowly-release.jks
 
+          KEYSTORE_INFO="$(keytool -list -v \
+            -keystore android/flowly-release.jks \
+            -storepass "$FLOWLY_KEYSTORE_PASSWORD" 2>/dev/null)" || {
+            echo "Unable to open release keystore. Check FLOWLY_KEYSTORE_PASSWORD."
+            exit 1
+          }
+
+          KEYSTORE_TYPE="$(printf '%s\n' "$KEYSTORE_INFO" | sed -n 's/^Keystore type: //p' | head -n 1 | tr '[:lower:]' '[:upper:]')"
+          echo "Detected release keystore type: $KEYSTORE_TYPE"
+
+          if [[ "$KEYSTORE_TYPE" == "PKCS12" ]]; then
+            EFFECTIVE_KEY_PASSWORD="$FLOWLY_KEYSTORE_PASSWORD"
+            echo "Using store password for PKCS12 key password."
+          else
+            test -n "$FLOWLY_KEY_PASSWORD"
+            EFFECTIVE_KEY_PASSWORD="$FLOWLY_KEY_PASSWORD"
+          fi
+
           cat > android/key.properties <<EOF
           storePassword=$FLOWLY_KEYSTORE_PASSWORD
-          keyPassword=$FLOWLY_KEY_PASSWORD
+          keyPassword=$EFFECTIVE_KEY_PASSWORD
           keyAlias=$FLOWLY_KEY_ALIAS
           storeFile=flowly-release.jks
           EOF
@@ -63,19 +80,37 @@ jobs:
           FLOWLY_KEY_PASSWORD: ${{ secrets.FLOWLY_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          keytool -list \
-            -keystore android/flowly-release.jks \
-            -storepass "$FLOWLY_KEYSTORE_PASSWORD" \
-            -alias "$FLOWLY_KEY_ALIAS" >/dev/null
 
-          keytool -exportcert \
+          KEYSTORE_INFO="$(keytool -list -v \
             -keystore android/flowly-release.jks \
-            -storepass "$FLOWLY_KEYSTORE_PASSWORD" \
-            -keypass "$FLOWLY_KEY_PASSWORD" \
-            -alias "$FLOWLY_KEY_ALIAS" \
-            -rfc >/dev/null
+            -storepass "$FLOWLY_KEYSTORE_PASSWORD" 2>/dev/null)" || {
+            echo "Release keystore cannot be opened. Check FLOWLY_KEYSTORE_PASSWORD."
+            exit 1
+          }
 
-          echo "Release keystore, alias, store password and key password validated."
+          KEYSTORE_TYPE="$(printf '%s\n' "$KEYSTORE_INFO" | sed -n 's/^Keystore type: //p' | head -n 1 | tr '[:lower:]' '[:upper:]')"
+          echo "Detected release keystore type: $KEYSTORE_TYPE"
+
+          if ! printf '%s\n' "$KEYSTORE_INFO" | grep -Fq "Alias name: $FLOWLY_KEY_ALIAS"; then
+            echo "Release key alias was not found in the keystore. Check FLOWLY_KEY_ALIAS."
+            exit 1
+          fi
+
+          if [[ "$KEYSTORE_TYPE" == "PKCS12" ]]; then
+            echo "PKCS12 keystore and alias validated."
+          else
+            test -n "$FLOWLY_KEY_PASSWORD"
+            keytool -exportcert \
+              -keystore android/flowly-release.jks \
+              -storepass "$FLOWLY_KEYSTORE_PASSWORD" \
+              -keypass "$FLOWLY_KEY_PASSWORD" \
+              -alias "$FLOWLY_KEY_ALIAS" \
+              -rfc >/dev/null || {
+                echo "Release key password is invalid. Check FLOWLY_KEY_PASSWORD."
+                exit 1
+              }
+            echo "JKS keystore, alias, store password and key password validated."
+          fi
 
       - name: Resolve Flutter dependencies
         run: flutter --version && flutter pub get
