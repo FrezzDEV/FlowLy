@@ -18,7 +18,7 @@ class FlowLyApi {
     if (raw.isEmpty) {
       throw StateError(
         'FLOWLY_API_BASE_URL is not configured. Pass baseUrl explicitly or '
-        'build with --dart-define=FLOWLY_API_BASE_URL=https://... ',
+        'build with --dart-define=FLOWLY_API_BASE_URL=https://...',
       );
     }
 
@@ -108,12 +108,13 @@ class FlowLyApi {
             headers: _headers(),
           )));
 
-  Future<bool> toggleFavorite(int trackId) async =>
-      (_jsonMap(await _request(() => _client.post(
-            _uri('/api/v1/tracks/$trackId/favorite'),
-            headers: _headers(),
-          )))['liked'] ==
-      true;
+  Future<bool> toggleFavorite(int trackId) async {
+    final data = await _jsonMap(await _request(() => _client.post(
+          _uri('/api/v1/tracks/$trackId/favorite'),
+          headers: _headers(),
+        )));
+    return data['liked'] == true;
+  }
 
   Future<List<Map<String, dynamic>>> comments(int trackId) async =>
       _jsonList(await _request(() => _client.get(
