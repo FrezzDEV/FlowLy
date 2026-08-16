@@ -47,6 +47,8 @@ jobs:
           test -n "$FLOWLY_KEY_PASSWORD"
 
           printf '%s' "$FLOWLY_KEYSTORE_BASE64" | base64 --decode > android/flowly-release.jks
+          test -s android/flowly-release.jks
+
           cat > android/key.properties <<EOF
           storePassword=$FLOWLY_KEYSTORE_PASSWORD
           keyPassword=$FLOWLY_KEY_PASSWORD
@@ -105,7 +107,3 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "FlowLy ${VERSION}" \
             --generate-notes
-
-      - name: Clean signing material
-        if: always()
-        run: rm -f android/flowly-release.jks android/key.properties
