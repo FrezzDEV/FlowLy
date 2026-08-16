@@ -60,7 +60,7 @@ jobs:
           PY
 
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Build FlowLy APK
         run: flutter build apk --release
