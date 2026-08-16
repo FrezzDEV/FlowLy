@@ -17,11 +17,25 @@ class FlowLyApiException implements Exception {
 class FlowLyApi {
   FlowLyApi._();
 
-  static const String _defaultBaseUrl =
-      'https://cryptic-forest-99443.herokuapp.com/api/v1';
-  static final Uri _baseUri = Uri.parse(
-    const String.fromEnvironment('FLOWLY_API_URL', defaultValue: _defaultBaseUrl),
+  static final Uri _baseUri = _resolveBaseUri(
+    const String.fromEnvironment('FLOWLY_API_URL'),
   );
+
+  static Uri _resolveBaseUri(String value) {
+    final raw = value.trim();
+    if (raw.isEmpty) {
+      throw StateError(
+        'FLOWLY_API_URL is not configured. Build with '
+        '--dart-define=FLOWLY_API_URL=https://.../api/v1',
+      );
+    }
+
+    final uri = Uri.tryParse(raw);
+    if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https') || uri.host.isEmpty) {
+      throw FormatException('Invalid FLOWLY_API_URL: $raw');
+    }
+    return uri;
+  }
 
   static Uri _uri(String path) =>
       _baseUri.resolve(path.replaceFirst('/', ''));
@@ -66,7 +80,7 @@ class FlowLyApi {
     if (decoded is! List) return const [];
     return decoded
         .map((item) => Map<String, dynamic>.from(item as Map))
-        .toList();
+        .toList(growable: false);
   }
 
   static Future<void> login({
