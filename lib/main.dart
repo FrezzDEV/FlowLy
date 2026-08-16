@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/adapters.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:flowly/screens/bottom_nav_bar/bottom_nav_bar.dart';
 import 'package:flowly/screens/welcome/welcome_page.dart';
@@ -26,15 +25,22 @@ Future<void> _bootstrap() async {
 
   final dir = await getApplicationDocumentsDirectory();
   await Hive.initFlutter(dir.path);
-  await Hive.openBox('liked');
-  await Hive.openBox('Recentsearch');
-  await Hive.openBox('RecentlyPlayed');
-  await Hive.openBox('playlists');
-  await Hive.openBox('profile');
-  await Hive.openBox('downloads');
-  await Hive.openBox('app_settings');
-  await SettingsService.init();
-  await AppLocale.init();
+
+  await Future.wait([
+    Hive.openBox('liked'),
+    Hive.openBox('Recentsearch'),
+    Hive.openBox('RecentlyPlayed'),
+    Hive.openBox('playlists'),
+    Hive.openBox('profile'),
+    Hive.openBox('downloads'),
+    Hive.openBox('app_settings'),
+  ]);
+
+  await Future.wait([
+    SettingsService.init(),
+    AppLocale.init(),
+  ]);
+
   runApp(const MyApp());
 }
 
