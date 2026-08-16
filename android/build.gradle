@@ -15,9 +15,31 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// Keep all Android library/plugin Java and Kotlin tasks on the same JVM 17 target.
-// This is required by current Kotlin/AGP when older plugins still default Java to 8.
+// Keep Android app/library modules on the same JVM 17 target.
+// Do NOT set JavaCompile.options.release for Android modules: AGP needs
+// android.jar as the bootclasspath and rejects --release for Android builds.
 subprojects {
+    pluginManager.withPlugin("com.android.application") {
+        android {
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+        }
+
+        tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
+            sourceCompatibility = JavaVersion.VERSION_17.toString()
+            targetCompatibility = JavaVersion.VERSION_17.toString()
+            options.release.set(null)
+        }
+
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            compilerOptions {
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            }
+        }
+    }
+
     pluginManager.withPlugin("com.android.library") {
         android {
             compileOptions {
@@ -29,7 +51,7 @@ subprojects {
         tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
             sourceCompatibility = JavaVersion.VERSION_17.toString()
             targetCompatibility = JavaVersion.VERSION_17.toString()
-            options.release.set(17)
+            options.release.set(null)
         }
 
         tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
