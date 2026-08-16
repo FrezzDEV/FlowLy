@@ -24,8 +24,6 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
-  static const double _navBarHeight = 64;
-
   final PersistentTabController controller =
       PersistentTabController(initialIndex: 0);
   final GlobalKey<ProfilePageState> _profileKey =
@@ -84,17 +82,189 @@ class _AppState extends State<App> {
     }
   }
 
-  void _showUnavailable(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => MainController()..init(),
+      child: _AppContent(
+        tabController: controller,
+        profileKey: _profileKey,
+        navBarsItems: _navBarsItems(),
+        screensBuilder: _buildScreens,
+        onHorizontalDragEnd: _handleMainMenuSwipeEnd,
       ),
     );
   }
+}
 
-  void _openMore(BuildContext context, MainController con, SongModel song) {
+class _AppContent extends StatelessWidget {
+  const _AppContent({
+    required this.tabController,
+    required this.profileKey,
+    required this.navBarsItems,
+    required this.screensBuilder,
+    required this.onHorizontalDragEnd,
+  });
+
+  static const double navBarHeight = 64;
+
+  final PersistentTabController tabController;
+  final GlobalKey<ProfilePageState> profileKey;
+  final List<PersistentBottomNavBarItem> navBarsItems;
+  final List<Widget> Function(MainController) screensBuilder;
+  final ValueChanged<DragEndDetails> onHorizontalDragEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final con = context.read<MainController>();
+
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragEnd: onHorizontalDragEnd,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          PersistentTabView(
+            context,
+            controller: tabController,
+            playWidget: const SizedBox.shrink(),
+            screens: screensBuilder(con),
+            items: navBarsItems,
+            onItemSelected: (index) {
+              if (index == 3) {
+                profileKey.currentState?.showProfile();
+              }
+            },
+            confineInSafeArea: true,
+            backgroundColor: Colors.black,
+            handleAndroidBackButtonPress: true,
+            hideNavigationBarWhenKeyboardShows: true,
+            resizeToAvoidBottomInset: true,
+            popAllScreensOnTapOfSelectedTab: true,
+            popActionScreens: PopActionScreensType.all,
+            navBarStyle: NavBarStyle.simple,
+            navBarHeight: navBarHeight,
+            padding: const NavBarPadding.all(0),
+          ),
+          const Positioned.fill(
+            child: _PlayerSheetHost(bottomOffset: navBarHeight),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlayerSnapshot {
+  const _PlayerSnapshot({
+    required this.song,
+    required this.isPlaying,
+    required this.position,
+    required this.duration,
+  });
+
+  final SongModel? song;
+  final bool isPlaying;
+  final Duration position;
+  final Duration duration;
+}
+
+class _PlayerSheetHost extends StatelessWidget {
+  const _PlayerSheetHost({required this.bottomOffset});
+
+  final double bottomOffset;
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<MainController, _PlayerSnapshot>(
+      selector: (_, con) => _PlayerSnapshot(
+        song: con.currentSong,
+        isPlaying: con.isPlaying,
+        position: con.position,
+        duration: con.duration,
+      ),
+      builder: (context, snapshot, _) {
+        final song = snapshot.song;
+        final coverUrl = song?.coverImageUrl;
+        if (song == null || coverUrl == null || coverUrl.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final con = context.read<MainController>();
+
+        return PlayerSheet(
+          cover: NetworkImage(coverUrl),
+          title: song.songname ?? 'FlowLy',
+          artist: song.name ?? song.userid,
+          isPlaying: snapshot.isPlaying,
+          isLiked: false,
+          bottomOffset: bottomOffset,
+          progressValue: snapshot.duration.inMilliseconds > 0
+              ? (snapshot.position.inMilliseconds /
+                      snapshot.duration.inMilliseconds)
+                  .clamp(0.0, 1.0)
+              : 0,
+          position: snapshot.position,
+          duration: snapshot.duration,
+          onPlayPause: con.playOrPause,
+          onPrevious: con.songs.length > 1 ? con.previous : null,
+          onNext: con.songs.length > 1 ? con.next : null,
+          onSeek: con.seek,
+          onLike: () => _toggleFavorite(con, song),
+          onComment: () => _showMessage(
+            context,
+            AppLocale.text(
+              'Комментарии пока недоступны',
+              'Comments are not available yet',
+            ),
+          ),
+          onDownload: () => _showMessage(
+            context,
+            AppLocale.text(
+              'Скачивание временно отключено',
+              'Downloads are temporarily disabled',
+            ),
+          ),
+          onMore: () => _openMore(context, con, song),
+          onUpNext: () => _openMore(context, con, song),
+          onLyrics: () => _showMessage(
+            context,
+            AppLocale.text(
+              'Текст песни пока недоступен',
+              'Lyrics are not available yet',
+            ),
+          ),
+          onRelated: () => _showMessage(
+            context,
+            AppLocale.text(
+              'Похожие треки пока недоступны',
+              'Related tracks are not available yet',
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static void _toggleFavorite(
+    MainController con,
+    SongModel song,
+  ) {
+    if (song.trackid == null || song.trackid!.isEmpty) return;
+    con.addToFavorite(
+      name: song.songname ?? '',
+      fullname: song.name ?? '',
+      username: song.userid ?? '',
+      cover: song.coverImageUrl ?? '',
+      track: song.trackid ?? '',
+    );
+  }
+
+  static void _openMore(
+    BuildContext context,
+    MainController con,
+    SongModel song,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -107,147 +277,12 @@ class _AppState extends State<App> {
     );
   }
 
-  void _toggleFavorite(MainController con, SongModel song) {
-    if (song.trackid == null || song.trackid!.isEmpty) return;
-    con.addToFavorite(
-      name: song.songname ?? '',
-      fullname: song.name ?? '',
-      username: song.userid ?? '',
-      cover: song.coverImageUrl ?? '',
-      track: song.trackid ?? '',
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => MainController()..init(),
-      child: Consumer<MainController>(
-        builder: (context, con, child) {
-          GlobalGestureService.attach(con);
-          final song = con.currentSong;
-          final coverUrl = song?.coverImageUrl;
-
-          return GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onHorizontalDragEnd: _handleMainMenuSwipeEnd,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                PersistentTabView(
-                  context,
-                  controller: controller,
-                  playWidget: const SizedBox.shrink(),
-                  screens: _buildScreens(con),
-                  items: _navBarsItems(),
-                  onItemSelected: (index) {
-                    if (index == 3) {
-                      _profileKey.currentState?.showProfile();
-                    }
-                  },
-                  confineInSafeArea: true,
-                  backgroundColor: Colors.black,
-                  handleAndroidBackButtonPress: true,
-                  hideNavigationBarWhenKeyboardShows: true,
-                  resizeToAvoidBottomInset: true,
-                  popAllScreensOnTapOfSelectedTab: true,
-                  popActionScreens: PopActionScreensType.all,
-                  navBarStyle: NavBarStyle.simple,
-                  navBarHeight: _navBarHeight,
-                  padding: const NavBarPadding.all(0),
-                ),
-                if (song != null &&
-                    coverUrl != null &&
-                    coverUrl.isNotEmpty)
-                  PlayerSheet(
-                    cover: NetworkImage(coverUrl),
-                    title: song.songname ?? 'FlowLy',
-                    artist: song.name ?? song.userid,
-                    isPlaying: con.isPlaying,
-                    isLiked: false,
-                    bottomOffset: _navBarHeight,
-                    progressValue: con.duration.inMilliseconds > 0
-                        ? (con.position.inMilliseconds /
-                                con.duration.inMilliseconds)
-                            .clamp(0.0, 1.0)
-                        : 0,
-                    position: con.position,
-                    duration: con.duration,
-                    onPlayPause: con.playOrPause,
-                    onPrevious: con.songs.length > 1 ? con.previous : null,
-                    onNext: con.songs.length > 1 ? con.next : null,
-                    onSeek: con.seek,
-                    onLike: () => _toggleFavorite(
-                      con,
-                      SongModel(
-                        songid: song.songid,
-                        songname: song.songname,
-                        userid: song.userid,
-                        trackid: song.trackid,
-                        duration: song.duration,
-                        coverImageUrl: song.coverImageUrl,
-                        name: song.name,
-                      ),
-                    ),
-                    onComment: () => _showUnavailable(
-                      context,
-                      AppLocale.text(
-                        'Комментарии пока недоступны',
-                        'Comments are not available yet',
-                      ),
-                    ),
-                    onDownload: () => _showUnavailable(
-                      context,
-                      AppLocale.text(
-                        'Скачивание временно отключено',
-                        'Downloads are temporarily disabled',
-                      ),
-                    ),
-                    onMore: () => _openMore(
-                      context,
-                      con,
-                      SongModel(
-                        songid: song.songid,
-                        songname: song.songname,
-                        userid: song.userid,
-                        trackid: song.trackid,
-                        duration: song.duration,
-                        coverImageUrl: song.coverImageUrl,
-                        name: song.name,
-                      ),
-                    ),
-                    onUpNext: () => _openMore(
-                      context,
-                      con,
-                      SongModel(
-                        songid: song.songid,
-                        songname: song.songname,
-                        userid: song.userid,
-                        trackid: song.trackid,
-                        duration: song.duration,
-                        coverImageUrl: song.coverImageUrl,
-                        name: song.name,
-                      ),
-                    ),
-                    onLyrics: () => _showUnavailable(
-                      context,
-                      AppLocale.text(
-                        'Текст песни пока недоступен',
-                        'Lyrics are not available yet',
-                      ),
-                    ),
-                    onRelated: () => _showUnavailable(
-                      context,
-                      AppLocale.text(
-                        'Похожие треки пока недоступны',
-                        'Related tracks are not available yet',
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
+  static void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
