@@ -15,46 +15,28 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// Keep Android app/library modules on the same JVM 17 target.
-// Android modules must use sourceCompatibility/targetCompatibility rather
-// than JavaCompile --release, because AGP supplies the Android bootclasspath.
+// Keep every Android module on the same JVM 17 target.
+// Configure after evaluation so Android/Flutter plugins cannot leave
+// their Java tasks at 1.8 while Kotlin targets JVM 17.
 subprojects {
-    pluginManager.withPlugin("com.android.application") {
-        android {
-            compileOptions {
-                sourceCompatibility JavaVersion.VERSION_17
-                targetCompatibility JavaVersion.VERSION_17
+    afterEvaluate { project ->
+        if (project.plugins.hasPlugin("com.android.application") ||
+            project.plugins.hasPlugin("com.android.library")) {
+            project.android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
             }
         }
 
-        tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
+        project.tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
             sourceCompatibility = JavaVersion.VERSION_17.toString()
             targetCompatibility = JavaVersion.VERSION_17.toString()
             options.release = null
         }
 
-        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-            compilerOptions {
-                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-            }
-        }
-    }
-
-    pluginManager.withPlugin("com.android.library") {
-        android {
-            compileOptions {
-                sourceCompatibility JavaVersion.VERSION_17
-                targetCompatibility JavaVersion.VERSION_17
-            }
-        }
-
-        tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
-            sourceCompatibility = JavaVersion.VERSION_17.toString()
-            targetCompatibility = JavaVersion.VERSION_17.toString()
-            options.release = null
-        }
-
-        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
             compilerOptions {
                 jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
             }
