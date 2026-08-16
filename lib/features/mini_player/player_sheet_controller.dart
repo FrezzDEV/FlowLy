@@ -29,11 +29,12 @@ class PlayerSheetController extends ChangeNotifier {
 
   void updateDrag({
     required double globalY,
-    required double availableHeight,
+    required double dragDistance,
   }) {
-    if (!_dragging || availableHeight <= 0) return;
+    if (!_dragging || dragDistance <= 0) return;
+
     final delta = _dragStartY - globalY;
-    setProgress(_dragStartProgress + (delta / availableHeight));
+    setProgress(_dragStartProgress + (delta / dragDistance));
   }
 
   bool endDrag({required double velocityY}) {
@@ -46,8 +47,16 @@ class PlayerSheetController extends ChangeNotifier {
     final targetExpanded = fastUp ||
         (!fastDown && _progress >= expandThreshold);
 
-    notifyListeners();
+    _notifyIfAlive();
     return targetExpanded;
+  }
+
+  double velocityToProgress({
+    required double velocityY,
+    required double dragDistance,
+  }) {
+    if (dragDistance <= 0) return 0;
+    return (-velocityY / dragDistance).clamp(-8.0, 8.0).toDouble();
   }
 
   void setProgress(double value) {
@@ -72,12 +81,16 @@ class PlayerSheetController extends ChangeNotifier {
 
   double fadeIn(double begin, double end) => interval(begin, end);
 
-  double lerp(double from, double to) {
-    return from + ((to - from) * _progress);
-  }
+  double lerp(double from, double to) =>
+      from + ((to - from) * _progress);
 
-  double lerpWith(double from, double to, double Function(double) transform) {
-    final transformedProgress = transform(_progress).clamp(0.0, 1.0);
+  double lerpWith(
+    double from,
+    double to,
+    double Function(double) transform,
+  ) {
+    final transformedProgress =
+        transform(_progress).clamp(0.0, 1.0).toDouble();
     return from + ((to - from) * transformedProgress);
   }
 
