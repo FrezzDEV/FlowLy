@@ -45,10 +45,7 @@ class FlowLyApi {
       request().timeout(_requestTimeout);
 
   Future<Map<String, dynamic>> getProfile() async =>
-      _jsonMap(await _request(() => _client.get(
-            _uri('/api/v1/me'),
-            headers: _headers(),
-          )));
+      _jsonMap(await _request(() => _client.get(_uri('/api/v1/me'), headers: _headers())));
 
   Future<Map<String, dynamic>> updateProfile({
     String? username,
@@ -69,14 +66,9 @@ class FlowLyApi {
           )));
 
   Future<Map<String, dynamic>> getFilters() async =>
-      _jsonMap(await _request(() => _client.get(
-            _uri('/api/v1/me/filters'),
-            headers: _headers(),
-          )));
+      _jsonMap(await _request(() => _client.get(_uri('/api/v1/me/filters'), headers: _headers())));
 
-  Future<Map<String, dynamic>> updateFilters(
-    Map<String, dynamic> values,
-  ) async =>
+  Future<Map<String, dynamic>> updateFilters(Map<String, dynamic> values) async =>
       _jsonMap(await _request(() => _client.put(
             _uri('/api/v1/me/filters'),
             headers: _headers(jsonBody: true),
@@ -84,10 +76,7 @@ class FlowLyApi {
           )));
 
   Future<List<Map<String, dynamic>>> recommendations() async =>
-      _jsonList(await _request(() => _client.get(
-            _uri('/api/v1/recommendations'),
-            headers: _headers(),
-          )));
+      _jsonList(await _request(() => _client.get(_uri('/api/v1/recommendations'), headers: _headers())));
 
   Future<List<Map<String, dynamic>>> related(int trackId) async =>
       _jsonList(await _request(() => _client.get(
@@ -103,13 +92,10 @@ class FlowLyApi {
       );
 
   Future<List<Map<String, dynamic>>> history() async =>
-      _jsonList(await _request(() => _client.get(
-            _uri('/api/v1/me/history'),
-            headers: _headers(),
-          )));
+      _jsonList(await _request(() => _client.get(_uri('/api/v1/me/history'), headers: _headers())));
 
   Future<bool> toggleFavorite(int trackId) async {
-    final data = await _jsonMap(await _request(() => _client.post(
+    final data = _jsonMap(await _request(() => _client.post(
           _uri('/api/v1/tracks/$trackId/favorite'),
           headers: _headers(),
         )));
@@ -136,16 +122,10 @@ class FlowLyApi {
           )));
 
   Future<Map<String, dynamic>> stats() async =>
-      _jsonMap(await _request(() => _client.get(
-            _uri('/api/v1/me/stats'),
-            headers: _headers(),
-          )));
+      _jsonMap(await _request(() => _client.get(_uri('/api/v1/me/stats'), headers: _headers())));
 
   Future<List<Map<String, dynamic>>> myThemes() async =>
-      _jsonList(await _request(() => _client.get(
-            _uri('/api/v1/me/themes'),
-            headers: _headers(),
-          )));
+      _jsonList(await _request(() => _client.get(_uri('/api/v1/me/themes'), headers: _headers())));
 
   Future<Map<String, dynamic>> saveTheme({
     required String name,
@@ -165,16 +145,10 @@ class FlowLyApi {
           )));
 
   Future<List<Map<String, dynamic>>> popularThemes() async =>
-      _jsonList(await _request(() => _client.get(
-            _uri('/api/v1/themes/popular'),
-            headers: _headers(),
-          )));
+      _jsonList(await _request(() => _client.get(_uri('/api/v1/themes/popular'), headers: _headers())));
 
   Future<Map<String, dynamic>> downloadTheme(int id) async =>
-      _jsonMap(await _request(() => _client.post(
-            _uri('/api/v1/themes/$id/download'),
-            headers: _headers(),
-          )));
+      _jsonMap(await _request(() => _client.post(_uri('/api/v1/themes/$id/download'), headers: _headers())));
 
   Future<Map<String, dynamic>> rateTheme(int id, int rating) async =>
       _jsonMap(await _request(() => _client.post(
@@ -197,10 +171,7 @@ class FlowLyApi {
       _jsonMap(await _request(() => _client.post(
             _uri('/api/v1/imports'),
             headers: _headers(jsonBody: true),
-            body: jsonEncode({
-              'source': source,
-              'source_url': sourceUrl,
-            }),
+            body: jsonEncode({'source': source, 'source_url': sourceUrl}),
           )));
 
   Future<Map<String, dynamic>> importStatus(int jobId) async =>
