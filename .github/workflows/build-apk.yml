@@ -33,19 +33,6 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Apply Flutter compatibility fixes
-        run: python3 tool/migrate_flutter_legacy.py
-
-      - name: Persist compatibility fixes
-        run: |
-          if ! git diff --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "chore: apply Flutter compatibility fixes"
-            git push
-          fi
-
       - name: Resolve Flutter dependencies
         run: flutter --version && flutter pub get
 
@@ -73,7 +60,7 @@ jobs:
           PY
 
       - name: Analyze
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        run: flutter analyze
 
       - name: Build FlowLy APK
         run: flutter build apk --release
