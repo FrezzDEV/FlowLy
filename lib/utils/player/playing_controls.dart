@@ -4,8 +4,6 @@ import 'package:line_icons/line_icons.dart';
 
 import '../../controllers/main_controller.dart';
 
-enum _PlayerAction { shuffle, previous, play, next, repeat }
-
 class PlayingControls extends StatelessWidget {
   final bool isPlaying;
   final LoopModeType? loopMode;
@@ -44,7 +42,7 @@ class PlayingControls extends StatelessWidget {
           _controlButton(
             icon: LineIcons.random,
             enabled: isPlaylist,
-            color: shuffled ? Colors.white : Colors.white,
+            color: shuffled ? Colors.white : const Color(0xFF777777),
             onPressed: isPlaylist ? con.toggleShuffle : null,
           ),
           _controlButton(
