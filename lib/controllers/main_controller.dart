@@ -13,6 +13,8 @@ class MainController extends ChangeNotifier {
   final AudioPlayer player = AudioPlayer();
   final List<StreamSubscription<dynamic>> _subscriptions = [];
 
+  static const Duration _positionNotifyInterval = Duration(milliseconds: 100);
+
   List<SongModel> _songs = [];
   int _currentIndex = 0;
   bool _isPlaying = false;
@@ -20,6 +22,7 @@ class MainController extends ChangeNotifier {
   LoopModeType _loopMode = LoopModeType.none;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
+  DateTime _lastPositionNotify = DateTime.fromMicrosecondsSinceEpoch(0);
 
   List<SongModel> get songs => List.unmodifiable(_songs);
   List<SongModel> get audios => List.unmodifiable(_songs);
@@ -36,12 +39,18 @@ class MainController extends ChangeNotifier {
   MainController() {
     _subscriptions.add(player.positionStream.listen((value) {
       _position = value;
-      notifyListeners();
+      final now = DateTime.now();
+      if (now.difference(_lastPositionNotify) >= _positionNotifyInterval) {
+        _lastPositionNotify = now;
+        notifyListeners();
+      }
     }));
+
     _subscriptions.add(player.durationStream.listen((value) {
       _duration = value ?? Duration.zero;
       notifyListeners();
     }));
+
     _subscriptions.add(player.currentIndexStream.listen((value) {
       if (value != null) {
         _currentIndex = value;
@@ -49,15 +58,19 @@ class MainController extends ChangeNotifier {
         notifyListeners();
       }
     }));
+
     _subscriptions.add(player.playerStateStream.listen((state) {
-      _isPlaying = state.playing;
-      notifyListeners();
+      if (_isPlaying != state.playing) {
+        _isPlaying = state.playing;
+        notifyListeners();
+      }
     }));
   }
 
   Future<void> init() async {
     final box = Hive.box('RecentlyPlayed');
     final recent = <SongModel>[];
+
     for (var i = 0; i < box.length; i++) {
       final value = box.getAt(i);
       if (value is Map) {
@@ -72,10 +85,16 @@ class MainController extends ChangeNotifier {
         ));
       }
     }
+
     if (recent.isNotEmpty) {
+      final recentIds = recent
+          .map((song) => song.songid)
+          .whereType<String>()
+          .toSet();
       _songs = [
         ...recent,
-        ..._songs.where((song) => !recent.any((item) => item.songid == song.songid)),
+        ..._songs.where((song) =>
+            song.songid == null || !recentIds.contains(song.songid)),
       ];
       notifyListeners();
     }
@@ -84,9 +103,16 @@ class MainController extends ChangeNotifier {
   Future<void> _saveRecentlyPlayed() async {
     final song = currentSong;
     if (song == null) return;
+
     try {
       final box = Hive.box('RecentlyPlayed');
-      await box.put(song.songid ?? song.songname ?? DateTime.now().toIso8601String(), {
+      final key = song.songid?.isNotEmpty == true
+          ? song.songid!
+          : song.trackid?.isNotEmpty == true
+              ? song.trackid!
+              : song.songname ?? DateTime.now().toIso8601String();
+
+      await box.put(key, {
         'songname': song.songname,
         'fullname': song.name,
         'username': song.userid,
@@ -210,15 +236,16 @@ class MainController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addToFavorite({
+  Future<void> addToFavorite({
     required String name,
     required String fullname,
     required String username,
     required String cover,
     required String track,
-  }) {
+  }) async {
     final box = Hive.box('liked');
-    box.put(name, {
+    final key = track.isNotEmpty ? track : name;
+    await box.put(key, {
       'songname': name,
       'fullname': fullname,
       'username': username,
@@ -227,7 +254,8 @@ class MainController extends ChangeNotifier {
     });
   }
 
-  List<SongModel> convertToAudio(List<SongModel> songs) => List<SongModel>.from(songs);
+  List<SongModel> convertToAudio(List<SongModel> songs) =>
+      List<SongModel>.from(songs);
 
   List<SongModel> converLocalSongToAudio(List<dynamic> songs) => songs.map((audio) {
         final item = audio as Map;
@@ -242,11 +270,19 @@ class MainController extends ChangeNotifier {
         );
       }).toList();
 
-  SongModel? find(List<SongModel> source, String? path) =>
-      source.where((song) => song.trackid == path).firstOrNull;
+  SongModel? find(List<SongModel> source, String? path) {
+    for (final song in source) {
+      if (song.trackid == path) return song;
+    }
+    return null;
+  }
 
-  SongModel? findByname(List<SongModel> source, String? title) =>
-      source.where((song) => song.songname == title).firstOrNull;
+  SongModel? findByname(List<SongModel> source, String? title) {
+    for (final song in source) {
+      if (song.songname == title) return song;
+    }
+    return null;
+  }
 
   AudioSource _toSource(SongModel song) {
     final url = song.trackid;
@@ -254,9 +290,14 @@ class MainController extends ChangeNotifier {
       throw ArgumentError('Song ${song.songname ?? ''} has no audio URL');
     }
 
+    final parsedUrl = Uri.tryParse(url);
+    if (parsedUrl == null || !parsedUrl.hasScheme || parsedUrl.host.isEmpty) {
+      throw ArgumentError('Song ${song.songname ?? ''} has an invalid audio URL');
+    }
+
     final coverUri = Uri.tryParse(song.coverImageUrl ?? '');
     return AudioSource.uri(
-      Uri.parse(url),
+      parsedUrl,
       tag: MediaItem(
         id: song.songid?.isNotEmpty == true ? song.songid! : url,
         title: song.songname?.isNotEmpty == true ? song.songname! : 'FlowLy',
@@ -279,14 +320,5 @@ class MainController extends ChangeNotifier {
   void dispose() {
     close();
     super.dispose();
-  }
-}
-
-extension _IterableFirstOrNull<T> on Iterable<T> {
-  T? get firstOrNull {
-    for (final value in this) {
-      return value;
-    }
-    return null;
   }
 }
