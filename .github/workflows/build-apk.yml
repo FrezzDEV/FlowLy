@@ -56,6 +56,27 @@ jobs:
           storeFile=flowly-release.jks
           EOF
 
+      - name: Validate release keystore
+        env:
+          FLOWLY_KEYSTORE_PASSWORD: ${{ secrets.FLOWLY_KEYSTORE_PASSWORD }}
+          FLOWLY_KEY_ALIAS: ${{ secrets.FLOWLY_KEY_ALIAS }}
+          FLOWLY_KEY_PASSWORD: ${{ secrets.FLOWLY_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          keytool -list \
+            -keystore android/flowly-release.jks \
+            -storepass "$FLOWLY_KEYSTORE_PASSWORD" \
+            -alias "$FLOWLY_KEY_ALIAS" >/dev/null
+
+          keytool -exportcert \
+            -keystore android/flowly-release.jks \
+            -storepass "$FLOWLY_KEYSTORE_PASSWORD" \
+            -keypass "$FLOWLY_KEY_PASSWORD" \
+            -alias "$FLOWLY_KEY_ALIAS" \
+            -rfc >/dev/null
+
+          echo "Release keystore, alias, store password and key password validated."
+
       - name: Resolve Flutter dependencies
         run: flutter --version && flutter pub get
 
