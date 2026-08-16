@@ -14,6 +14,16 @@ class PlayerSheet extends StatefulWidget {
     required this.onPlayPause,
     this.onNext,
     this.onPrevious,
+    this.onLike,
+    this.onComment,
+    this.onDownload,
+    this.onMore,
+    this.onLyrics,
+    this.onRelated,
+    this.onUpNext,
+    this.onClose,
+    this.isLiked = false,
+    this.bottomOffset = 0,
     this.progressValue = 0,
     this.duration = Duration.zero,
     this.position = Duration.zero,
@@ -26,9 +36,19 @@ class PlayerSheet extends StatefulWidget {
   final String title;
   final String? artist;
   final bool isPlaying;
+  final bool isLiked;
   final VoidCallback onPlayPause;
   final VoidCallback? onNext;
   final VoidCallback? onPrevious;
+  final VoidCallback? onLike;
+  final VoidCallback? onComment;
+  final VoidCallback? onDownload;
+  final VoidCallback? onMore;
+  final VoidCallback? onLyrics;
+  final VoidCallback? onRelated;
+  final VoidCallback? onUpNext;
+  final VoidCallback? onClose;
+  final double bottomOffset;
   final double progressValue;
   final Duration duration;
   final Duration position;
@@ -44,6 +64,7 @@ class _PlayerSheetState extends State<PlayerSheet>
     with SingleTickerProviderStateMixin {
   late final PlayerSheetController controller;
   late final AnimationController snapController;
+  bool _closing = false;
 
   @override
   void initState() {
@@ -58,27 +79,26 @@ class _PlayerSheetState extends State<PlayerSheet>
     });
   }
 
-  void _snapTo(bool expanded) {
+  Future<void> _snapTo(bool expanded) async {
     final target = expanded ? 1.0 : 0.0;
     snapController.stop();
     snapController.value = controller.progress;
-    snapController.animateWith(
+    await snapController.animateWith(
       SpringSimulation(
         const SpringDescription(
-          mass: 1,
-          stiffness: 420,
-          damping: 36,
+          mass: 1.0,
+          stiffness: 360.0,
+          damping: 34.0,
         ),
         controller.progress,
         target,
         0,
       ),
     );
-  }
-
-  void _handleTap() {
-    if (controller.progress < 0.2) {
-      _snapTo(true);
+    controller.setProgress(target);
+    if (!expanded && !_closing && mounted) {
+      _closing = true;
+      widget.onClose?.call();
     }
   }
 
@@ -94,18 +114,12 @@ class _PlayerSheetState extends State<PlayerSheet>
     return LayoutBuilder(
       builder: (context, constraints) {
         final media = MediaQuery.of(context);
-        final layout = PlayerSheetLayout(
-          progress: controller.progress,
-          screenSize: constraints.biggest,
-          topSafeArea: media.padding.top,
-          bottomSafeArea: media.padding.bottom,
-        );
 
         return GestureDetector(
           behavior: HitTestBehavior.translucent,
-          onTap: _handleTap,
           onVerticalDragStart: (details) {
             snapController.stop();
+            _closing = false;
             controller.beginDrag(details.globalPosition.dy);
           },
           onVerticalDragUpdate: (details) {
@@ -122,20 +136,30 @@ class _PlayerSheetState extends State<PlayerSheet>
           },
           child: AnimatedBuilder(
             animation: controller,
-            builder: (context, _) => Stack(
-              fit: StackFit.expand,
-              children: [
-                if (layout.scrimOpacity > 0)
-                  IgnorePointer(
-                    child: ColoredBox(
-                      color: Colors.black.withValues(
-                        alpha: layout.scrimOpacity,
+            builder: (context, _) {
+              final layout = PlayerSheetLayout(
+                progress: controller.progress,
+                screenSize: constraints.biggest,
+                topSafeArea: media.padding.top,
+                bottomSafeArea: media.padding.bottom,
+                bottomOffset: widget.bottomOffset,
+              );
+
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (layout.scrimOpacity > 0)
+                    IgnorePointer(
+                      child: ColoredBox(
+                        color: Colors.black.withValues(
+                          alpha: layout.scrimOpacity,
+                        ),
                       ),
                     ),
-                  ),
-                _sheet(layout),
-              ],
-            ),
+                  _sheet(layout),
+                ],
+              );
+            },
           ),
         );
       },
@@ -152,13 +176,13 @@ class _PlayerSheetState extends State<PlayerSheet>
         decoration: BoxDecoration(
           color: const Color(0xFF101010),
           borderRadius: BorderRadius.vertical(
-            top: Radius.circular(layout.lerp(12, 0)),
+            top: Radius.circular(layout.lerp(14, 0)),
           ),
         ),
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            _artwork(layout),
+            RepaintBoundary(child: _artwork(layout)),
             _miniContent(layout),
             _expandedContent(layout),
             if (layout.p > 0.85) _dragHandle(layout),
@@ -169,6 +193,8 @@ class _PlayerSheetState extends State<PlayerSheet>
   }
 
   Widget _artwork(PlayerSheetLayout layout) {
+    final cacheSize = (layout.expandedArtworkSize * 2).round().clamp(256, 1600);
+
     return Positioned(
       left: layout.artworkLeft,
       top: layout.artworkTop,
@@ -176,7 +202,13 @@ class _PlayerSheetState extends State<PlayerSheet>
       height: layout.artworkSize,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(layout.artworkRadius),
-        child: Image(image: widget.cover, fit: BoxFit.cover),
+        child: Image(
+          image: widget.cover,
+          fit: BoxFit.cover,
+          cacheWidth: cacheSize,
+          cacheHeight: cacheSize,
+          filterQuality: FilterQuality.low,
+        ),
       ),
     );
   }
@@ -232,67 +264,41 @@ class _PlayerSheetState extends State<PlayerSheet>
                 right: 24,
                 top: layout.fullContentTop,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
                       widget.title,
                       maxLines: 2,
-                      textAlign: TextAlign.center,
+                      textAlign: TextAlign.left,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 27,
+                        fontSize: 28,
                         height: 1.1,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     if (widget.artist?.isNotEmpty == true) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Text(
                         widget.artist!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 15,
+                          color: Color(0xFFC9C9C9),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
-                  ],
-                ),
-              ),
-              Positioned(
-                left: 24,
-                right: 24,
-                bottom: layout.progressBottom,
-                child: _progressBar(),
-              ),
-              Positioned(
-                left: 20,
-                right: 20,
-                bottom: layout.controlsBottom,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    IconButton(
-                      onPressed: widget.onPrevious,
-                      icon: const Icon(Icons.skip_previous, size: 38),
-                      color: Colors.white,
-                    ),
-                    IconButton(
-                      onPressed: widget.onPlayPause,
-                      icon: Icon(
-                        widget.isPlaying
-                            ? Icons.pause_circle_filled
-                            : Icons.play_circle_filled,
-                        size: 76,
-                        color: Colors.white,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: widget.onNext,
-                      icon: const Icon(Icons.skip_next, size: 38),
-                      color: Colors.white,
-                    ),
+                    const SizedBox(height: 8),
+                    _actionRow(),
+                    const SizedBox(height: 8),
+                    _progressBar(),
+                    const SizedBox(height: 12),
+                    _controls(),
+                    const SizedBox(height: 12),
+                    _secondaryTabs(),
                   ],
                 ),
               ),
@@ -303,26 +309,151 @@ class _PlayerSheetState extends State<PlayerSheet>
     );
   }
 
+  Widget _actionRow() {
+    return Row(
+      children: [
+        _actionButton(
+          icon: widget.isLiked
+              ? Icons.thumb_up_alt
+              : Icons.thumb_up_alt_outlined,
+          onPressed: widget.onLike,
+        ),
+        _actionButton(
+          icon: Icons.chat_bubble_outline,
+          onPressed: widget.onComment,
+        ),
+        const Spacer(),
+        _actionButton(
+          icon: Icons.download_rounded,
+          onPressed: widget.onDownload,
+        ),
+        _actionButton(
+          icon: Icons.more_vert,
+          onPressed: widget.onMore,
+        ),
+      ],
+    );
+  }
+
+  Widget _actionButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
+    return IconButton(
+      padding: const EdgeInsets.all(8),
+      visualDensity: VisualDensity.compact,
+      onPressed: onPressed,
+      icon: Icon(icon, color: Colors.white, size: 27),
+    );
+  }
+
+  Widget _controls() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        IconButton(
+          onPressed: widget.onPrevious,
+          icon: const Icon(Icons.skip_previous, size: 40),
+          color: Colors.white,
+        ),
+        Material(
+          color: const Color(0xFF777777),
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: widget.onPlayPause,
+            child: SizedBox(
+              width: 82,
+              height: 82,
+              child: Icon(
+                widget.isPlaying
+                    ? Icons.pause
+                    : Icons.play_arrow,
+                color: Colors.white,
+                size: 44,
+              ),
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: widget.onNext,
+          icon: const Icon(Icons.skip_next, size: 40),
+          color: Colors.white,
+        ),
+      ],
+    );
+  }
+
+  Widget _secondaryTabs() {
+    return Row(
+      children: [
+        Expanded(
+          child: _textAction(
+            'UP NEXT',
+            Icons.queue_music_rounded,
+            widget.onUpNext,
+          ),
+        ),
+        Expanded(
+          child: _textAction(
+            'LYRICS',
+            Icons.lyrics_outlined,
+            widget.onLyrics,
+          ),
+        ),
+        Expanded(
+          child: _textAction(
+            'RELATED',
+            Icons.graphic_eq_rounded,
+            widget.onRelated,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _textAction(
+    String label,
+    IconData icon,
+    VoidCallback? onPressed,
+  ) {
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18, color: Colors.white70),
+      label: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+      ),
+    );
+  }
+
   Widget _progressBar() {
-    final duration = widget.duration.inMilliseconds;
-    final position = widget.position.inMilliseconds;
-    final value = duration <= 0
+    final durationMs = widget.duration.inMilliseconds;
+    final positionMs = widget.position.inMilliseconds;
+    final value = durationMs <= 0
         ? widget.progressValue.clamp(0.0, 1.0)
-        : (position / duration).clamp(0.0, 1.0);
+        : (positionMs / durationMs).clamp(0.0, 1.0);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(
           children: [
             GestureDetector(
-              onTapDown: widget.onSeek == null || duration <= 0
+              onTapDown: widget.onSeek == null || durationMs <= 0
                   ? null
                   : (details) {
-                      final fraction = (details.localPosition.dx /
-                              constraints.maxWidth)
-                          .clamp(0.0, 1.0);
+                      final fraction =
+                          (details.localPosition.dx / constraints.maxWidth)
+                              .clamp(0.0, 1.0);
                       widget.onSeek!(Duration(
-                        milliseconds: (duration * fraction).round(),
+                        milliseconds: (durationMs * fraction).round(),
                       ));
                     },
               child: ClipRRect(
@@ -336,24 +467,14 @@ class _PlayerSheetState extends State<PlayerSheet>
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 7),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  _format(widget.position),
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                ),
-                Text(
-                  _format(widget.duration),
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                ),
+                Text(_format(widget.position),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                Text(_format(widget.duration),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12)),
               ],
             ),
           ],
@@ -366,24 +487,21 @@ class _PlayerSheetState extends State<PlayerSheet>
     return Positioned(
       top: 10,
       left: (layout.screenSize.width - 38) / 2,
-      child: Semantics(
-        label: 'Player drag handle',
-        child: Container(
-          width: 38,
-          height: 4,
-          decoration: BoxDecoration(
-            color: Colors.white24,
-            borderRadius: BorderRadius.circular(2),
-          ),
+      child: Container(
+        width: 38,
+        height: 4,
+        decoration: BoxDecoration(
+          color: Colors.white24,
+          borderRadius: BorderRadius.circular(2),
         ),
       ),
     );
   }
 
   String _format(Duration value) {
-    final seconds = value.inSeconds;
-    final minutes = seconds ~/ 60;
-    final remainder = seconds % 60;
-    return '$minutes:${remainder.toString().padLeft(2, '0')}';
+    final totalSeconds = value.inSeconds.clamp(0, 1 << 30);
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 }
