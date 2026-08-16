@@ -60,7 +60,8 @@ android {
         release {
             keyAlias requiredSigningProperty('keyAlias')
             keyPassword requiredSigningProperty('keyPassword')
-            storeFile file(requiredSigningProperty('storeFile'))
+            // key.properties is in android/, while this module lives in android/app/.
+            storeFile file("../${requiredSigningProperty('storeFile')}")
             storePassword requiredSigningProperty('storePassword')
         }
     }
