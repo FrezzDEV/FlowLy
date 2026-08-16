@@ -124,7 +124,6 @@ class _PlayerSheetState extends State<PlayerSheet>
             animation: controller,
             builder: (context, _) => Stack(
               fit: StackFit.expand,
-              clipBehavior: Clip.none,
               children: [
                 if (layout.scrimOpacity > 0)
                   IgnorePointer(
@@ -311,44 +310,55 @@ class _PlayerSheetState extends State<PlayerSheet>
         ? widget.progressValue.clamp(0.0, 1.0)
         : (position / duration).clamp(0.0, 1.0);
 
-    return Column(
-      children: [
-        GestureDetector(
-          onTapDown: widget.onSeek == null
-              ? null
-              : (details) {
-                  final render = context.findRenderObject();
-                  if (render is! RenderBox || render.size.width <= 0) return;
-                  final fraction =
-                      (details.localPosition.dx / render.size.width)
-                          .clamp(0.0, 1.0);
-                  if (duration > 0) {
-                    widget.onSeek!(Duration(
-                      milliseconds: (duration * fraction).round(),
-                    ));
-                  }
-                },
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              minHeight: 4,
-              value: value,
-              backgroundColor: const Color(0xFF3A3A3A),
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
           children: [
-            Text(_format(widget.position),
-                style: const TextStyle(color: Colors.white70, fontSize: 12)),
-            Text(_format(widget.duration),
-                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            GestureDetector(
+              onTapDown: widget.onSeek == null || duration <= 0
+                  ? null
+                  : (details) {
+                      final fraction = (details.localPosition.dx /
+                              constraints.maxWidth)
+                          .clamp(0.0, 1.0);
+                      widget.onSeek!(Duration(
+                        milliseconds: (duration * fraction).round(),
+                      ));
+                    },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  minHeight: 4,
+                  value: value,
+                  backgroundColor: const Color(0xFF3A3A3A),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _format(widget.position),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  _format(widget.duration),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
