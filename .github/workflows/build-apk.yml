@@ -33,6 +33,27 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Configure release signing
+        env:
+          FLOWLY_KEYSTORE_BASE64: ${{ secrets.FLOWLY_KEYSTORE_BASE64 }}
+          FLOWLY_KEYSTORE_PASSWORD: ${{ secrets.FLOWLY_KEYSTORE_PASSWORD }}
+          FLOWLY_KEY_ALIAS: ${{ secrets.FLOWLY_KEY_ALIAS }}
+          FLOWLY_KEY_PASSWORD: ${{ secrets.FLOWLY_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$FLOWLY_KEYSTORE_BASE64"
+          test -n "$FLOWLY_KEYSTORE_PASSWORD"
+          test -n "$FLOWLY_KEY_ALIAS"
+          test -n "$FLOWLY_KEY_PASSWORD"
+
+          printf '%s' "$FLOWLY_KEYSTORE_BASE64" | base64 --decode > android/flowly-release.jks
+          cat > android/key.properties <<EOF
+          storePassword=$FLOWLY_KEYSTORE_PASSWORD
+          keyPassword=$FLOWLY_KEY_PASSWORD
+          keyAlias=$FLOWLY_KEY_ALIAS
+          storeFile=flowly-release.jks
+          EOF
+
       - name: Resolve Flutter dependencies
         run: flutter --version && flutter pub get
 
@@ -84,3 +105,7 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "FlowLy ${VERSION}" \
             --generate-notes
+
+      - name: Clean signing material
+        if: always()
+        run: rm -f android/flowly-release.jks android/key.properties
