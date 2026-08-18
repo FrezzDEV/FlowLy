@@ -75,18 +75,7 @@ class PersistentBottomNavBar extends StatelessWidget {
       );
 
   @override
-  Widget build(BuildContext context) {
-    return hideNavigationBar == null
-        ? _navBarWidget()
-        : OffsetAnimation(
-            hideNavigationBar: hideNavigationBar,
-            navBarHeight: navBarEssentials!.navBarHeight,
-            onAnimationComplete: (isAnimating, isComplete) {
-              onAnimationComplete!(isAnimating, isComplete);
-            },
-            child: _navBarWidget(),
-          );
-  }
+  Widget build(BuildContext context) => _navBarWidget();
 
   PersistentBottomNavBar copyWith(
       {int? selectedIndex,
