@@ -46,12 +46,11 @@ class _DraggableViewState extends State<DraggableView> {
 
         final screenHeight = MediaQuery.of(context).size.height;
         final topPadding = MediaQuery.of(context).padding.top;
-        final maxHeight = (screenHeight - topPadding).clamp(320.0, screenHeight);
 
         return SlidingBox(
           controller: _boxController,
           minHeight: 62,
-          maxHeight: maxHeight,
+          maxHeight: screenHeight - topPadding,
           collapsed: true,
           draggable: true,
           draggableIconVisible: false,
