@@ -8,7 +8,7 @@ import '../../controllers/main_controller.dart';
 import '../../services/global_gesture_service.dart';
 import '../../services/settings_service.dart';
 import '../../utils/bottom_nav_bar/persistent-tab-view.widget.dart';
-import '../../utils/bottom_play_widget.dart';
+import '../../utils/draggable_view.dart';
 import '../current_playing/current_playing_song.dart';
 import '../home/home_screen.dart';
 import '../library/library.dart';
@@ -67,10 +67,6 @@ class _AppState extends State<App> {
     ];
   }
 
-  Future<void> _openPlayer(MainController con) {
-    return PlayerRoute.open(context, con);
-  }
-
   void _handleMainMenuSwipeEnd(DragEndDetails details) {
     if (!SettingsService.swipeNavigationEnabled) return;
     final velocity = details.primaryVelocity;
@@ -101,29 +97,21 @@ class _AppState extends State<App> {
       child: Consumer<MainController>(
         builder: (context, con, child) {
           GlobalGestureService.attach(con);
-          return ValueListenableBuilder<bool>(
-            valueListenable: PlayerRoute.isOpenNotifier,
-            builder: (context, playerOpen, _) {
-              return GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onHorizontalDragStart: _handleMainMenuSwipeStart,
-                onHorizontalDragUpdate: _handleMainMenuSwipeUpdate,
-                onHorizontalDragEnd: (details) {
-                  _handleMainMenuSwipeEnd(details);
-                  _horizontalDragStartX = null;
-                },
-                child: PersistentTabView(
+          return GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragStart: _handleMainMenuSwipeStart,
+            onHorizontalDragUpdate: _handleMainMenuSwipeUpdate,
+            onHorizontalDragEnd: (details) {
+              _handleMainMenuSwipeEnd(details);
+              _horizontalDragStartX = null;
+            },
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                PersistentTabView(
                   context,
                   controller: controller,
-                  playWidget: playerOpen
-                      ? const SizedBox.shrink()
-                      : Material(
-                          color: Colors.black,
-                          child: PlayWidget(
-                            con: con,
-                            onTap: () => _openPlayer(con),
-                          ),
-                        ),
+                  playWidget: const SizedBox.shrink(),
                   screens: _buildScreens(con),
                   items: _navBarsItems(),
                   onItemSelected: (index) {
@@ -142,8 +130,12 @@ class _AppState extends State<App> {
                   navBarHeight: 64,
                   padding: const NavBarPadding.all(0),
                 ),
-              );
-            },
+                DraggableView(
+                  con: con,
+                  onOpenPlayer: () => PlayerRoute.open(context, con),
+                ),
+              ],
+            ),
           );
         },
       ),
