@@ -23,12 +23,9 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
-  final PersistentTabController controller =
-      PersistentTabController(initialIndex: 0);
-  final GlobalKey<ProfilePageState> _profileKey =
-      GlobalKey<ProfilePageState>();
-  final GlobalKey<DraggableViewState> _draggableViewKey =
-      GlobalKey<DraggableViewState>();
+  final PersistentTabController controller = PersistentTabController(initialIndex: 0);
+  final GlobalKey<ProfilePageState> _profileKey = GlobalKey<ProfilePageState>();
+  final GlobalKey<DraggableViewState> _draggableViewKey = GlobalKey<DraggableViewState>();
   final ValueNotifier<bool> _playerOpen = ValueNotifier<bool>(false);
   MainController? _notificationController;
   bool _notificationsReady = false;
@@ -43,17 +40,13 @@ class _AppState extends State<App> {
   }
 
   void _attachNotificationController(MainController con) {
-    if (identical(_notificationController, con)) {
-      return;
-    }
+    if (identical(_notificationController, con)) return;
     _detachNotificationController();
     _notificationController = con;
     con.addListener(_onControllerChanged);
     if (!_notificationsReady) {
       _notificationsReady = true;
-      NotificationPlayerService.initialize(con).then((_) {
-        return NotificationPlayerService.show(con);
-      });
+      NotificationPlayerService.initialize(con).then((_) => NotificationPlayerService.show(con));
     }
   }
 
@@ -64,45 +57,18 @@ class _AppState extends State<App> {
 
   void _onControllerChanged() {
     final con = _notificationController;
-    if (con != null) {
-      NotificationPlayerService.show(con);
-    }
+    if (con != null) NotificationPlayerService.show(con);
   }
 
   List<PersistentBottomNavBarItem> _navBarsItems() => [
-        PersistentBottomNavBarItem(
-          icon: const Icon(Icons.home),
-          inactiveIcon: const Icon(LineIcons.home),
-          activeColorSecondary: Colors.white,
-          activeColorPrimary: Colors.grey,
-        ),
-        PersistentBottomNavBarItem(
-          icon: const Icon(CupertinoIcons.search),
-          inactiveIcon: const Icon(CupertinoIcons.search),
-          activeColorSecondary: Colors.white,
-          activeColorPrimary: Colors.grey,
-        ),
-        PersistentBottomNavBarItem(
-          icon: const _LibraryNavIcon(color: Colors.white),
-          inactiveIcon: const _LibraryNavIcon(
-            color: Color(0xFF8E8E8E),
-          ),
-          activeColorSecondary: Colors.white,
-          activeColorPrimary: Colors.grey,
-        ),
-        PersistentBottomNavBarItem(
-          icon: const Icon(CupertinoIcons.person_fill),
-          inactiveIcon: const Icon(CupertinoIcons.person),
-          activeColorSecondary: Colors.white,
-          activeColorPrimary: Colors.grey,
-        ),
+        PersistentBottomNavBarItem(icon: const Icon(Icons.home), inactiveIcon: const Icon(LineIcons.home), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
+        PersistentBottomNavBarItem(icon: const Icon(CupertinoIcons.search), inactiveIcon: const Icon(CupertinoIcons.search), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
+        PersistentBottomNavBarItem(icon: const _LibraryNavIcon(color: Colors.white), inactiveIcon: const _LibraryNavIcon(color: Color(0xFF8E8E8E)), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
+        PersistentBottomNavBarItem(icon: const Icon(CupertinoIcons.person_fill), inactiveIcon: const Icon(CupertinoIcons.person), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
       ];
 
   List<Widget> _buildScreens(MainController con) => [
-        HomeScreen(
-          con: con,
-          onTestPlayerTap: () => _openTestPlayer(con),
-        ),
+        HomeScreen(con: con, onTestPlayerTap: () => _openTestPlayer(con)),
         SearchPage(con: con),
         Library(con: con),
         ProfilePage(key: _profileKey, con: con),
@@ -110,27 +76,9 @@ class _AppState extends State<App> {
 
   Future<void> _openTestPlayer(MainController con) async {
     await con.setPlaylist([
-      SongModel(
-        songid: 'flowly-test-song-1',
-        songname: 'Midnight Flow',
-        name: 'FlowLy Test Artist',
-        trackid: 'flowly-test-track-1',
-        duration: '03:42',
-      ),
-      SongModel(
-        songid: 'flowly-test-song-2',
-        songname: 'Neon Dreams',
-        name: 'FlowLy Test Artist',
-        trackid: 'flowly-test-track-2',
-        duration: '04:08',
-      ),
-      SongModel(
-        songid: 'flowly-test-song-3',
-        songname: 'Afterglow',
-        name: 'FlowLy Test Artist',
-        trackid: 'flowly-test-track-3',
-        duration: '03:31',
-      ),
+      SongModel(songid: 'flowly-test-song-1', songname: 'Midnight Flow', name: 'FlowLy Test Artist', trackid: 'flowly-test-track-1', duration: '03:42'),
+      SongModel(songid: 'flowly-test-song-2', songname: 'Neon Dreams', name: 'FlowLy Test Artist', trackid: 'flowly-test-track-2', duration: '04:08'),
+      SongModel(songid: 'flowly-test-song-3', songname: 'Afterglow', name: 'FlowLy Test Artist', trackid: 'flowly-test-track-3', duration: '03:31'),
     ]);
     await con.play();
     await _draggableViewKey.currentState?.open();
@@ -148,6 +96,15 @@ class _AppState extends State<App> {
     return true;
   }
 
+  void _tapNavigation(int index) {
+    if (index < 0 || index > 3) return;
+    if (index == controller.index) {
+      return;
+    }
+    controller.jumpToTab(index);
+    if (index == 3) _profileKey.currentState?.showProfile();
+  }
+
   void _startPointer(PointerDownEvent event) {
     _pointerDownPosition = event.position;
     _horizontalSwipeHandled = false;
@@ -162,13 +119,9 @@ class _AppState extends State<App> {
     if (!SettingsService.swipeNavigationEnabled) return;
 
     final current = controller.index;
-    final nextIndex = dx < 0
-        ? (current + 1) % 4
-        : (current - 1 + 4) % 4;
+    final nextIndex = dx < 0 ? (current + 1) % 4 : (current - 1 + 4) % 4;
     controller.jumpToTab(nextIndex);
-    if (nextIndex == 3) {
-      _profileKey.currentState?.showProfile();
-    }
+    if (nextIndex == 3) _profileKey.currentState?.showProfile();
     _horizontalSwipeHandled = true;
   }
 
@@ -203,9 +156,7 @@ class _AppState extends State<App> {
                     screens: _buildScreens(con),
                     items: _navBarsItems(),
                     onItemSelected: (index) {
-                      if (index == 3) {
-                        _profileKey.currentState?.showProfile();
-                      }
+                      if (index == 3) _profileKey.currentState?.showProfile();
                     },
                     confineInSafeArea: true,
                     backgroundColor: Colors.black,
@@ -222,6 +173,27 @@ class _AppState extends State<App> {
                     key: _draggableViewKey,
                     con: con,
                     onOpenStateChanged: (open) => _playerOpen.value = open,
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: 64,
+                    child: Row(
+                      children: List.generate(4, (index) {
+                        return Expanded(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              splashColor: Colors.white12,
+                              highlightColor: Colors.white.withValues(alpha: 0.04),
+                              onTap: () => _tapNavigation(index),
+                              child: const SizedBox.expand(),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
                   ),
                 ],
               ),
@@ -262,29 +234,12 @@ class _LibraryNavPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final centerY = size.height / 2;
-    canvas.drawLine(
-      Offset(3, centerY - 7),
-      Offset(3, centerY + 7),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(9, centerY - 9),
-      Offset(9, centerY + 8),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(15, centerY - 6),
-      Offset(15, centerY + 8),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(20, centerY - 8),
-      Offset(22, centerY + 7),
-      paint,
-    );
+    canvas.drawLine(Offset(3, centerY - 7), Offset(3, centerY + 7), paint);
+    canvas.drawLine(Offset(9, centerY - 9), Offset(9, centerY + 8), paint);
+    canvas.drawLine(Offset(15, centerY - 6), Offset(15, centerY + 8), paint);
+    canvas.drawLine(Offset(20, centerY - 8), Offset(22, centerY + 7), paint);
   }
 
   @override
-  bool shouldRepaint(covariant _LibraryNavPainter oldDelegate) =>
-      oldDelegate.color != color;
+  bool shouldRepaint(covariant _LibraryNavPainter oldDelegate) => oldDelegate.color != color;
 }
