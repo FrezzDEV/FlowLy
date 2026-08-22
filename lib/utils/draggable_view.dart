@@ -31,6 +31,7 @@ class DraggableViewState extends State<DraggableView> {
   Future<void> open() async {
     if (!_boxController.isAttached) return;
     await _boxController.showBox();
+    await Future<void>.delayed(Duration.zero);
     widget.onOpenStateChanged?.call(true);
     await _boxController.openBox();
   }
@@ -53,12 +54,11 @@ class DraggableViewState extends State<DraggableView> {
 
         return SlidingBox(
           controller: _boxController,
-          minHeight: 0,
+          minHeight: 1,
           maxHeight: screenHeight - topPadding,
           collapsed: true,
           draggable: true,
           draggableIconVisible: false,
-          style: BoxStyle.none,
           animationCurve: Curves.easeOutCubic,
           animationDuration: const Duration(milliseconds: 240),
           color: const Color(0xFF151515),
@@ -147,7 +147,16 @@ class _MiniPlayerState extends State<MiniPlayer>
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: _CoverThumbnail(imageUrl: song.coverImageUrl),
+                        child: const SizedBox.square(
+                          dimension: 44,
+                          child: ColoredBox(
+                            color: Color(0xFF252525),
+                            child: Icon(
+                              Icons.music_note_rounded,
+                              color: Colors.white54,
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -237,41 +246,6 @@ class _MiniControl extends StatelessWidget {
   }
 }
 
-class _CoverThumbnail extends StatelessWidget {
-  final String? imageUrl;
-
-  const _CoverThumbnail({this.imageUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    if (imageUrl == null || imageUrl!.isEmpty) {
-      return const SizedBox(
-        width: 44,
-        height: 44,
-        child: ColoredBox(
-          color: Color(0xFF252525),
-          child: Icon(Icons.music_note_rounded, color: Colors.white54),
-        ),
-      );
-    }
-
-    return Image.network(
-      imageUrl!,
-      width: 44,
-      height: 44,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => const SizedBox(
-        width: 44,
-        height: 44,
-        child: ColoredBox(
-          color: Color(0xFF252525),
-          child: Icon(Icons.music_note_rounded, color: Colors.white54),
-        ),
-      ),
-    );
-  }
-}
-
 class _ExpandedPlayer extends StatelessWidget {
   final MainController con;
   final VoidCallback onClose;
@@ -330,10 +304,9 @@ class _ExpandedPlayer extends StatelessWidget {
             Center(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(24),
-                child: _CoverArtwork(
+                child: _FallbackArtwork(
                   title: song.songname ?? 'Track',
                   artist: song.name ?? 'FlowLy',
-                  imageUrl: song.coverImageUrl,
                 ),
               ),
             ),
@@ -518,33 +491,6 @@ class _LargePlayPauseButtonState extends State<_LargePlayPauseButton>
   }
 }
 
-class _CoverArtwork extends StatelessWidget {
-  final String title;
-  final String artist;
-  final String? imageUrl;
-
-  const _CoverArtwork({
-    required this.title,
-    required this.artist,
-    this.imageUrl,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return Image.network(
-        imageUrl!,
-        width: 310,
-        height: 310,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) =>
-            _FallbackArtwork(title: title, artist: artist),
-      );
-    }
-    return _FallbackArtwork(title: title, artist: artist);
-  }
-}
-
 class _FallbackArtwork extends StatelessWidget {
   final String title;
   final String artist;
@@ -553,42 +499,46 @@ class _FallbackArtwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 310,
-      height: 310,
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF3E3E3E), Color(0xFF141414)],
+    return SizedBox.square(
+      dimension: 310,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF3E3E3E), Color(0xFF141414)],
+          ),
         ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.music_note_rounded, color: Colors.white70, size: 44),
-          const Spacer(),
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              height: 1.0,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.music_note_rounded, color: Colors.white70, size: 44),
+            const Spacer(),
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                height: 1.05,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            artist,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white70, fontSize: 15),
-          ),
-        ],
+            const SizedBox(height: 6),
+            Text(
+              artist,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
