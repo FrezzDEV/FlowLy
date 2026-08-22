@@ -14,81 +14,32 @@ class SettingsService {
   static Box<dynamic> get _box => Hive.box<dynamic>(_boxName);
 
   static bool get swipeNavigationEnabled =>
-      (_box.get('swipe_navigation_enabled', defaultValue: true) as bool?) ?? true;
+      (_box.get('quickNavigationSwipe', defaultValue: true) as bool?) ?? true;
 
   static Future<void> setSwipeNavigationEnabled(bool value) =>
-      _box.put('swipe_navigation_enabled', value);
+      _box.put('quickNavigationSwipe', value);
 
-  static String get downloadQuality =>
-      (_box.get('download_quality', defaultValue: 'high') as String?) ?? 'high';
-
-  static Future<void> setDownloadQuality(String value) =>
-      _box.put('download_quality', value);
-
-  static bool get downloadWifiOnly =>
-      (_box.get('download_wifi_only', defaultValue: true) as bool?) ?? true;
-
-  static Future<void> setDownloadWifiOnly(bool value) =>
-      _box.put('download_wifi_only', value);
-
-  static String? get downloadDirectory =>
-      _box.get('download_directory') as String?;
-
-  static Future<void> setDownloadDirectory(String? value) async {
-    if (value == null || value.isEmpty) {
-      await _box.delete('download_directory');
-    } else {
-      await _box.put('download_directory', value);
-    }
-  }
-
-  static bool get autoDownloadFavorites =>
-      (_box.get('auto_download_favorites', defaultValue: false) as bool?) ?? false;
-
-  static Future<void> setAutoDownloadFavorites(bool value) =>
-      _box.put('auto_download_favorites', value);
-
-  static bool get autoplay =>
-      (_box.get('autoplay', defaultValue: true) as bool?) ?? true;
-
+  static String get downloadQuality => (_box.get('download_quality', defaultValue: 'high') as String?) ?? 'high';
+  static Future<void> setDownloadQuality(String value) => _box.put('download_quality', value);
+  static bool get downloadWifiOnly => (_box.get('download_wifi_only', defaultValue: true) as bool?) ?? true;
+  static Future<void> setDownloadWifiOnly(bool value) => _box.put('download_wifi_only', value);
+  static String? get downloadDirectory => _box.get('download_directory') as String?;
+  static Future<void> setDownloadDirectory(String? value) async { if (value == null || value.isEmpty) { await _box.delete('download_directory'); } else { await _box.put('download_directory', value); } }
+  static bool get autoDownloadFavorites => (_box.get('auto_download_favorites', defaultValue: false) as bool?) ?? false;
+  static Future<void> setAutoDownloadFavorites(bool value) => _box.put('auto_download_favorites', value);
+  static bool get autoplay => (_box.get('autoplay', defaultValue: true) as bool?) ?? true;
   static Future<void> setAutoplay(bool value) => _box.put('autoplay', value);
-
-  static double get crossfadeSeconds =>
-      ((_box.get('crossfade_seconds', defaultValue: 0.0) as num?) ?? 0).toDouble();
-
-  static Future<void> setCrossfadeSeconds(double value) =>
-      _box.put('crossfade_seconds', value.clamp(0, 12));
-
-  static bool get notificationMusic =>
-      (_box.get('notification_music', defaultValue: true) as bool?) ?? true;
-
-  static Future<void> setNotificationMusic(bool value) =>
-      _box.put('notification_music', value);
-
-  static bool get notificationUpdates =>
-      (_box.get('notification_updates', defaultValue: true) as bool?) ?? true;
-
-  static Future<void> setNotificationUpdates(bool value) =>
-      _box.put('notification_updates', value);
-
-  static bool get notificationDownloads =>
-      (_box.get('notification_downloads', defaultValue: true) as bool?) ?? true;
-
-  static Future<void> setNotificationDownloads(bool value) =>
-      _box.put('notification_downloads', value);
-
-  static bool get diagnosticsEnabled =>
-      (_box.get('diagnostics_enabled', defaultValue: true) as bool?) ?? true;
-
-  static Future<void> setDiagnosticsEnabled(bool value) =>
-      _box.put('diagnostics_enabled', value);
-
-  static String get themePreset =>
-      (_box.get('theme_preset', defaultValue: 'flowly_default') as String?) ??
-      'flowly_default';
-
-  static Future<void> setThemePreset(String value) =>
-      _box.put('theme_preset', value);
-
+  static double get crossfadeSeconds => ((_box.get('crossfade_seconds', defaultValue: 0.0) as num?) ?? 0).toDouble();
+  static Future<void> setCrossfadeSeconds(double value) => _box.put('crossfade_seconds', value.clamp(0, 12));
+  static bool get notificationMusic => (_box.get('notification_music', defaultValue: true) as bool?) ?? true;
+  static Future<void> setNotificationMusic(bool value) => _box.put('notification_music', value);
+  static bool get notificationUpdates => (_box.get('notification_updates', defaultValue: true) as bool?) ?? true;
+  static Future<void> setNotificationUpdates(bool value) => _box.put('notification_updates', value);
+  static bool get notificationDownloads => (_box.get('notification_downloads', defaultValue: true) as bool?) ?? true;
+  static Future<void> setNotificationDownloads(bool value) => _box.put('notification_downloads', value);
+  static bool get diagnosticsEnabled => (_box.get('diagnostics_enabled', defaultValue: true) as bool?) ?? true;
+  static Future<void> setDiagnosticsEnabled(bool value) => _box.put('diagnostics_enabled', value);
+  static String get themePreset => (_box.get('theme_preset', defaultValue: 'flowly_default') as String?) ?? 'flowly_default';
+  static Future<void> setThemePreset(String value) => _box.put('theme_preset', value);
   static ValueListenable<Box<dynamic>> get listenable => _box.listenable();
 }
