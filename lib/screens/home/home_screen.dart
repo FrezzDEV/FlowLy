@@ -24,89 +24,89 @@ class HomeScreen extends StatelessWidget {
 
   Widget _testPlayerCard() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       child: Material(
-        color: const Color(0xFF151515),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTestPlayerTap,
-          child: SizedBox(
+          child: Container(
             height: 220,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF424242), Color(0xFF161616)],
+              ),
+            ),
+            padding: const EdgeInsets.all(22),
             child: Stack(
-              fit: StackFit.expand,
               children: [
-                Image.network(
-                  'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=85',
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const ColoredBox(
-                    color: Color(0xFF242424),
-                    child: Center(
-                      child: Icon(
-                        Icons.music_note_rounded,
-                        color: Colors.white54,
-                        size: 64,
-                      ),
+                const Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Icon(
+                    Icons.graphic_eq_rounded,
+                    color: Colors.white24,
+                    size: 72,
+                  ),
+                ),
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  child: Icon(
+                    Icons.music_note_rounded,
+                    color: Colors.white70,
+                    size: 34,
+                  ),
+                ),
+                const Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 66,
+                  child: Text(
+                    'Midnight Flow',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      height: 1.0,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.05),
-                        Colors.black.withOpacity(0.78),
-                      ],
+                const Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 36,
+                  child: Text(
+                    'FlowLy Test Artist',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
                 Positioned(
-                  left: 18,
-                  right: 18,
-                  bottom: 16,
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Тестовый трек',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Нажми на обложку — откроется большой плеер',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Material(
-                        color: Colors.white,
-                        shape: const CircleBorder(),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: const Icon(
-                            Icons.play_arrow_rounded,
-                            color: Colors.black,
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                    ],
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.black,
+                      size: 28,
+                    ),
                   ),
                 ),
               ],
@@ -162,7 +162,9 @@ class HomeScreen extends StatelessWidget {
       child: BlocBuilder<HomeCubit, HomeState>(
         builder: (context, state) {
           if (state.status == LoadPage.loading) {
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
           }
 
           return _HomeScaffold(
@@ -203,10 +205,29 @@ class _FlowLyHeader extends StatelessWidget {
         children: [
           const Icon(Icons.waves_rounded, color: Colors.white, size: 30),
           const SizedBox(width: 8),
-          const Text('FlowLy', style: TextStyle(color: Colors.white, fontSize: 32, height: 1.0, fontWeight: FontWeight.w800, letterSpacing: -1.0)),
+          const Text(
+            'FlowLy',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              height: 1.0,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -1.0,
+            ),
+          ),
           const Spacer(),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 27)),
-          const CircleAvatar(radius: 18, backgroundImage: NetworkImage('https://i.pravatar.cc/200?img=12')),
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: Colors.white,
+              size: 27,
+            ),
+          ),
+          const CircleAvatar(
+            radius: 18,
+            backgroundImage: NetworkImage('https://i.pravatar.cc/200?img=12'),
+          ),
         ],
       ),
     );
