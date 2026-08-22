@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flowly/utils/bottom_nav_bar/persistent-tab-view.dart';
 
 import '../../controllers/main_controller.dart';
+import '../../models/song_model.dart';
 import '../../services/global_gesture_service.dart';
 import '../../services/settings_service.dart';
 import '../../utils/bottom_nav_bar/persistent-tab-view.widget.dart';
@@ -26,6 +27,8 @@ class _AppState extends State<App> {
       PersistentTabController(initialIndex: 0);
   final GlobalKey<ProfilePageState> _profileKey =
       GlobalKey<ProfilePageState>();
+  final GlobalKey<DraggableViewState> _draggableViewKey =
+      GlobalKey<DraggableViewState>();
   double? _horizontalDragStartX;
 
   List<PersistentBottomNavBarItem> _navBarsItems() {
@@ -59,11 +62,29 @@ class _AppState extends State<App> {
 
   List<Widget> _buildScreens(MainController con) {
     return [
-      HomeScreen(con: con),
+      HomeScreen(con: con, onTestPlayerTap: () => _openTestPlayer(con)),
       SearchPage(con: con),
       Library(con: con),
       ProfilePage(key: _profileKey, con: con),
     ];
+  }
+
+  Future<void> _openTestPlayer(MainController con) async {
+    await con.setPlaylist([
+      SongModel(
+        songid: 'flowly-test-song',
+        songname: 'Midnight Flow',
+        name: 'FlowLy Test Artist',
+        trackid: 'flowly-test-track',
+        duration: '3:42',
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=85',
+      ),
+    ]);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _draggableViewKey.currentState?.open();
+    });
   }
 
   void _handleMainMenuSwipeEnd(DragEndDetails details) {
@@ -129,7 +150,7 @@ class _AppState extends State<App> {
                   navBarHeight: 64,
                   padding: const NavBarPadding.all(0),
                 ),
-                DraggableView(con: con),
+                DraggableView(key: _draggableViewKey, con: con),
               ],
             ),
           );
