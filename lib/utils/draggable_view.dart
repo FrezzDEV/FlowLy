@@ -1,221 +1,363 @@
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/material.dart';
-import 'package:flutter_sliding_box/flutter_sliding_box.dart';
 
 import '../controllers/main_controller.dart';
 
 class DraggableView extends StatefulWidget {
   final MainController con;
-  final VoidCallback? onOpenPlayer;
   final ValueChanged<bool>? onOpenStateChanged;
 
   const DraggableView({
     super.key,
     required this.con,
-    this.onOpenPlayer,
     this.onOpenStateChanged,
   });
 
   @override
-  DraggableViewState createState() => DraggableViewState();
+  State<DraggableView> createState() => DraggableViewState();
 }
 
-class DraggableViewState extends State<DraggableView> {
-  final BoxController _boxController = BoxController();
-
-  @override
-  void dispose() {
-    _boxController.dispose();
-    super.dispose();
-  }
-
-  Future<void> open() async {
-    if (!_boxController.isAttached) return;
-    await _boxController.showBox();
-    await Future<void>.delayed(Duration.zero);
-    widget.onOpenStateChanged?.call(true);
-    await _boxController.openBox();
-  }
-
-  Future<void> close() async {
-    if (!_boxController.isAttached) return;
-    await _boxController.closeBox();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.con,
-      builder: (context, _) {
-        final song = widget.con.currentSong;
-        if (song == null) return const SizedBox.shrink();
-
-        final screenHeight = MediaQuery.sizeOf(context).height;
-        final topPadding = MediaQuery.paddingOf(context).top;
-
-        return SlidingBox(
-          controller: _boxController,
-          minHeight: 1,
-          maxHeight: screenHeight - topPadding,
-          collapsed: true,
-          draggable: true,
-          draggableIconVisible: false,
-          animationCurve: Curves.easeOutCubic,
-          animationDuration: const Duration(milliseconds: 240),
-          color: const Color(0xFF151515),
-          onBoxOpen: () => widget.onOpenStateChanged?.call(true),
-          onBoxClose: () async {
-            widget.onOpenStateChanged?.call(false);
-            await _boxController.hideBox();
-          },
-          backdrop: Backdrop(
-            fading: true,
-            overlay: true,
-            overlayOpacity: 0.42,
-            color: const Color(0xFF111111),
-          ),
-          body: _ExpandedPlayer(
-            con: widget.con,
-            onClose: close,
-            onOpenPlayer: widget.onOpenPlayer,
-          ),
-        );
-      },
-    );
-  }
-}
-
-class MiniPlayer extends StatefulWidget {
-  final MainController con;
-  final VoidCallback onTap;
-
-  const MiniPlayer({
-    super.key,
-    required this.con,
-    required this.onTap,
-  });
-
-  @override
-  State<MiniPlayer> createState() => _MiniPlayerState();
-}
-
-class _MiniPlayerState extends State<MiniPlayer>
+class DraggableViewState extends State<DraggableView>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _playPause;
+  static const double _miniHeight = 64;
+  static const double _miniMargin = 8;
+  static const double _miniRadius = 14;
+  static const double _navBarHeight = 64;
+
+  late final AnimationController _progress;
+
+  bool get isOpen => _progress.value > 0.001;
 
   @override
   void initState() {
     super.initState();
-    _playPause = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 170),
-      value: widget.con.isPlaying ? 1 : 0,
-    );
+    _progress = AnimationController(vsync: this, value: 0);
   }
 
   @override
   void dispose() {
-    _playPause.dispose();
+    _progress.dispose();
     super.dispose();
+  }
+
+  Future<void> open() async {
+    if (!mounted || widget.con.currentSong == null) return;
+    widget.onOpenStateChanged?.call(true);
+    await _progress.animateTo(
+      1,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Future<void> close() async {
+    if (!mounted) return;
+    await _progress.animateTo(
+      0,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+    widget.onOpenStateChanged?.call(false);
+  }
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    final height = MediaQuery.sizeOf(context).height;
+    final range = height - _miniHeight;
+    if (range <= 0) return;
+    final delta = details.primaryDelta ?? 0;
+    _progress.value = (_progress.value - delta / range).clamp(0.0, 1.0);
+  }
+
+  Future<void> _onDragEnd(DragEndDetails details) async {
+    final velocity = details.primaryVelocity ?? 0;
+    const flingVelocity = 600.0;
+    final target = velocity.abs() > flingVelocity
+        ? (velocity < 0 ? 1.0 : 0.0)
+        : (_progress.value > 0.5 ? 1.0 : 0.0);
+
+    if (target == 1) {
+      await open();
+    } else {
+      await close();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: widget.con,
+      animation: Listenable.merge([_progress, widget.con]),
       builder: (context, _) {
         final song = widget.con.currentSong;
         if (song == null) return const SizedBox.shrink();
 
-        final isPlaying = widget.con.isPlaying;
-        if (isPlaying && _playPause.status != AnimationStatus.completed) {
-          _playPause.forward();
-        } else if (!isPlaying && _playPause.status != AnimationStatus.dismissed) {
-          _playPause.reverse();
-        }
+        final size = MediaQuery.sizeOf(context);
+        final screenWidth = size.width;
+        final screenHeight = size.height;
+        final t = _progress.value;
 
-        return Material(
-          color: const Color(0xFF161616),
-          child: InkWell(
-            onTap: widget.onTap,
-            child: SafeArea(
-              top: false,
-              child: SizedBox(
-                height: 62,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: const SizedBox.square(
-                          dimension: 44,
-                          child: ColoredBox(
-                            color: Color(0xFF252525),
-                            child: Icon(
-                              Icons.music_note_rounded,
-                              color: Colors.white54,
+        final cardHeight = lerpDouble(_miniHeight, screenHeight, t)!;
+        final cardMargin = lerpDouble(_miniMargin, 0, t)!;
+        final cardRadius = lerpDouble(_miniRadius, 0, t)!;
+        final artSize = lerpDouble(44, screenWidth * 0.72, t)!;
+        final artTop = lerpDouble(10, 64, t)!;
+        final artLeft = lerpDouble(12, (screenWidth - artSize) / 2, t)!;
+        final artRadius = lerpDouble(8, 18, t)!;
+        final miniOpacity = 1 - _remap(t, 0, 0.3);
+        final expandedOpacity = _remap(t, 0.55, 1);
+        final handleOpacity = _remap(t, 0.5, 1);
+        final bottomMargin = lerpDouble(_navBarHeight + 8, 0, t)!;
+
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onVerticalDragUpdate: _onDragUpdate,
+            onVerticalDragEnd: _onDragEnd,
+            child: Container(
+              width: screenWidth - cardMargin * 2,
+              height: cardHeight,
+              margin: EdgeInsets.fromLTRB(
+                cardMargin,
+                0,
+                cardMargin,
+                bottomMargin,
+              ),
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: Color.lerp(
+                  const Color(0xFF191919),
+                  const Color(0xFF0B0B0B),
+                  t,
+                ),
+                borderRadius: BorderRadius.circular(cardRadius),
+                boxShadow: [
+                  if (t < 1)
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.32),
+                      blurRadius: 16,
+                      offset: const Offset(0, 5),
+                    ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  if (t > 0.001)
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: _remap(t, 0.15, 0.65) * 0.58,
+                        child: const ColoredBox(color: Colors.black),
+                      ),
+                    ),
+                  Positioned(
+                    top: 10,
+                    left: 0,
+                    right: 0,
+                    child: Opacity(
+                      opacity: handleOpacity,
+                      child: const Center(
+                        child: SizedBox(
+                          width: 36,
+                          height: 4,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.white38,
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(2),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              song.songname ?? '',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
+                    ),
+                  ),
+                  Positioned(
+                    top: artTop,
+                    left: artLeft,
+                    width: artSize,
+                    height: artSize,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(artRadius),
+                      child: _DemoArtwork(
+                        title: song.songname ?? 'Track',
+                        artist: song.name ?? 'FlowLy',
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    left: 66,
+                    right: 160,
+                    height: _miniHeight,
+                    child: Opacity(
+                      opacity: miniOpacity,
+                      child: IgnorePointer(
+                        ignoring: t > 0.3,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: open,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  song.songname ?? 'Track',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  song.name ?? 'FlowLy',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              song.name ?? 'FlowLy',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFFB8B8B8),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                      _MiniControl(
+                    ),
+                  ),
+                  Positioned(
+                    right: 104,
+                    top: 0,
+                    height: _miniHeight,
+                    child: Opacity(
+                      opacity: miniOpacity,
+                      child: _MiniButton(
                         icon: Icons.skip_previous_rounded,
                         onTap: widget.con.songs.length > 1
                             ? widget.con.previous
                             : null,
                       ),
-                      IconButton(
-                        tooltip: isPlaying ? 'Pause' : 'Play',
-                        onPressed: widget.con.playOrPause,
-                        icon: SizedBox(
-                          width: 28,
-                          height: 28,
-                          child: AnimatedIcon(
-                            icon: AnimatedIcons.play_pause,
-                            progress: _playPause,
-                            color: Colors.white,
-                            size: 25,
-                          ),
-                        ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 56,
+                    top: 0,
+                    height: _miniHeight,
+                    child: Opacity(
+                      opacity: miniOpacity,
+                      child: _MiniButton(
+                        icon: widget.con.isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        onTap: widget.con.playOrPause,
                       ),
-                      _MiniControl(
+                    ),
+                  ),
+                  Positioned(
+                    right: 8,
+                    top: 0,
+                    height: _miniHeight,
+                    child: Opacity(
+                      opacity: miniOpacity,
+                      child: _MiniButton(
                         icon: Icons.skip_next_rounded,
                         onTap: widget.con.songs.length > 1
                             ? widget.con.next
                             : null,
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  Positioned(
+                    top: artTop + artSize + 24,
+                    left: 24,
+                    right: 24,
+                    child: IgnorePointer(
+                      ignoring: t < 0.55,
+                      child: Opacity(
+                        opacity: expandedOpacity,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              song.songname ?? 'Track',
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              song.name ?? 'FlowLy',
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                activeTrackColor: Colors.white,
+                                inactiveTrackColor: Colors.white24,
+                                thumbColor: Colors.white,
+                                overlayColor: Colors.transparent,
+                                trackHeight: 4,
+                              ),
+                              child: Slider(
+                                value: 0,
+                                onChanged: (_) {},
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _LargeIconButton(
+                                  icon: Icons.skip_previous_rounded,
+                                  onTap: widget.con.songs.length > 1
+                                      ? widget.con.previous
+                                      : null,
+                                ),
+                                _LargePlayPauseButton(con: widget.con),
+                                _LargeIconButton(
+                                  icon: Icons.skip_next_rounded,
+                                  onTap: widget.con.songs.length > 1
+                                      ? widget.con.next
+                                      : null,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: IgnorePointer(
+                      ignoring: t < 0.55,
+                      child: Opacity(
+                        opacity: expandedOpacity,
+                        child: _MiniButton(
+                          icon: Icons.keyboard_arrow_down_rounded,
+                          onTap: close,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -223,208 +365,58 @@ class _MiniPlayerState extends State<MiniPlayer>
       },
     );
   }
-}
 
-class _MiniControl extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  const _MiniControl({required this.icon, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      constraints: const BoxConstraints.tightFor(width: 36, height: 44),
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
-      icon: Icon(
-        icon,
-        color: onTap == null ? Colors.white24 : Colors.white,
-        size: 25,
-      ),
-    );
+  double _remap(double value, double start, double end) {
+    if (end == start) return value >= end ? 1 : 0;
+    return ((value - start) / (end - start)).clamp(0.0, 1.0).toDouble();
   }
 }
 
-class _ExpandedPlayer extends StatelessWidget {
-  final MainController con;
-  final VoidCallback onClose;
-  final VoidCallback? onOpenPlayer;
+class _MiniButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
 
-  const _ExpandedPlayer({
-    required this.con,
-    required this.onClose,
-    this.onOpenPlayer,
-  });
+  const _MiniButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final song = con.currentSong;
-    if (song == null) return const SizedBox.shrink();
-
     return Material(
-      color: const Color(0xFF151515),
-      child: SafeArea(
-        bottom: false,
-        child: ListView(
-          physics: const ClampingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
-          children: [
-            Center(
-              child: Container(
-                width: 42,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.white38,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
+      color: Colors.transparent,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 48,
+          height: 64,
+          child: Center(
+            child: Icon(
+              icon,
+              color: onTap == null ? Colors.white24 : Colors.white,
+              size: 26,
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                IconButton(
-                  tooltip: 'Close',
-                  onPressed: onClose,
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down,
-                    color: Colors.white,
-                  ),
-                ),
-                const Spacer(),
-                if (onOpenPlayer != null)
-                  IconButton(
-                    tooltip: 'Open full player',
-                    onPressed: onOpenPlayer,
-                    icon: const Icon(Icons.open_in_full, color: Colors.white),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: _FallbackArtwork(
-                  title: song.songname ?? 'Track',
-                  artist: song.name ?? 'FlowLy',
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              song.songname ?? '',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                height: 1.05,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              song.name ?? 'FlowLy',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFFBFBFBF),
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 20),
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                activeTrackColor: Colors.white,
-                inactiveTrackColor: Colors.white24,
-                thumbColor: Colors.white,
-                overlayColor: Colors.transparent,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                trackHeight: 4,
-              ),
-              child: Slider(
-                value: con.duration.inMilliseconds <= 0
-                    ? 0
-                    : (con.position.inMilliseconds /
-                            con.duration.inMilliseconds)
-                        .clamp(0.0, 1.0),
-                onChanged: con.duration.inMilliseconds <= 0
-                    ? null
-                    : (value) => con.seek(
-                          Duration(
-                            milliseconds:
-                                (con.duration.inMilliseconds * value).round(),
-                          ),
-                        ),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _format(con.position),
-                  style: const TextStyle(color: Colors.white60),
-                ),
-                Text(
-                  _format(con.duration),
-                  style: const TextStyle(color: Colors.white60),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                IconButton(
-                  onPressed: con.songs.length > 1 ? con.toggleShuffle : null,
-                  icon: Icon(
-                    Icons.shuffle,
-                    color: con.isShuffled ? Colors.white : Colors.white54,
-                  ),
-                ),
-                IconButton(
-                  onPressed: con.songs.length > 1 ? con.previous : null,
-                  icon: const Icon(
-                    Icons.skip_previous_rounded,
-                    color: Colors.white,
-                    size: 36,
-                  ),
-                ),
-                _LargePlayPauseButton(con: con),
-                IconButton(
-                  onPressed: con.songs.length > 1 ? con.next : null,
-                  icon: const Icon(
-                    Icons.skip_next_rounded,
-                    color: Colors.white,
-                    size: 36,
-                  ),
-                ),
-                IconButton(
-                  onPressed: con.toggleLoop,
-                  icon: Icon(
-                    con.loopMode == LoopModeType.one
-                        ? Icons.repeat_one
-                        : Icons.repeat,
-                    color: con.loopMode == LoopModeType.none
-                        ? Colors.white54
-                        : Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
 
-  static String _format(Duration value) {
-    final total = value.inSeconds;
-    final minutes = total ~/ 60;
-    final seconds = total % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+class _LargeIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _LargeIconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(
+        icon,
+        color: onTap == null ? Colors.white24 : Colors.white,
+        size: 42,
+      ),
+    );
   }
 }
 
@@ -471,7 +463,7 @@ class _LargePlayPauseButtonState extends State<_LargePlayPauseButton>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFF777777),
+      color: Colors.white12,
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -491,54 +483,48 @@ class _LargePlayPauseButtonState extends State<_LargePlayPauseButton>
   }
 }
 
-class _FallbackArtwork extends StatelessWidget {
+class _DemoArtwork extends StatelessWidget {
   final String title;
   final String artist;
 
-  const _FallbackArtwork({required this.title, required this.artist});
+  const _DemoArtwork({required this.title, required this.artist});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox.square(
-      dimension: 310,
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF3E3E3E), Color(0xFF141414)],
+    return Container(
+      color: const Color(0xFF292929),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.music_note_rounded,
+            color: Colors.white70,
+            size: 36,
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.music_note_rounded, color: Colors.white70, size: 44),
-            const Spacer(),
-            Text(
-              title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                height: 1.05,
-              ),
+          const Spacer(),
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
             ),
-            const SizedBox(height: 6),
-            Text(
-              artist,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 15,
-              ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            artist,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
