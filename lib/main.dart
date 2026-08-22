@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'package:flowly/screens/bottom_nav_bar/bottom_nav_bar.dart';
 import 'package:flowly/screens/welcome/welcome_page.dart';
 
@@ -17,12 +16,6 @@ Future<void> main() async {
 
 Future<void> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await JustAudioBackground.init(
-    androidNotificationChannelId: 'com.flowly.audio.playback',
-    androidNotificationChannelName: 'FlowLy — Воспроизведение',
-    androidNotificationChannelDescription: 'Управление воспроизведением FlowLy',
-    androidNotificationOngoing: true,
-  );
 
   final dir = await getApplicationDocumentsDirectory();
   await Hive.initFlutter(dir.path);
