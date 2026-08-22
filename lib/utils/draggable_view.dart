@@ -61,9 +61,7 @@ class DraggableViewState extends State<DraggableView>
 
   void _onDragUpdate(DragUpdateDetails details) {
     final range = MediaQuery.sizeOf(context).height - _miniHeight;
-    if (range <= 0) {
-      return;
-    }
+    if (range <= 0) return;
     _progress.value = (_progress.value -
             (details.primaryDelta ?? 0) / range)
         .clamp(0.0, 1.0);
@@ -74,7 +72,6 @@ class DraggableViewState extends State<DraggableView>
     final target = velocity.abs() > 600
         ? (velocity < 0 ? 1.0 : 0.0)
         : (_progress.value > 0.5 ? 1.0 : 0.0);
-
     if (target == 1) {
       await open();
     } else {
@@ -88,23 +85,18 @@ class DraggableViewState extends State<DraggableView>
       animation: Listenable.merge([_progress, widget.con]),
       builder: (context, _) {
         final song = widget.con.currentSong;
-        if (song == null) {
-          return const SizedBox.shrink();
-        }
+        if (song == null) return const SizedBox.shrink();
 
         final size = MediaQuery.sizeOf(context);
         final t = _progress.value;
-        final artSize = lerpDouble(44, size.width * 0.60, t)!;
-        final artTop = lerpDouble(10, 56, t)!;
-        final artLeft = lerpDouble(12, (size.width - artSize) / 2, t)!;
-        final cardWidth = size.width -
-            lerpDouble(_miniMargin * 2, 0, t)!;
+        final artSize = lerpDouble(42, size.width * 0.56, t)!;
+        final artTop = lerpDouble(11, 92, t)!;
+        final artLeft = lerpDouble(10, (size.width - artSize) / 2, t)!;
+        final cardWidth = size.width - lerpDouble(_miniMargin * 2, 0, t)!;
         final cardHeight = lerpDouble(_miniHeight, size.height, t)!;
-        final cardRadius = lerpDouble(_miniRadius, 0, t)!;
         final miniOpacity = 1 - _remap(t, 0, 0.3);
         final expandedOpacity = _remap(t, 0.5, 1);
-        final bottomMargin =
-            lerpDouble(_navBarHeight + 8, 0, t)!;
+        final bottomMargin = lerpDouble(_navBarHeight + 8, 0, t)!;
         final font = Theme.of(context).textTheme;
 
         return Align(
@@ -124,7 +116,12 @@ class DraggableViewState extends State<DraggableView>
                   const Color(0xFF0B0B0B),
                   t,
                 ),
-                borderRadius: BorderRadius.circular(cardRadius),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(lerpDouble(_miniRadius, 0, t)!),
+                  topRight: Radius.circular(lerpDouble(_miniRadius, 0, t)!),
+                  bottomLeft: Radius.circular(lerpDouble(0, 0, t)!),
+                  bottomRight: Radius.circular(lerpDouble(0, 0, t)!),
+                ),
               ),
               child: Stack(
                 children: [
@@ -134,7 +131,9 @@ class DraggableViewState extends State<DraggableView>
                     width: artSize,
                     height: artSize,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(
+                        lerpDouble(10, 16, t)!,
+                      ),
                       child: _DemoArtwork(
                         title: song.songname ?? 'Track',
                         artist: song.name ?? 'FlowLy',
@@ -143,8 +142,8 @@ class DraggableViewState extends State<DraggableView>
                     ),
                   ),
                   Positioned(
-                    left: 66,
-                    right: 160,
+                    left: 62,
+                    right: 142,
                     top: 0,
                     height: _miniHeight,
                     child: Opacity(
@@ -185,7 +184,7 @@ class DraggableViewState extends State<DraggableView>
                     ),
                   ),
                   Positioned(
-                    right: 104,
+                    right: 90,
                     top: 0,
                     height: _miniHeight,
                     child: Opacity(
@@ -199,7 +198,7 @@ class DraggableViewState extends State<DraggableView>
                     ),
                   ),
                   Positioned(
-                    right: 56,
+                    right: 45,
                     top: 0,
                     height: _miniHeight,
                     child: Opacity(
@@ -213,7 +212,7 @@ class DraggableViewState extends State<DraggableView>
                     ),
                   ),
                   Positioned(
-                    right: 8,
+                    right: 0,
                     top: 0,
                     height: _miniHeight,
                     child: Opacity(
@@ -227,7 +226,7 @@ class DraggableViewState extends State<DraggableView>
                     ),
                   ),
                   Positioned(
-                    top: artTop + artSize + 28,
+                    top: artTop + artSize + 42,
                     left: 22,
                     right: 22,
                     child: IgnorePointer(
@@ -253,7 +252,7 @@ class DraggableViewState extends State<DraggableView>
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 5),
                                       Text(
                                         song.name ?? 'FlowLy',
                                         maxLines: 1,
@@ -278,7 +277,7 @@ class DraggableViewState extends State<DraggableView>
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 52),
+                            const SizedBox(height: 60),
                             SliderTheme(
                               data: SliderTheme.of(context).copyWith(
                                 activeTrackColor: Colors.white,
@@ -325,14 +324,14 @@ class DraggableViewState extends State<DraggableView>
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 34),
+                            const SizedBox(height: 48),
                             Row(
                               mainAxisAlignment:
                                   MainAxisAlignment.spaceEvenly,
                               children: [
                                 _ActionButton(
                                   icon: Icons.skip_previous_rounded,
-                                  size: 48,
+                                  size: 64,
                                   onTap: widget.con.songs.length > 1
                                       ? widget.con.previous
                                       : null,
@@ -340,7 +339,7 @@ class DraggableViewState extends State<DraggableView>
                                 _LargePlayPauseButton(con: widget.con),
                                 _ActionButton(
                                   icon: Icons.skip_next_rounded,
-                                  size: 48,
+                                  size: 64,
                                   onTap: widget.con.songs.length > 1
                                       ? widget.con.next
                                       : null,
@@ -353,7 +352,7 @@ class DraggableViewState extends State<DraggableView>
                     ),
                   ),
                   Positioned(
-                    top: 8,
+                    top: 34,
                     right: 8,
                     child: IgnorePointer(
                       ignoring: t < 0.5,
@@ -361,6 +360,7 @@ class DraggableViewState extends State<DraggableView>
                         opacity: expandedOpacity,
                         child: _ActionButton(
                           icon: Icons.keyboard_arrow_down_rounded,
+                          size: 48,
                           onTap: close,
                         ),
                       ),
@@ -440,9 +440,7 @@ class _LargePlayPauseButtonState extends State<_LargePlayPauseButton>
   }
 
   void _sync() {
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     if (widget.con.isPlaying) {
       _controller.forward();
     } else {
@@ -463,8 +461,8 @@ class _LargePlayPauseButtonState extends State<_LargePlayPauseButton>
       onTap: widget.con.playOrPause,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 76,
-        height: 76,
+        width: 82,
+        height: 82,
         decoration: const BoxDecoration(
           color: Colors.white12,
           shape: BoxShape.circle,
@@ -473,14 +471,14 @@ class _LargePlayPauseButtonState extends State<_LargePlayPauseButton>
         child: Transform.translate(
           offset: const Offset(1.5, 0),
           child: SizedBox(
-            width: 38,
-            height: 38,
+            width: 40,
+            height: 40,
             child: Center(
               child: AnimatedIcon(
                 icon: AnimatedIcons.play_pause,
                 progress: _controller,
                 color: Colors.white,
-                size: 32,
+                size: 34,
               ),
             ),
           ),
