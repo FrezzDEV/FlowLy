@@ -103,10 +103,6 @@ class _AppState extends State<App> {
     });
   }
 
-  void _openPlayerFromMini() {
-    _draggableViewKey.currentState?.open();
-  }
-
   Future<bool> _handleBackButton() async {
     if (_playerOpen.value) {
       await _draggableViewKey.currentState?.close();
@@ -167,18 +163,7 @@ class _AppState extends State<App> {
                   PersistentTabView(
                     context,
                     controller: controller,
-                    playWidget: ValueListenableBuilder<bool>(
-                      valueListenable: _playerOpen,
-                      builder: (context, open, _) {
-                        if (open || con.currentSong == null) {
-                          return const SizedBox.shrink();
-                        }
-                        return MiniPlayer(
-                          con: con,
-                          onTap: _openPlayerFromMini,
-                        );
-                      },
-                    ),
+                    playWidget: const SizedBox.shrink(),
                     screens: _buildScreens(con),
                     items: _navBarsItems(),
                     onItemSelected: (index) {
