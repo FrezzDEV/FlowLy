@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sliding_box/flutter_sliding_box.dart';
 
@@ -7,11 +6,13 @@ import '../controllers/main_controller.dart';
 class DraggableView extends StatefulWidget {
   final MainController con;
   final VoidCallback? onOpenPlayer;
+  final ValueChanged<bool>? onOpenStateChanged;
 
   const DraggableView({
     super.key,
     required this.con,
     this.onOpenPlayer,
+    this.onOpenStateChanged,
   });
 
   @override
@@ -27,19 +28,16 @@ class DraggableViewState extends State<DraggableView> {
     super.dispose();
   }
 
-  void open() {
-    if (_boxController.isAttached) {
-      _boxController.openBox();
-    }
+  Future<void> open() async {
+    if (!_boxController.isAttached) return;
+    await _boxController.showBox();
+    widget.onOpenStateChanged?.call(true);
+    await _boxController.openBox();
   }
 
-  void _toggle() {
+  Future<void> close() async {
     if (!_boxController.isAttached) return;
-    if (_boxController.isBoxOpen) {
-      _boxController.closeBox();
-    } else {
-      _boxController.openBox();
-    }
+    await _boxController.closeBox();
   }
 
   @override
@@ -50,22 +48,25 @@ class DraggableViewState extends State<DraggableView> {
         final song = widget.con.currentSong;
         if (song == null) return const SizedBox.shrink();
 
-        final screenHeight = MediaQuery.of(context).size.height;
-        final topPadding = MediaQuery.of(context).padding.top;
+        final screenHeight = MediaQuery.sizeOf(context).height;
+        final topPadding = MediaQuery.paddingOf(context).top;
 
         return SlidingBox(
           controller: _boxController,
-          minHeight: 62,
+          minHeight: 0,
           maxHeight: screenHeight - topPadding,
           collapsed: true,
           draggable: true,
           draggableIconVisible: false,
+          style: BoxStyle.none,
           animationCurve: Curves.easeOutCubic,
-          animationDuration: const Duration(milliseconds: 280),
+          animationDuration: const Duration(milliseconds: 240),
           color: const Color(0xFF151515),
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(28),
-          ),
+          onBoxOpen: () => widget.onOpenStateChanged?.call(true),
+          onBoxClose: () async {
+            widget.onOpenStateChanged?.call(false);
+            await _boxController.hideBox();
+          },
           backdrop: Backdrop(
             fading: true,
             overlay: true,
@@ -74,12 +75,8 @@ class DraggableViewState extends State<DraggableView> {
           ),
           body: _ExpandedPlayer(
             con: widget.con,
-            onClose: () => _boxController.closeBox(),
+            onClose: close,
             onOpenPlayer: widget.onOpenPlayer,
-          ),
-          collapsedBody: _CollapsedPlayer(
-            con: widget.con,
-            onTap: _toggle,
           ),
         );
       },
@@ -87,95 +84,188 @@ class DraggableViewState extends State<DraggableView> {
   }
 }
 
-class _CollapsedPlayer extends StatelessWidget {
+class MiniPlayer extends StatefulWidget {
   final MainController con;
   final VoidCallback onTap;
 
-  const _CollapsedPlayer({
+  const MiniPlayer({
+    super.key,
     required this.con,
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final song = con.currentSong;
-    if (song == null) return const SizedBox.shrink();
+  State<MiniPlayer> createState() => _MiniPlayerState();
+}
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Material(
-        color: const Color(0xFF161616),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 62,
-            child: Row(
-              children: [
-                const SizedBox(width: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: CachedNetworkImage(
-                    imageUrl: song.coverImageUrl ?? '',
-                    width: 44,
-                    height: 44,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => Container(
-                      width: 44,
-                      height: 44,
-                      color: const Color(0xFF252525),
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.music_note, color: Colors.white54),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+class _MiniPlayerState extends State<MiniPlayer>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _playPause;
+
+  @override
+  void initState() {
+    super.initState();
+    _playPause = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 170),
+      value: widget.con.isPlaying ? 1 : 0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _playPause.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: widget.con,
+      builder: (context, _) {
+        final song = widget.con.currentSong;
+        if (song == null) return const SizedBox.shrink();
+
+        final isPlaying = widget.con.isPlaying;
+        if (isPlaying && _playPause.status != AnimationStatus.completed) {
+          _playPause.forward();
+        } else if (!isPlaying && _playPause.status != AnimationStatus.dismissed) {
+          _playPause.reverse();
+        }
+
+        return Material(
+          color: const Color(0xFF161616),
+          child: InkWell(
+            onTap: widget.onTap,
+            child: SafeArea(
+              top: false,
+              child: SizedBox(
+                height: 62,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
                     children: [
-                      Text(
-                        song.songname ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: _CoverThumbnail(imageUrl: song.coverImageUrl),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              song.songname ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              song.name ?? 'FlowLy',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFFB8B8B8),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        song.name ?? 'FlowLy',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFB8B8B8),
-                          fontSize: 12,
+                      _MiniControl(
+                        icon: Icons.skip_previous_rounded,
+                        onTap: widget.con.songs.length > 1
+                            ? widget.con.previous
+                            : null,
+                      ),
+                      IconButton(
+                        tooltip: isPlaying ? 'Pause' : 'Play',
+                        onPressed: widget.con.playOrPause,
+                        icon: SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: AnimatedIcon(
+                            icon: AnimatedIcons.play_pause,
+                            progress: _playPause,
+                            color: Colors.white,
+                            size: 25,
+                          ),
                         ),
+                      ),
+                      _MiniControl(
+                        icon: Icons.skip_next_rounded,
+                        onTap: widget.con.songs.length > 1
+                            ? widget.con.next
+                            : null,
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  tooltip: con.isPlaying ? 'Pause' : 'Play',
-                  onPressed: con.playOrPause,
-                  icon: Icon(
-                    con.isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Next',
-                  onPressed: con.songs.length > 1 ? con.next : null,
-                  icon: const Icon(Icons.skip_next, color: Colors.white, size: 28),
-                ),
-                const SizedBox(width: 4),
-              ],
+              ),
             ),
           ),
+        );
+      },
+    );
+  }
+}
+
+class _MiniControl extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _MiniControl({required this.icon, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      constraints: const BoxConstraints.tightFor(width: 36, height: 44),
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      icon: Icon(
+        icon,
+        color: onTap == null ? Colors.white24 : Colors.white,
+        size: 25,
+      ),
+    );
+  }
+}
+
+class _CoverThumbnail extends StatelessWidget {
+  final String? imageUrl;
+
+  const _CoverThumbnail({this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl == null || imageUrl!.isEmpty) {
+      return const SizedBox(
+        width: 44,
+        height: 44,
+        child: ColoredBox(
+          color: Color(0xFF252525),
+          child: Icon(Icons.music_note_rounded, color: Colors.white54),
+        ),
+      );
+    }
+
+    return Image.network(
+      imageUrl!,
+      width: 44,
+      height: 44,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => const SizedBox(
+        width: 44,
+        height: 44,
+        child: ColoredBox(
+          color: Color(0xFF252525),
+          child: Icon(Icons.music_note_rounded, color: Colors.white54),
         ),
       ),
     );
@@ -198,13 +288,13 @@ class _ExpandedPlayer extends StatelessWidget {
     final song = con.currentSong;
     if (song == null) return const SizedBox.shrink();
 
-    return SafeArea(
-      bottom: false,
-      child: SingleChildScrollView(
-        physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Material(
+      color: const Color(0xFF151515),
+      child: SafeArea(
+        bottom: false,
+        child: ListView(
+          physics: const ClampingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
           children: [
             Center(
               child: Container(
@@ -216,13 +306,16 @@ class _ExpandedPlayer extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Row(
               children: [
                 IconButton(
                   tooltip: 'Close',
                   onPressed: onClose,
-                  icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down,
+                    color: Colors.white,
+                  ),
                 ),
                 const Spacer(),
                 if (onOpenPlayer != null)
@@ -233,23 +326,14 @@ class _ExpandedPlayer extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 8),
-            AspectRatio(
-              aspectRatio: 1,
+            const SizedBox(height: 4),
+            Center(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(22),
-                child: CachedNetworkImage(
-                  imageUrl: song.coverImageUrl ?? '',
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => Container(
-                    color: const Color(0xFF202020),
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.music_note,
-                      color: Colors.white54,
-                      size: 80,
-                    ),
-                  ),
+                borderRadius: BorderRadius.circular(24),
+                child: _CoverArtwork(
+                  title: song.songname ?? 'Track',
+                  artist: song.name ?? 'FlowLy',
+                  imageUrl: song.coverImageUrl,
                 ),
               ),
             ),
@@ -276,9 +360,13 @@ class _ExpandedPlayer extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
+                activeTrackColor: Colors.white,
+                inactiveTrackColor: Colors.white24,
+                thumbColor: Colors.white,
+                overlayColor: Colors.transparent,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                 trackHeight: 4,
               ),
@@ -298,17 +386,23 @@ class _ExpandedPlayer extends StatelessWidget {
                         ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(_format(con.position), style: const TextStyle(color: Colors.white60)),
-                Text(_format(con.duration), style: const TextStyle(color: Colors.white60)),
+                Text(
+                  _format(con.position),
+                  style: const TextStyle(color: Colors.white60),
+                ),
+                Text(
+                  _format(con.duration),
+                  style: const TextStyle(color: Colors.white60),
+                ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 IconButton(
                   onPressed: con.songs.length > 1 ? con.toggleShuffle : null,
@@ -319,33 +413,27 @@ class _ExpandedPlayer extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: con.songs.length > 1 ? con.previous : null,
-                  icon: const Icon(Icons.skip_previous, color: Colors.white, size: 36),
-                ),
-                Material(
-                  color: const Color(0xFF777777),
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: con.playOrPause,
-                    child: SizedBox(
-                      width: 78,
-                      height: 78,
-                      child: Icon(
-                        con.isPlaying ? Icons.pause : Icons.play_arrow,
-                        color: Colors.white,
-                        size: 40,
-                      ),
-                    ),
+                  icon: const Icon(
+                    Icons.skip_previous_rounded,
+                    color: Colors.white,
+                    size: 36,
                   ),
                 ),
+                _LargePlayPauseButton(con: con),
                 IconButton(
                   onPressed: con.songs.length > 1 ? con.next : null,
-                  icon: const Icon(Icons.skip_next, color: Colors.white, size: 36),
+                  icon: const Icon(
+                    Icons.skip_next_rounded,
+                    color: Colors.white,
+                    size: 36,
+                  ),
                 ),
                 IconButton(
                   onPressed: con.toggleLoop,
                   icon: Icon(
-                    con.loopMode == LoopModeType.one ? Icons.repeat_one : Icons.repeat,
+                    con.loopMode == LoopModeType.one
+                        ? Icons.repeat_one
+                        : Icons.repeat,
                     color: con.loopMode == LoopModeType.none
                         ? Colors.white54
                         : Colors.white,
@@ -364,5 +452,144 @@ class _ExpandedPlayer extends StatelessWidget {
     final minutes = total ~/ 60;
     final seconds = total % 60;
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+}
+
+class _LargePlayPauseButton extends StatefulWidget {
+  final MainController con;
+
+  const _LargePlayPauseButton({required this.con});
+
+  @override
+  State<_LargePlayPauseButton> createState() => _LargePlayPauseButtonState();
+}
+
+class _LargePlayPauseButtonState extends State<_LargePlayPauseButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 170),
+      value: widget.con.isPlaying ? 1 : 0,
+    );
+    widget.con.addListener(_sync);
+  }
+
+  void _sync() {
+    if (!mounted) return;
+    if (widget.con.isPlaying) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.con.removeListener(_sync);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF777777),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: widget.con.playOrPause,
+        child: SizedBox(
+          width: 78,
+          height: 78,
+          child: AnimatedIcon(
+            icon: AnimatedIcons.play_pause,
+            progress: _controller,
+            color: Colors.white,
+            size: 40,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CoverArtwork extends StatelessWidget {
+  final String title;
+  final String artist;
+  final String? imageUrl;
+
+  const _CoverArtwork({
+    required this.title,
+    required this.artist,
+    this.imageUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl != null && imageUrl!.isNotEmpty) {
+      return Image.network(
+        imageUrl!,
+        width: 310,
+        height: 310,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            _FallbackArtwork(title: title, artist: artist),
+      );
+    }
+    return _FallbackArtwork(title: title, artist: artist);
+  }
+}
+
+class _FallbackArtwork extends StatelessWidget {
+  final String title;
+  final String artist;
+
+  const _FallbackArtwork({required this.title, required this.artist});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 310,
+      height: 310,
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF3E3E3E), Color(0xFF141414)],
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.music_note_rounded, color: Colors.white70, size: 44),
+          const Spacer(),
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              height: 1.0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            artist,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white70, fontSize: 15),
+          ),
+        ],
+      ),
+    );
   }
 }
