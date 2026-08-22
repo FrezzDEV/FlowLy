@@ -100,7 +100,7 @@ class DraggableViewState extends State<DraggableView>
         final miniOpacity = 1 - _remap(t, 0, 0.3);
         final expandedOpacity = _remap(t, 0.5, 1);
         final bottomMargin =
-            lerpDouble(_navBarHeight + safeBottom + 2, 0, t)!;
+            lerpDouble(_navBarHeight + safeBottom + 3, 0, t)!;
         final font = Theme.of(context).textTheme;
 
         return Align(
