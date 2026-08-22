@@ -8,13 +8,14 @@ enum LoopModeType { none, all, one }
 class MainController extends ChangeNotifier {
   List<SongModel> _songs = [];
   int _currentIndex = 0;
+  bool _isPlaying = false;
   bool _isShuffled = false;
   LoopModeType _loopMode = LoopModeType.none;
 
   List<SongModel> get songs => List.unmodifiable(_songs);
   List<SongModel> get audios => List.unmodifiable(_songs);
   int get currentIndex => _currentIndex;
-  bool get isPlaying => false;
+  bool get isPlaying => _isPlaying;
   bool get isShuffled => _isShuffled;
   LoopModeType get loopMode => _loopMode;
   Duration get position => Duration.zero;
@@ -60,26 +61,46 @@ class MainController extends ChangeNotifier {
   Future<void> setPlaylist(List<SongModel> songs, {int startIndex = 0}) async {
     _songs = List<SongModel>.from(songs);
     _currentIndex = _songs.isEmpty ? 0 : startIndex.clamp(0, _songs.length - 1);
+    _isPlaying = false;
     notifyListeners();
   }
 
   Future<void> playSong(List<SongModel> songs, int initial) async {
     await setPlaylist(songs, startIndex: initial);
+    await play();
   }
 
-  Future<void> playOrPause() async {}
-  Future<void> play() async {}
-  Future<void> pause() async {}
-  Future<void> stop() async {}
+  Future<void> playOrPause() async {
+    if (_songs.isEmpty) return;
+    _isPlaying = !_isPlaying;
+    notifyListeners();
+  }
+
+  Future<void> play() async {
+    if (_songs.isEmpty) return;
+    _isPlaying = true;
+    notifyListeners();
+  }
+
+  Future<void> pause() async {
+    _isPlaying = false;
+    notifyListeners();
+  }
+
+  Future<void> stop() async {
+    _isPlaying = false;
+    notifyListeners();
+  }
+
   Future<void> next() async {
     if (_songs.isEmpty) return;
-    _currentIndex = (_currentIndex + 1).clamp(0, _songs.length - 1);
+    _currentIndex = (_currentIndex + 1) % _songs.length;
     notifyListeners();
   }
 
   Future<void> previous() async {
     if (_songs.isEmpty) return;
-    _currentIndex = (_currentIndex - 1).clamp(0, _songs.length - 1);
+    _currentIndex = (_currentIndex - 1 + _songs.length) % _songs.length;
     notifyListeners();
   }
 
