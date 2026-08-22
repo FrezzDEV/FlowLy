@@ -67,7 +67,7 @@ class HomeScreen extends StatelessWidget {
     final popularSongs = _take(state.songs, 0, 10);
     final newReleases = _take(state.songs, 10, 20);
     return ListView(
-      padding: const EdgeInsets.only(bottom: 100),
+      padding: const EdgeInsets.only(bottom: 180),
       children: [
         _testPlayerCard(context),
         if (recentUsers.isNotEmpty) ...[
