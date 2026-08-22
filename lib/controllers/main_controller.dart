@@ -9,7 +9,7 @@ import '../models/song_model.dart';
 enum LoopModeType { none, all, one }
 
 class MainController extends ChangeNotifier {
-  final AudioPlayer _player = AudioPlayer();
+  AudioPlayer? _player;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
 
   List<SongModel> _songs = [];
@@ -21,32 +21,38 @@ class MainController extends ChangeNotifier {
   List<SongModel> get songs => List.unmodifiable(_songs);
   List<SongModel> get audios => List.unmodifiable(_songs);
   int get currentIndex => _currentIndex;
-  bool get isPlaying => _player.playing;
+  bool get isPlaying => _player?.playing ?? false;
   bool get isShuffled => _isShuffled;
   LoopModeType get loopMode => _loopMode;
-  Duration get position => _player.position;
-  Duration get duration => _player.duration ?? Duration.zero;
+  Duration get position => _player?.position ?? Duration.zero;
+  Duration get duration => _player?.duration ?? Duration.zero;
   SongModel? get currentSong =>
       _currentIndex >= 0 && _currentIndex < _songs.length ? _songs[_currentIndex] : null;
   String? get getCurrentAudioTitle => currentSong?.songname;
 
-  Future<void> init() async {
-    if (_subscriptions.isNotEmpty) return;
+  AudioPlayer _ensurePlayer() {
+    final existing = _player;
+    if (existing != null) return existing;
 
-    _subscriptions.add(_player.playerStateStream.listen((_) => _safeNotify()));
-    _subscriptions.add(_player.positionStream.listen((_) => _safeNotify()));
-    _subscriptions.add(_player.durationStream.listen((_) => _safeNotify()));
-    _subscriptions.add(_player.currentIndexStream.listen((index) {
-      if (index != null && index < _songs.length) {
+    final player = AudioPlayer();
+    _player = player;
+    _subscriptions.add(player.playerStateStream.listen((_) => _safeNotify()));
+    _subscriptions.add(player.positionStream.listen((_) => _safeNotify()));
+    _subscriptions.add(player.durationStream.listen((_) => _safeNotify()));
+    _subscriptions.add(player.currentIndexStream.listen((index) {
+      if (index != null && index >= 0 && index < _songs.length) {
         _currentIndex = index;
       }
       _safeNotify();
     }));
-    _subscriptions.add(_player.shuffleModeEnabledStream.listen((enabled) {
+    _subscriptions.add(player.shuffleModeEnabledStream.listen((enabled) {
       _isShuffled = enabled;
       _safeNotify();
     }));
+    return player;
+  }
 
+  Future<void> init() async {
     final box = Hive.box('RecentlyPlayed');
     final recent = <SongModel>[];
 
@@ -72,9 +78,11 @@ class MainController extends ChangeNotifier {
   }
 
   Future<void> setPlaylist(List<SongModel> songs, {int startIndex = 0}) async {
+    final player = _ensurePlayer();
     _songs = List<SongModel>.from(songs);
+
     if (_songs.isEmpty) {
-      await _player.stop();
+      await player.stop();
       _currentIndex = 0;
       _safeNotify();
       return;
@@ -82,37 +90,47 @@ class MainController extends ChangeNotifier {
 
     _currentIndex = startIndex.clamp(0, _songs.length - 1);
     final sources = <AudioSource>[];
+    var sourceIndex = 0;
 
     for (final song in _songs) {
-      final url = song.trackid?.trim();
-      if (url == null || url.isEmpty) continue;
-      sources.add(AudioSource.uri(Uri.parse(url)));
+      final raw = song.trackid?.trim();
+      if (raw == null || raw.isEmpty) continue;
+
+      final uri = Uri.tryParse(raw);
+      if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+        continue;
+      }
+
+      sources.add(AudioSource.uri(uri));
+      if (sources.length - 1 < _currentIndex) {
+        sourceIndex = sources.length - 1;
+      }
     }
 
     if (sources.isEmpty) {
-      await _player.stop();
+      await player.stop();
       _safeNotify();
       return;
     }
 
     try {
-      await _player.setAudioSources(
+      await player.setAudioSources(
         sources,
-        initialIndex: _currentIndex.clamp(0, sources.length - 1),
+        initialIndex: sourceIndex.clamp(0, sources.length - 1),
         initialPosition: Duration.zero,
       );
       await _applyLoopMode();
-      await _player.setShuffleModeEnabled(_isShuffled);
+      await player.setShuffleModeEnabled(_isShuffled);
       _safeNotify();
     } on PlayerException catch (error, stackTrace) {
       debugPrint('AudioPlayer load failed: ${error.message}');
       debugPrintStack(stackTrace: stackTrace);
-      await _player.stop();
+      await player.stop();
       _safeNotify();
     } catch (error, stackTrace) {
       debugPrint('AudioPlayer load failed: $error');
       debugPrintStack(stackTrace: stackTrace);
-      await _player.stop();
+      await player.stop();
       _safeNotify();
     }
   }
@@ -123,62 +141,74 @@ class MainController extends ChangeNotifier {
   }
 
   Future<void> playOrPause() async {
-    if (_player.playing) {
-      await _player.pause();
+    final player = _ensurePlayer();
+    if (player.playing) {
+      await player.pause();
     } else {
       await play();
     }
   }
 
   Future<void> play() async {
-    if (_player.audioSources.isEmpty) {
-      final song = currentSong;
-      if (song != null) {
-        await setPlaylist(_songs, startIndex: _currentIndex);
-      }
+    final player = _ensurePlayer();
+    if (player.audioSources.isEmpty && _songs.isNotEmpty) {
+      await setPlaylist(_songs, startIndex: _currentIndex);
     }
-    if (_player.audioSources.isNotEmpty) {
-      await _player.play();
+    if (player.audioSources.isNotEmpty) {
+      await player.play();
     }
   }
 
-  Future<void> pause() => _player.pause();
+  Future<void> pause() async {
+    final player = _player;
+    if (player != null) await player.pause();
+  }
 
   Future<void> stop() async {
-    await _player.stop();
-    _safeNotify();
+    final player = _player;
+    if (player != null) {
+      await player.stop();
+      _safeNotify();
+    }
   }
 
   Future<void> next() async {
-    if (_player.hasNext) {
-      await _player.seekToNext();
-      _currentIndex = _player.currentIndex ?? _currentIndex;
+    final player = _player;
+    if (player == null) return;
+    if (player.hasNext) {
+      await player.seekToNext();
+      _currentIndex = player.currentIndex ?? _currentIndex;
       return;
     }
-    if (_songs.isNotEmpty && _currentIndex < _songs.length - 1) {
+    if (_songs.isNotEmpty && _currentIndex < _songs.length - 1 && player.audioSources.isNotEmpty) {
       _currentIndex += 1;
-      await _player.seek(Duration.zero, index: _currentIndex);
+      await player.seek(Duration.zero, index: _currentIndex.clamp(0, player.sequence.length - 1));
     }
+    _safeNotify();
   }
 
   Future<void> previous() async {
-    if (_player.hasPrevious) {
-      await _player.seekToPrevious();
-      _currentIndex = _player.currentIndex ?? _currentIndex;
+    final player = _player;
+    if (player == null) return;
+    if (player.hasPrevious) {
+      await player.seekToPrevious();
+      _currentIndex = player.currentIndex ?? _currentIndex;
       return;
     }
-    if (_player.position > const Duration(seconds: 3)) {
-      await _player.seek(Duration.zero);
+    if (player.position > const Duration(seconds: 3)) {
+      await player.seek(Duration.zero);
       return;
     }
-    if (_songs.isNotEmpty && _currentIndex > 0) {
+    if (_songs.isNotEmpty && _currentIndex > 0 && player.audioSources.isNotEmpty) {
       _currentIndex -= 1;
-      await _player.seek(Duration.zero, index: _currentIndex);
+      await player.seek(Duration.zero, index: _currentIndex.clamp(0, player.sequence.length - 1));
     }
+    _safeNotify();
   }
 
   Future<void> seek(Duration value) async {
-    await _player.seek(value);
+    final player = _player;
+    if (player != null) await player.seek(value);
   }
 
   void toggleLoop() {
@@ -198,24 +228,34 @@ class MainController extends ChangeNotifier {
   }
 
   Future<void> _applyLoopMode() async {
+    final player = _player;
+    if (player == null) return;
     final mode = switch (_loopMode) {
       LoopModeType.none => LoopMode.off,
       LoopModeType.all => LoopMode.all,
       LoopModeType.one => LoopMode.one,
     };
-    await _player.setLoopMode(mode);
+    await player.setLoopMode(mode);
   }
 
   void toggleShuffle() {
     _isShuffled = !_isShuffled;
-    unawaited(_player.setShuffleModeEnabled(_isShuffled));
+    final player = _player;
+    if (player != null) {
+      unawaited(player.setShuffleModeEnabled(_isShuffled));
+    }
     _safeNotify();
   }
 
   Future<void> addToPlaylist(SongModel song) async {
     _songs.add(song);
-    if (_player.audioSources.isNotEmpty && song.trackid?.isNotEmpty == true) {
-      await _player.addAudioSource(AudioSource.uri(Uri.parse(song.trackid!.trim())));
+    final raw = song.trackid?.trim();
+    final player = _player;
+    if (player != null && player.audioSources.isNotEmpty && raw != null && raw.isNotEmpty) {
+      final uri = Uri.tryParse(raw);
+      if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+        await player.addAudioSource(AudioSource.uri(uri));
+      }
     }
     _safeNotify();
   }
@@ -262,8 +302,7 @@ class MainController extends ChangeNotifier {
     });
   }
 
-  List<SongModel> convertToAudio(List<SongModel> songs) =>
-      List<SongModel>.from(songs);
+  List<SongModel> convertToAudio(List<SongModel> songs) => List<SongModel>.from(songs);
 
   List<SongModel> converLocalSongToAudio(List<dynamic> songs) => songs.map((audio) {
         final item = audio as Map;
@@ -302,7 +341,10 @@ class MainController extends ChangeNotifier {
     for (final subscription in _subscriptions) {
       unawaited(subscription.cancel());
     }
-    unawaited(_player.dispose());
+    final player = _player;
+    if (player != null) {
+      unawaited(player.dispose());
+    }
     super.dispose();
   }
 }
