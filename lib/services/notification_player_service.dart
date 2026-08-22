@@ -5,7 +5,8 @@ import '../controllers/main_controller.dart';
 class NotificationPlayerService {
   NotificationPlayerService._();
 
-  static final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
   static const int _id = 1001;
 
   static Future<void> initialize(MainController controller) async {
@@ -35,7 +36,9 @@ class NotificationPlayerService {
         await show(controller);
       },
     );
-    final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
     await android?.requestNotificationsPermission();
   }
 
@@ -58,12 +61,33 @@ class NotificationPlayerService {
       onlyAlertOnce: true,
       playSound: false,
       category: AndroidNotificationCategory.transport,
+      styleInformation: const MediaStyleInformation(),
       actions: [
-        const AndroidNotificationAction('previous', 'Назад', cancelNotification: false),
-        AndroidNotificationAction('play_pause', controller.isPlaying ? 'Пауза' : 'Продолжить', cancelNotification: false),
-        const AndroidNotificationAction('next', 'Вперёд', cancelNotification: false),
-        const AndroidNotificationAction('like', 'Лайк', cancelNotification: false),
-        const AndroidNotificationAction('download', 'Скачать', cancelNotification: false),
+        const AndroidNotificationAction(
+          'previous',
+          'Назад',
+          cancelNotification: false,
+        ),
+        AndroidNotificationAction(
+          'play_pause',
+          controller.isPlaying ? 'Пауза' : 'Продолжить',
+          cancelNotification: false,
+        ),
+        const AndroidNotificationAction(
+          'next',
+          'Вперёд',
+          cancelNotification: false,
+        ),
+        const AndroidNotificationAction(
+          'like',
+          'Лайк',
+          cancelNotification: false,
+        ),
+        const AndroidNotificationAction(
+          'download',
+          'Скачать',
+          cancelNotification: false,
+        ),
       ],
     );
 
