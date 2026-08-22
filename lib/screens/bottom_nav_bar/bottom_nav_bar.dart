@@ -7,6 +7,7 @@ import 'package:flowly/utils/bottom_nav_bar/persistent-tab-view.dart';
 import '../../controllers/main_controller.dart';
 import '../../models/song_model.dart';
 import '../../services/global_gesture_service.dart';
+import '../../services/notification_player_service.dart';
 import '../../services/settings_service.dart';
 import '../../utils/bottom_nav_bar/persistent-tab-view.widget.dart';
 import '../../utils/draggable_view.dart';
@@ -17,103 +18,63 @@ import '../search_page/search_page.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
-
   @override
   State<App> createState() => _AppState();
 }
 
 class _AppState extends State<App> {
-  final PersistentTabController controller =
-      PersistentTabController(initialIndex: 0);
-  final GlobalKey<ProfilePageState> _profileKey =
-      GlobalKey<ProfilePageState>();
-  final GlobalKey<DraggableViewState> _draggableViewKey =
-      GlobalKey<DraggableViewState>();
+  final PersistentTabController controller = PersistentTabController(initialIndex: 0);
+  final GlobalKey<ProfilePageState> _profileKey = GlobalKey<ProfilePageState>();
+  final GlobalKey<DraggableViewState> _draggableViewKey = GlobalKey<DraggableViewState>();
   final ValueNotifier<bool> _playerOpen = ValueNotifier<bool>(false);
+  MainController? _notificationController;
+  bool _notificationsReady = false;
   double? _horizontalDragStartX;
 
   @override
-  void dispose() {
-    _playerOpen.dispose();
-    super.dispose();
+  void dispose() { _detachNotificationController(); _playerOpen.dispose(); super.dispose(); }
+
+  void _attachNotificationController(MainController con) {
+    if (identical(_notificationController, con)) return;
+    _detachNotificationController();
+    _notificationController = con;
+    con.addListener(_onControllerChanged);
+    if (!_notificationsReady) {
+      _notificationsReady = true;
+      NotificationPlayerService.initialize(con).then((_) => NotificationPlayerService.show(con));
+    }
   }
 
-  List<PersistentBottomNavBarItem> _navBarsItems() {
-    return [
-      PersistentBottomNavBarItem(
-        icon: const Icon(Icons.home),
-        inactiveIcon: const Icon(LineIcons.home),
-        activeColorSecondary: Colors.white,
-        activeColorPrimary: Colors.grey,
-      ),
-      PersistentBottomNavBarItem(
-        icon: const Icon(CupertinoIcons.search),
-        inactiveIcon: const Icon(CupertinoIcons.search),
-        activeColorSecondary: Colors.white,
-        activeColorPrimary: Colors.grey,
-      ),
-      PersistentBottomNavBarItem(
-        icon: const _LibraryNavIcon(color: Colors.white),
-        inactiveIcon: const _LibraryNavIcon(color: Color(0xFF8E8E8E)),
-        activeColorSecondary: Colors.white,
-        activeColorPrimary: Colors.grey,
-      ),
-      PersistentBottomNavBarItem(
-        icon: const Icon(CupertinoIcons.person_fill),
-        inactiveIcon: const Icon(CupertinoIcons.person),
-        activeColorSecondary: Colors.white,
-        activeColorPrimary: Colors.grey,
-      ),
-    ];
-  }
+  void _detachNotificationController() { _notificationController?.removeListener(_onControllerChanged); _notificationController = null; }
+  void _onControllerChanged() { final con = _notificationController; if (con != null) NotificationPlayerService.show(con); }
 
-  List<Widget> _buildScreens(MainController con) {
-    return [
-      HomeScreen(con: con, onTestPlayerTap: () => _openTestPlayer(con)),
-      SearchPage(con: con),
-      Library(con: con),
-      ProfilePage(key: _profileKey, con: con),
-    ];
-  }
+  List<PersistentBottomNavBarItem> _navBarsItems() => [
+    PersistentBottomNavBarItem(icon: const Icon(Icons.home), inactiveIcon: const Icon(LineIcons.home), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
+    PersistentBottomNavBarItem(icon: const Icon(CupertinoIcons.search), inactiveIcon: const Icon(CupertinoIcons.search), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
+    PersistentBottomNavBarItem(icon: const _LibraryNavIcon(color: Colors.white), inactiveIcon: const _LibraryNavIcon(color: Color(0xFF8E8E8E)), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
+    PersistentBottomNavBarItem(icon: const Icon(CupertinoIcons.person_fill), inactiveIcon: const Icon(CupertinoIcons.person), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
+  ];
+
+  List<Widget> _buildScreens(MainController con) => [
+    HomeScreen(con: con, onTestPlayerTap: () => _openTestPlayer(con)),
+    SearchPage(con: con),
+    Library(con: con),
+    ProfilePage(key: _profileKey, con: con),
+  ];
 
   Future<void> _openTestPlayer(MainController con) async {
     await con.setPlaylist([
-      SongModel(
-        songid: 'flowly-test-song-1',
-        songname: 'Midnight Flow',
-        name: 'FlowLy Test Artist',
-        trackid: 'flowly-test-track-1',
-      ),
-      SongModel(
-        songid: 'flowly-test-song-2',
-        songname: 'Neon Dreams',
-        name: 'FlowLy Test Artist',
-        trackid: 'flowly-test-track-2',
-      ),
-      SongModel(
-        songid: 'flowly-test-song-3',
-        songname: 'Afterglow',
-        name: 'FlowLy Test Artist',
-        trackid: 'flowly-test-track-3',
-      ),
+      SongModel(songid: 'flowly-test-song-1', songname: 'Midnight Flow', name: 'FlowLy Test Artist', trackid: 'flowly-test-track-1', duration: '03:42'),
+      SongModel(songid: 'flowly-test-song-2', songname: 'Neon Dreams', name: 'FlowLy Test Artist', trackid: 'flowly-test-track-2', duration: '04:08'),
+      SongModel(songid: 'flowly-test-song-3', songname: 'Afterglow', name: 'FlowLy Test Artist', trackid: 'flowly-test-track-3', duration: '03:31'),
     ]);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _draggableViewKey.currentState?.open();
-    });
+    await con.play();
+    await _draggableViewKey.currentState?.open();
   }
 
   Future<bool> _handleBackButton() async {
-    if (_playerOpen.value) {
-      await _draggableViewKey.currentState?.close();
-      return false;
-    }
-
-    if (controller.index != 0) {
-      controller.jumpToTab(0);
-      return false;
-    }
-
+    if (_playerOpen.value) { await _draggableViewKey.currentState?.close(); return false; }
+    if (controller.index != 0) { controller.jumpToTab(0); return false; }
     return true;
   }
 
@@ -121,118 +82,69 @@ class _AppState extends State<App> {
     if (!SettingsService.swipeNavigationEnabled) return;
     final velocity = details.primaryVelocity;
     if (velocity == null || velocity.abs() < 260) return;
-
     final current = controller.index;
-    final nextIndex = velocity < 0
-        ? (current + 1) % 4
-        : (current - 1 + 4) % 4;
+    final nextIndex = velocity < 0 ? (current + 1) % 4 : (current - 1 + 4) % 4;
     controller.jumpToTab(nextIndex);
-    if (nextIndex == 3) {
-      _profileKey.currentState?.showProfile();
-    }
+    if (nextIndex == 3) _profileKey.currentState?.showProfile();
   }
-
-  void _handleMainMenuSwipeStart(DragStartDetails details) {
-    _horizontalDragStartX = details.globalPosition.dx;
-  }
-
-  void _handleMainMenuSwipeUpdate(DragUpdateDetails details) {
-    _horizontalDragStartX ??= details.globalPosition.dx;
-  }
+  void _handleMainMenuSwipeStart(DragStartDetails details) { _horizontalDragStartX = details.globalPosition.dx; }
+  void _handleMainMenuSwipeUpdate(DragUpdateDetails details) { _horizontalDragStartX ??= details.globalPosition.dx; }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => MainController()..init(),
-      child: Consumer<MainController>(
-        builder: (context, con, child) {
-          GlobalGestureService.attach(con);
-          return WillPopScope(
-            onWillPop: _handleBackButton,
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onHorizontalDragStart: _handleMainMenuSwipeStart,
-              onHorizontalDragUpdate: _handleMainMenuSwipeUpdate,
-              onHorizontalDragEnd: (details) {
-                _handleMainMenuSwipeEnd(details);
-                _horizontalDragStartX = null;
-              },
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  PersistentTabView(
-                    context,
-                    controller: controller,
-                    playWidget: const SizedBox.shrink(),
-                    screens: _buildScreens(con),
-                    items: _navBarsItems(),
-                    onItemSelected: (index) {
-                      if (index == 3) {
-                        _profileKey.currentState?.showProfile();
-                      }
-                    },
-                    confineInSafeArea: true,
-                    backgroundColor: Colors.black,
-                    handleAndroidBackButtonPress: false,
-                    hideNavigationBarWhenKeyboardShows: true,
-                    resizeToAvoidBottomInset: true,
-                    popAllScreensOnTapOfSelectedTab: true,
-                    popActionScreens: PopActionScreensType.all,
-                    navBarStyle: NavBarStyle.simple,
-                    navBarHeight: 64,
-                    padding: const NavBarPadding.all(0),
-                  ),
-                  DraggableView(
-                    key: _draggableViewKey,
-                    con: con,
-                    onOpenStateChanged: (open) => _playerOpen.value = open,
-                  ),
-                ],
-              ),
+      create: (_) => MainController()..init(),
+      child: Consumer<MainController>(builder: (context, con, child) {
+        GlobalGestureService.attach(con);
+        _attachNotificationController(con);
+        return WillPopScope(
+          onWillPop: _handleBackButton,
+          child: Stack(fit: StackFit.expand, children: [
+            PersistentTabView(
+              context,
+              controller: controller,
+              playWidget: const SizedBox.shrink(),
+              screens: _buildScreens(con),
+              items: _navBarsItems(),
+              onItemSelected: (index) { if (index == 3) _profileKey.currentState?.showProfile(); },
+              confineInSafeArea: true,
+              backgroundColor: Colors.black,
+              handleAndroidBackButtonPress: false,
+              hideNavigationBarWhenKeyboardShows: true,
+              resizeToAvoidBottomInset: true,
+              popAllScreensOnTapOfSelectedTab: true,
+              popActionScreens: PopActionScreensType.all,
+              navBarStyle: NavBarStyle.simple,
+              navBarHeight: 64,
+              padding: const NavBarPadding.all(0),
             ),
-          );
-        },
-      ),
+            DraggableView(key: _draggableViewKey, con: con, onOpenStateChanged: (open) => _playerOpen.value = open),
+          ]),
+        );
+      }),
     );
   }
 }
 
 class _LibraryNavIcon extends StatelessWidget {
   final Color color;
-
   const _LibraryNavIcon({required this.color});
-
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 24,
-      height: 24,
-      child: CustomPaint(painter: _LibraryNavPainter(color)),
-    );
-  }
+  Widget build(BuildContext context) => SizedBox(width: 24, height: 24, child: CustomPaint(painter: _LibraryNavPainter(color)));
 }
 
 class _LibraryNavPainter extends CustomPainter {
   final Color color;
-
   const _LibraryNavPainter(this.color);
-
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2.6
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    final centerY = size.height / 2;
-    canvas.drawLine(Offset(3, centerY - 7), Offset(3, centerY + 7), paint);
-    canvas.drawLine(Offset(9, centerY - 9), Offset(9, centerY + 8), paint);
-    canvas.drawLine(Offset(15, centerY - 6), Offset(15, centerY + 8), paint);
-    canvas.drawLine(Offset(20, centerY - 8), Offset(22, centerY + 7), paint);
+    final paint = Paint()..color = color..strokeWidth = 2.6..strokeCap = StrokeCap.round..style = PaintingStyle.stroke;
+    final y = size.height / 2;
+    canvas.drawLine(Offset(3, y - 7), Offset(3, y + 7), paint);
+    canvas.drawLine(Offset(9, y - 9), Offset(9, y + 8), paint);
+    canvas.drawLine(Offset(15, y - 6), Offset(15, y + 8), paint);
+    canvas.drawLine(Offset(20, y - 8), Offset(22, y + 7), paint);
   }
-
   @override
-  bool shouldRepaint(covariant _LibraryNavPainter oldDelegate) =>
-      oldDelegate.color != color;
+  bool shouldRepaint(covariant _LibraryNavPainter oldDelegate) => oldDelegate.color != color;
 }
