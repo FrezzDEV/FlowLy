@@ -42,6 +42,12 @@ class BottomNavSimple extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+                focusColor: Colors.transparent,
+                overlayColor: WidgetStateProperty.all(Colors.transparent),
+                enableFeedback: false,
                 onTap: () {
                   if (item.onPressed != null) {
                     item.onPressed!(navBarEssentials!.selectedScreenBuildContext);
