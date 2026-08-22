@@ -8,6 +8,7 @@ import '../../controllers/main_controller.dart';
 import '../../models/song_model.dart';
 import '../../services/global_gesture_service.dart';
 import '../../services/notification_player_service.dart';
+import '../../services/settings_service.dart';
 import '../../utils/draggable_view.dart';
 import '../home/home_screen.dart';
 import '../library/library.dart';
@@ -60,30 +61,10 @@ class _AppState extends State<App> {
   }
 
   List<PersistentBottomNavBarItem> _navBarsItems() => [
-        PersistentBottomNavBarItem(
-          icon: const Icon(Icons.home),
-          inactiveIcon: const Icon(LineIcons.home),
-          activeColorSecondary: Colors.white,
-          activeColorPrimary: Colors.grey,
-        ),
-        PersistentBottomNavBarItem(
-          icon: const Icon(CupertinoIcons.search),
-          inactiveIcon: const Icon(CupertinoIcons.search),
-          activeColorSecondary: Colors.white,
-          activeColorPrimary: Colors.grey,
-        ),
-        PersistentBottomNavBarItem(
-          icon: const _LibraryNavIcon(color: Colors.white),
-          inactiveIcon: const _LibraryNavIcon(color: Color(0xFF8E8E8E)),
-          activeColorSecondary: Colors.white,
-          activeColorPrimary: Colors.grey,
-        ),
-        PersistentBottomNavBarItem(
-          icon: const Icon(CupertinoIcons.person_fill),
-          inactiveIcon: const Icon(CupertinoIcons.person),
-          activeColorSecondary: Colors.white,
-          activeColorPrimary: Colors.grey,
-        ),
+        PersistentBottomNavBarItem(icon: const Icon(Icons.home), inactiveIcon: const Icon(LineIcons.home), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
+        PersistentBottomNavBarItem(icon: const Icon(CupertinoIcons.search), inactiveIcon: const Icon(CupertinoIcons.search), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
+        PersistentBottomNavBarItem(icon: const _LibraryNavIcon(color: Colors.white), inactiveIcon: const _LibraryNavIcon(color: Color(0xFF8E8E8E)), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
+        PersistentBottomNavBarItem(icon: const Icon(CupertinoIcons.person_fill), inactiveIcon: const Icon(CupertinoIcons.person), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
       ];
 
   List<Widget> _buildScreens(MainController con) => [
@@ -112,9 +93,7 @@ class _AppState extends State<App> {
     final profileContext = _profileKey.currentContext;
     if (profileContext != null) {
       final navigator = Navigator.maybeOf(profileContext);
-      if (navigator != null && await navigator.maybePop()) {
-        return false;
-      }
+      if (navigator != null && await navigator.maybePop()) return false;
     }
 
     if (controller.index != 0) {
