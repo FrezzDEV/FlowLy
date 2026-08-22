@@ -8,6 +8,7 @@ import '../../controllers/main_controller.dart';
 import '../../services/global_gesture_service.dart';
 import '../../services/settings_service.dart';
 import '../../utils/bottom_nav_bar/persistent-tab-view.widget.dart';
+import '../../utils/draggable_view.dart';
 import '../home/home_screen.dart';
 import '../library/library.dart';
 import '../profile/profile.dart';
@@ -103,27 +104,33 @@ class _AppState extends State<App> {
               _handleMainMenuSwipeEnd(details);
               _horizontalDragStartX = null;
             },
-            child: PersistentTabView(
-              context,
-              controller: controller,
-              playWidget: const SizedBox.shrink(),
-              screens: _buildScreens(con),
-              items: _navBarsItems(),
-              onItemSelected: (index) {
-                if (index == 3) {
-                  _profileKey.currentState?.showProfile();
-                }
-              },
-              confineInSafeArea: true,
-              backgroundColor: Colors.black,
-              handleAndroidBackButtonPress: true,
-              hideNavigationBarWhenKeyboardShows: true,
-              resizeToAvoidBottomInset: true,
-              popAllScreensOnTapOfSelectedTab: true,
-              popActionScreens: PopActionScreensType.all,
-              navBarStyle: NavBarStyle.simple,
-              navBarHeight: 64,
-              padding: const NavBarPadding.all(0),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                PersistentTabView(
+                  context,
+                  controller: controller,
+                  playWidget: const SizedBox.shrink(),
+                  screens: _buildScreens(con),
+                  items: _navBarsItems(),
+                  onItemSelected: (index) {
+                    if (index == 3) {
+                      _profileKey.currentState?.showProfile();
+                    }
+                  },
+                  confineInSafeArea: true,
+                  backgroundColor: Colors.black,
+                  handleAndroidBackButtonPress: true,
+                  hideNavigationBarWhenKeyboardShows: true,
+                  resizeToAvoidBottomInset: true,
+                  popAllScreensOnTapOfSelectedTab: true,
+                  popActionScreens: PopActionScreensType.all,
+                  navBarStyle: NavBarStyle.simple,
+                  navBarHeight: 64,
+                  padding: const NavBarPadding.all(0),
+                ),
+                DraggableView(con: con),
+              ],
             ),
           );
         },
