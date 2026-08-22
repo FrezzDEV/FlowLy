@@ -62,8 +62,7 @@ class DraggableViewState extends State<DraggableView>
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
-    final size = MediaQuery.sizeOf(context);
-    final height = size.height;
+    final height = MediaQuery.sizeOf(context).height;
     final range = height - _miniHeight;
     if (range <= 0) return;
     final delta = details.primaryDelta ?? 0;
@@ -97,11 +96,7 @@ class DraggableViewState extends State<DraggableView>
         final screenHeight = size.height;
         final t = _progress.value;
 
-        final cardHeight = lerpDouble(
-          _miniHeight,
-          screenHeight,
-          t,
-        )!;
+        final cardHeight = lerpDouble(_miniHeight, screenHeight, t)!;
         final cardMargin = lerpDouble(_miniMargin, 0, t)!;
         final cardRadius = lerpDouble(_miniRadius, 0, t)!;
         final artSize = lerpDouble(44, screenWidth * 0.72, t)!;
@@ -113,260 +108,256 @@ class DraggableViewState extends State<DraggableView>
         final handleOpacity = _remap(t, 0.5, 1);
         final bottomMargin = lerpDouble(_navBarHeight + 8, 0, t)!;
 
-        return IgnorePointer(
-          ignoring: t < 0.001,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onVerticalDragUpdate: _onDragUpdate,
-              onVerticalDragEnd: _onDragEnd,
-              child: Container(
-                width: screenWidth - cardMargin * 2,
-                height: cardHeight,
-                margin: EdgeInsets.fromLTRB(
-                  cardMargin,
-                  0,
-                  cardMargin,
-                  bottomMargin,
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onVerticalDragUpdate: _onDragUpdate,
+            onVerticalDragEnd: _onDragEnd,
+            child: Container(
+              width: screenWidth - cardMargin * 2,
+              height: cardHeight,
+              margin: EdgeInsets.fromLTRB(
+                cardMargin,
+                0,
+                cardMargin,
+                bottomMargin,
+              ),
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: Color.lerp(
+                  const Color(0xFF191919),
+                  const Color(0xFF0B0B0B),
+                  t,
                 ),
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: Color.lerp(
-                    const Color(0xFF191919),
-                    const Color(0xFF0B0B0B),
-                    t,
+                borderRadius: BorderRadius.circular(cardRadius),
+                boxShadow: [
+                  if (t < 1)
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.32),
+                      blurRadius: 16,
+                      offset: const Offset(0, 5),
+                    ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  if (t > 0.001)
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: _remap(t, 0.15, 0.65) * 0.58,
+                        child: const ColoredBox(color: Colors.black),
+                      ),
+                    ),
+                  Positioned(
+                    top: 10,
+                    left: 0,
+                    right: 0,
+                    child: Opacity(
+                      opacity: handleOpacity,
+                      child: const Center(
+                        child: SizedBox(
+                          width: 36,
+                          height: 4,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.white38,
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(2),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(cardRadius),
-                  boxShadow: [
-                    if (t < 1)
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.32),
-                        blurRadius: 16,
-                        offset: const Offset(0, 5),
+                  Positioned(
+                    top: artTop,
+                    left: artLeft,
+                    width: artSize,
+                    height: artSize,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(artRadius),
+                      child: _DemoArtwork(
+                        title: song.songname ?? 'Track',
+                        artist: song.name ?? 'FlowLy',
                       ),
-                  ],
-                ),
-                child: Stack(
-                  children: [
-                    if (t > 0.001)
-                      Positioned.fill(
-                        child: Opacity(
-                          opacity: _remap(t, 0.15, 0.65) * 0.58,
-                          child: const ColoredBox(color: Colors.black),
-                        ),
-                      ),
-                    Positioned(
-                      top: 10,
-                      left: 0,
-                      right: 0,
-                      child: Opacity(
-                        opacity: handleOpacity,
-                        child: const Center(
-                          child: SizedBox(
-                            width: 36,
-                            height: 4,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Colors.white38,
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(2),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    left: 66,
+                    right: 160,
+                    height: _miniHeight,
+                    child: Opacity(
+                      opacity: miniOpacity,
+                      child: IgnorePointer(
+                        ignoring: t > 0.3,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: open,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  song.songname ?? 'Track',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  song.name ?? 'FlowLy',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: artTop,
-                      left: artLeft,
-                      width: artSize,
-                      height: artSize,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(artRadius),
-                        child: _DemoArtwork(
-                          title: song.songname ?? 'Track',
-                          artist: song.name ?? 'FlowLy',
-                        ),
+                  ),
+                  Positioned(
+                    right: 104,
+                    top: 0,
+                    height: _miniHeight,
+                    child: Opacity(
+                      opacity: miniOpacity,
+                      child: _MiniButton(
+                        icon: Icons.skip_previous_rounded,
+                        onTap: widget.con.songs.length > 1
+                            ? widget.con.previous
+                            : null,
                       ),
                     ),
-                    Positioned(
-                      top: 0,
-                      left: 66,
-                      right: 126,
-                      height: _miniHeight,
+                  ),
+                  Positioned(
+                    right: 56,
+                    top: 0,
+                    height: _miniHeight,
+                    child: Opacity(
+                      opacity: miniOpacity,
+                      child: _MiniButton(
+                        icon: widget.con.isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        onTap: widget.con.playOrPause,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 8,
+                    top: 0,
+                    height: _miniHeight,
+                    child: Opacity(
+                      opacity: miniOpacity,
+                      child: _MiniButton(
+                        icon: Icons.skip_next_rounded,
+                        onTap: widget.con.songs.length > 1
+                            ? widget.con.next
+                            : null,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: artTop + artSize + 24,
+                    left: 24,
+                    right: 24,
+                    child: IgnorePointer(
+                      ignoring: t < 0.55,
                       child: Opacity(
-                        opacity: miniOpacity,
-                        child: IgnorePointer(
-                          ignoring: t > 0.3,
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: open,
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    song.songname ?? 'Track',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    song.name ?? 'FlowLy',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
+                        opacity: expandedOpacity,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              song.songname ?? 'Track',
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 6),
+                            Text(
+                              song.name ?? 'FlowLy',
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                activeTrackColor: Colors.white,
+                                inactiveTrackColor: Colors.white24,
+                                thumbColor: Colors.white,
+                                overlayColor: Colors.transparent,
+                                trackHeight: 4,
+                              ),
+                              child: Slider(
+                                value: 0,
+                                onChanged: (_) {},
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _LargeIconButton(
+                                  icon: Icons.skip_previous_rounded,
+                                  onTap: widget.con.songs.length > 1
+                                      ? widget.con.previous
+                                      : null,
+                                ),
+                                _LargePlayPauseButton(con: widget.con),
+                                _LargeIconButton(
+                                  icon: Icons.skip_next_rounded,
+                                  onTap: widget.con.songs.length > 1
+                                      ? widget.con.next
+                                      : null,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    Positioned(
-                      right: 58,
-                      top: 0,
-                      height: _miniHeight,
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: IgnorePointer(
+                      ignoring: t < 0.55,
                       child: Opacity(
-                        opacity: miniOpacity,
+                        opacity: expandedOpacity,
                         child: _MiniButton(
-                          icon: Icons.skip_previous_rounded,
-                          onTap: widget.con.songs.length > 1
-                              ? widget.con.previous
-                              : null,
+                          icon: Icons.keyboard_arrow_down_rounded,
+                          onTap: close,
                         ),
                       ),
                     ),
-                    Positioned(
-                      right: 8,
-                      top: 0,
-                      height: _miniHeight,
-                      child: Opacity(
-                        opacity: miniOpacity,
-                        child: _MiniButton(
-                          icon: widget.con.isPlaying
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          onTap: widget.con.playOrPause,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: -40,
-                      top: 0,
-                      height: _miniHeight,
-                      child: Opacity(
-                        opacity: miniOpacity,
-                        child: IgnorePointer(
-                          ignoring: true,
-                          child: _MiniButton(
-                            icon: Icons.skip_next_rounded,
-                            onTap: null,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: artTop + artSize + 24,
-                      left: 24,
-                      right: 24,
-                      child: IgnorePointer(
-                        ignoring: t < 0.55,
-                        child: Opacity(
-                          opacity: expandedOpacity,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                song.songname ?? 'Track',
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                song.name ?? 'FlowLy',
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 28),
-                              SliderTheme(
-                                data: SliderTheme.of(context).copyWith(
-                                  activeTrackColor: Colors.white,
-                                  inactiveTrackColor: Colors.white24,
-                                  thumbColor: Colors.white,
-                                  overlayColor: Colors.transparent,
-                                  trackHeight: 4,
-                                ),
-                                child: Slider(
-                                  value: 0,
-                                  onChanged: (_) {},
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  _LargeIconButton(
-                                    icon: Icons.skip_previous_rounded,
-                                    onTap: widget.con.songs.length > 1
-                                        ? widget.con.previous
-                                        : null,
-                                  ),
-                                  _LargePlayPauseButton(con: widget.con),
-                                  _LargeIconButton(
-                                    icon: Icons.skip_next_rounded,
-                                    onTap: widget.con.songs.length > 1
-                                        ? widget.con.next
-                                        : null,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: IgnorePointer(
-                        ignoring: t < 0.55,
-                        child: Opacity(
-                          opacity: expandedOpacity,
-                          child: _MiniButton(
-                            icon: Icons.keyboard_arrow_down_rounded,
-                            onTap: close,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
