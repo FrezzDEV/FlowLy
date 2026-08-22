@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../controllers/main_controller.dart';
 import '../../models/loading_enum.dart';
-import '../../models/song_model.dart';
 import '../../utils/horizontal_songs_list.dart';
 import '../../utils/recent_users.dart';
 import 'cubit/home_cubit.dart';
@@ -11,16 +10,6 @@ class HomeScreen extends StatelessWidget {
   final MainController con;
 
   const HomeScreen({super.key, required this.con});
-
-  static final SongModel _demoSong = SongModel(
-    songid: 'flowly-demo-player',
-    songname: 'Demo Player',
-    userid: 'flowly',
-    name: 'FlowLy',
-    duration: '00:00',
-    trackid: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    coverImageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=900&q=80',
-  );
 
   List<T> _take<T>(List<T> values, int start, [int? end]) {
     if (start >= values.length) return const [];
@@ -32,7 +21,7 @@ class HomeScreen extends StatelessWidget {
     final recentUsers = _take(state.users, 0, 6);
     final bestArtists = _take(state.users, 6, 16);
     final moreArtists = _take(state.users, 16);
-    final popularSongs = <SongModel>[_demoSong, ..._take(state.songs, 0, 10)];
+    final popularSongs = _take(state.songs, 0, 10);
     final newReleases = _take(state.songs, 10, 20);
 
     return ListView(
@@ -42,9 +31,11 @@ class HomeScreen extends StatelessWidget {
           RecentUsers(con: con, users: recentUsers),
           const SizedBox(height: 12),
         ],
-        const _SectionTitle(title: 'Popular Hits'),
-        HorizontalSongList(con: con, songs: popularSongs),
-        const SizedBox(height: 12),
+        if (popularSongs.isNotEmpty) ...[
+          const _SectionTitle(title: 'Popular Hits'),
+          HorizontalSongList(con: con, songs: popularSongs),
+          const SizedBox(height: 12),
+        ],
         if (bestArtists.isNotEmpty) ...[
           const _SectionTitle(title: 'Best Picks For You'),
           HorizontalArtistList(con: con, users: bestArtists),
@@ -73,8 +64,6 @@ class HomeScreen extends StatelessWidget {
             return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
 
-          // Recommendations are optional. Even if the API is unavailable,
-          // always render Home with the local Demo Player.
           return _HomeScaffold(
             con: con,
             body: _content(context, state),
