@@ -1,71 +1,27 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 
 import '../models/song_model.dart';
 
 enum LoopModeType { none, all, one }
 
 class MainController extends ChangeNotifier {
-  final AudioPlayer player = AudioPlayer();
-  final List<StreamSubscription<dynamic>> _subscriptions = [];
-
-  static const Duration _positionNotifyInterval = Duration(milliseconds: 100);
-
   List<SongModel> _songs = [];
   int _currentIndex = 0;
-  bool _isPlaying = false;
   bool _isShuffled = false;
   LoopModeType _loopMode = LoopModeType.none;
-  Duration _position = Duration.zero;
-  Duration _duration = Duration.zero;
-  DateTime _lastPositionNotify = DateTime.fromMicrosecondsSinceEpoch(0);
 
   List<SongModel> get songs => List.unmodifiable(_songs);
   List<SongModel> get audios => List.unmodifiable(_songs);
   int get currentIndex => _currentIndex;
-  bool get isPlaying => _isPlaying;
+  bool get isPlaying => false;
   bool get isShuffled => _isShuffled;
   LoopModeType get loopMode => _loopMode;
-  Duration get position => _position;
-  Duration get duration => _duration;
+  Duration get position => Duration.zero;
+  Duration get duration => Duration.zero;
   SongModel? get currentSong =>
       _currentIndex >= 0 && _currentIndex < _songs.length ? _songs[_currentIndex] : null;
   String? get getCurrentAudioTitle => currentSong?.songname;
-
-  MainController() {
-    _subscriptions.add(player.positionStream.listen((value) {
-      _position = value;
-      final now = DateTime.now();
-      if (now.difference(_lastPositionNotify) >= _positionNotifyInterval) {
-        _lastPositionNotify = now;
-        notifyListeners();
-      }
-    }));
-
-    _subscriptions.add(player.durationStream.listen((value) {
-      _duration = value ?? Duration.zero;
-      notifyListeners();
-    }));
-
-    _subscriptions.add(player.currentIndexStream.listen((value) {
-      if (value != null) {
-        _currentIndex = value;
-        _saveRecentlyPlayed();
-        notifyListeners();
-      }
-    }));
-
-    _subscriptions.add(player.playerStateStream.listen((state) {
-      if (_isPlaying != state.playing) {
-        _isPlaying = state.playing;
-        notifyListeners();
-      }
-    }));
-  }
 
   Future<void> init() async {
     final box = Hive.box('RecentlyPlayed');
@@ -93,56 +49,17 @@ class MainController extends ChangeNotifier {
           .toSet();
       _songs = [
         ...recent,
-        ..._songs.where((song) =>
-            song.songid == null || !recentIds.contains(song.songid)),
+        ..._songs.where(
+          (song) => song.songid == null || !recentIds.contains(song.songid),
+        ),
       ];
       notifyListeners();
     }
   }
 
-  Future<void> _saveRecentlyPlayed() async {
-    final song = currentSong;
-    if (song == null) return;
-
-    try {
-      final box = Hive.box('RecentlyPlayed');
-      final key = song.songid?.isNotEmpty == true
-          ? song.songid!
-          : song.trackid?.isNotEmpty == true
-              ? song.trackid!
-              : song.songname ?? DateTime.now().toIso8601String();
-
-      await box.put(key, {
-        'songname': song.songname,
-        'fullname': song.name,
-        'username': song.userid,
-        'cover': song.coverImageUrl,
-        'track': song.trackid,
-        'id': song.songid,
-        'created': DateTime.now().toIso8601String(),
-      });
-    } catch (_) {
-      // Recently played is optional and must not interrupt playback.
-    }
-  }
-
   Future<void> setPlaylist(List<SongModel> songs, {int startIndex = 0}) async {
     _songs = List<SongModel>.from(songs);
-    if (_songs.isEmpty) {
-      await player.stop();
-      _currentIndex = 0;
-      notifyListeners();
-      return;
-    }
-
-    final sources = _songs.map(_toSource).toList(growable: false);
-    _currentIndex = startIndex.clamp(0, _songs.length - 1);
-    await player.setAudioSources(
-      sources,
-      initialIndex: _currentIndex,
-      shuffleOrder: DefaultShuffleOrder(),
-    );
-    await player.play();
+    _currentIndex = _songs.isEmpty ? 0 : startIndex.clamp(0, _songs.length - 1);
     notifyListeners();
   }
 
@@ -150,80 +67,60 @@ class MainController extends ChangeNotifier {
     await setPlaylist(songs, startIndex: initial);
   }
 
-  Future<void> playOrPause() async {
-    if (player.playing) {
-      await player.pause();
-    } else {
-      await player.play();
-    }
+  Future<void> playOrPause() async {}
+  Future<void> play() async {}
+  Future<void> pause() async {}
+  Future<void> stop() async {}
+  Future<void> next() async {
+    if (_songs.isEmpty) return;
+    _currentIndex = (_currentIndex + 1).clamp(0, _songs.length - 1);
+    notifyListeners();
   }
-
-  Future<void> play() => player.play();
-  Future<void> pause() => player.pause();
-  Future<void> stop() => player.stop();
-  Future<void> next() => player.seekToNext();
 
   Future<void> previous() async {
-    if (_position > const Duration(seconds: 3)) {
-      await player.seek(Duration.zero);
-    } else {
-      await player.seekToPrevious();
-    }
+    if (_songs.isEmpty) return;
+    _currentIndex = (_currentIndex - 1).clamp(0, _songs.length - 1);
+    notifyListeners();
   }
 
-  Future<void> seek(Duration value) => player.seek(value);
+  Future<void> seek(Duration value) async {}
 
   void toggleLoop() {
-    switch (_loopMode) {
-      case LoopModeType.none:
-        _loopMode = LoopModeType.all;
-        player.setLoopMode(LoopMode.all);
-        break;
-      case LoopModeType.all:
-        _loopMode = LoopModeType.one;
-        player.setLoopMode(LoopMode.one);
-        break;
-      case LoopModeType.one:
-        _loopMode = LoopModeType.none;
-        player.setLoopMode(LoopMode.off);
-        break;
-    }
+    _loopMode = switch (_loopMode) {
+      LoopModeType.none => LoopModeType.all,
+      LoopModeType.all => LoopModeType.one,
+      LoopModeType.one => LoopModeType.none,
+    };
     notifyListeners();
   }
 
   void setLoopMode(LoopModeType mode) {
     _loopMode = mode;
-    player.setLoopMode(switch (mode) {
-      LoopModeType.none => LoopMode.off,
-      LoopModeType.all => LoopMode.all,
-      LoopModeType.one => LoopMode.one,
-    });
     notifyListeners();
   }
 
   void toggleShuffle() {
     _isShuffled = !_isShuffled;
-    player.setShuffleModeEnabled(_isShuffled);
     notifyListeners();
   }
 
   Future<void> addToPlaylist(SongModel song) async {
     _songs.add(song);
-    await player.addAudioSource(_toSource(song));
     notifyListeners();
   }
 
   Future<void> insertToPlaylist(int index, SongModel song) async {
     final safeIndex = index.clamp(0, _songs.length);
     _songs.insert(safeIndex, song);
-    await player.insertAudioSource(safeIndex, _toSource(song));
     notifyListeners();
   }
 
   Future<void> removeFromPlaylist(int index) async {
     if (index < 0 || index >= _songs.length) return;
     _songs.removeAt(index);
-    await player.removeAudioSourceAt(index);
+    if (_currentIndex >= _songs.length) {
+      _currentIndex = _songs.isEmpty ? 0 : _songs.length - 1;
+    }
     notifyListeners();
   }
 
@@ -232,7 +129,7 @@ class MainController extends ChangeNotifier {
     final safeNewIndex = newIndex.clamp(0, _songs.length - 1);
     final song = _songs.removeAt(oldIndex);
     _songs.insert(safeNewIndex, song);
-    await player.moveAudioSource(oldIndex, safeNewIndex);
+    _currentIndex = safeNewIndex;
     notifyListeners();
   }
 
@@ -282,43 +179,5 @@ class MainController extends ChangeNotifier {
       if (song.songname == title) return song;
     }
     return null;
-  }
-
-  AudioSource _toSource(SongModel song) {
-    final url = song.trackid;
-    if (url == null || url.isEmpty) {
-      throw ArgumentError('Song ${song.songname ?? ''} has no audio URL');
-    }
-
-    final parsedUrl = Uri.tryParse(url);
-    if (parsedUrl == null || !parsedUrl.hasScheme || parsedUrl.host.isEmpty) {
-      throw ArgumentError('Song ${song.songname ?? ''} has an invalid audio URL');
-    }
-
-    final coverUri = Uri.tryParse(song.coverImageUrl ?? '');
-    return AudioSource.uri(
-      parsedUrl,
-      tag: MediaItem(
-        id: song.songid?.isNotEmpty == true ? song.songid! : url,
-        title: song.songname?.isNotEmpty == true ? song.songname! : 'FlowLy',
-        artist: song.name?.isNotEmpty == true ? song.name : song.userid,
-        album: 'FlowLy',
-        artUri: coverUri,
-      ),
-    );
-  }
-
-  void close() {
-    for (final subscription in _subscriptions) {
-      subscription.cancel();
-    }
-    _subscriptions.clear();
-    player.dispose();
-  }
-
-  @override
-  void dispose() {
-    close();
-    super.dispose();
   }
 }
