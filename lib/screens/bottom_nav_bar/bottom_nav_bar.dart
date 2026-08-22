@@ -107,6 +107,20 @@ class _AppState extends State<App> {
     _draggableViewKey.currentState?.open();
   }
 
+  Future<bool> _handleBackButton() async {
+    if (_playerOpen.value) {
+      await _draggableViewKey.currentState?.close();
+      return false;
+    }
+
+    if (controller.index != 0) {
+      controller.jumpToTab(0);
+      return false;
+    }
+
+    return true;
+  }
+
   void _handleMainMenuSwipeEnd(DragEndDetails details) {
     if (!SettingsService.swipeNavigationEnabled) return;
     final velocity = details.primaryVelocity;
@@ -137,56 +151,59 @@ class _AppState extends State<App> {
       child: Consumer<MainController>(
         builder: (context, con, child) {
           GlobalGestureService.attach(con);
-          return GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onHorizontalDragStart: _handleMainMenuSwipeStart,
-            onHorizontalDragUpdate: _handleMainMenuSwipeUpdate,
-            onHorizontalDragEnd: (details) {
-              _handleMainMenuSwipeEnd(details);
-              _horizontalDragStartX = null;
-            },
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                PersistentTabView(
-                  context,
-                  controller: controller,
-                  playWidget: ValueListenableBuilder<bool>(
-                    valueListenable: _playerOpen,
-                    builder: (context, open, _) {
-                      if (open || con.currentSong == null) {
-                        return const SizedBox.shrink();
+          return WillPopScope(
+            onWillPop: _handleBackButton,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragStart: _handleMainMenuSwipeStart,
+              onHorizontalDragUpdate: _handleMainMenuSwipeUpdate,
+              onHorizontalDragEnd: (details) {
+                _handleMainMenuSwipeEnd(details);
+                _horizontalDragStartX = null;
+              },
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  PersistentTabView(
+                    context,
+                    controller: controller,
+                    playWidget: ValueListenableBuilder<bool>(
+                      valueListenable: _playerOpen,
+                      builder: (context, open, _) {
+                        if (open || con.currentSong == null) {
+                          return const SizedBox.shrink();
+                        }
+                        return MiniPlayer(
+                          con: con,
+                          onTap: _openPlayerFromMini,
+                        );
+                      },
+                    ),
+                    screens: _buildScreens(con),
+                    items: _navBarsItems(),
+                    onItemSelected: (index) {
+                      if (index == 3) {
+                        _profileKey.currentState?.showProfile();
                       }
-                      return MiniPlayer(
-                        con: con,
-                        onTap: _openPlayerFromMini,
-                      );
                     },
+                    confineInSafeArea: true,
+                    backgroundColor: Colors.black,
+                    handleAndroidBackButtonPress: false,
+                    hideNavigationBarWhenKeyboardShows: true,
+                    resizeToAvoidBottomInset: true,
+                    popAllScreensOnTapOfSelectedTab: true,
+                    popActionScreens: PopActionScreensType.all,
+                    navBarStyle: NavBarStyle.simple,
+                    navBarHeight: 64,
+                    padding: const NavBarPadding.all(0),
                   ),
-                  screens: _buildScreens(con),
-                  items: _navBarsItems(),
-                  onItemSelected: (index) {
-                    if (index == 3) {
-                      _profileKey.currentState?.showProfile();
-                    }
-                  },
-                  confineInSafeArea: true,
-                  backgroundColor: Colors.black,
-                  handleAndroidBackButtonPress: true,
-                  hideNavigationBarWhenKeyboardShows: true,
-                  resizeToAvoidBottomInset: true,
-                  popAllScreensOnTapOfSelectedTab: true,
-                  popActionScreens: PopActionScreensType.all,
-                  navBarStyle: NavBarStyle.simple,
-                  navBarHeight: 64,
-                  padding: const NavBarPadding.all(0),
-                ),
-                DraggableView(
-                  key: _draggableViewKey,
-                  con: con,
-                  onOpenStateChanged: (open) => _playerOpen.value = open,
-                ),
-              ],
+                  DraggableView(
+                    key: _draggableViewKey,
+                    con: con,
+                    onOpenStateChanged: (open) => _playerOpen.value = open,
+                  ),
+                ],
+              ),
             ),
           );
         },
