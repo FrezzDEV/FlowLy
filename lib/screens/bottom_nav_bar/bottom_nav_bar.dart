@@ -8,7 +8,6 @@ import '../../controllers/main_controller.dart';
 import '../../models/song_model.dart';
 import '../../services/global_gesture_service.dart';
 import '../../services/notification_player_service.dart';
-import '../../services/settings_service.dart';
 import '../../utils/draggable_view.dart';
 import '../home/home_screen.dart';
 import '../library/library.dart';
@@ -61,10 +60,30 @@ class _AppState extends State<App> {
   }
 
   List<PersistentBottomNavBarItem> _navBarsItems() => [
-        PersistentBottomNavBarItem(icon: const Icon(Icons.home), inactiveIcon: const Icon(LineIcons.home), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
-        PersistentBottomNavBarItem(icon: const Icon(CupertinoIcons.search), inactiveIcon: const Icon(CupertinoIcons.search), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
-        PersistentBottomNavBarItem(icon: const _LibraryNavIcon(color: Colors.white), inactiveIcon: const _LibraryNavIcon(color: Color(0xFF8E8E8E)), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
-        PersistentBottomNavBarItem(icon: const Icon(CupertinoIcons.person_fill), inactiveIcon: const Icon(CupertinoIcons.person), activeColorSecondary: Colors.white, activeColorPrimary: Colors.grey),
+        PersistentBottomNavBarItem(
+          icon: const Icon(Icons.home),
+          inactiveIcon: const Icon(LineIcons.home),
+          activeColorSecondary: Colors.white,
+          activeColorPrimary: Colors.grey,
+        ),
+        PersistentBottomNavBarItem(
+          icon: const Icon(CupertinoIcons.search),
+          inactiveIcon: const Icon(CupertinoIcons.search),
+          activeColorSecondary: Colors.white,
+          activeColorPrimary: Colors.grey,
+        ),
+        PersistentBottomNavBarItem(
+          icon: const _LibraryNavIcon(color: Colors.white),
+          inactiveIcon: const _LibraryNavIcon(color: Color(0xFF8E8E8E)),
+          activeColorSecondary: Colors.white,
+          activeColorPrimary: Colors.grey,
+        ),
+        PersistentBottomNavBarItem(
+          icon: const Icon(CupertinoIcons.person_fill),
+          inactiveIcon: const Icon(CupertinoIcons.person),
+          activeColorSecondary: Colors.white,
+          activeColorPrimary: Colors.grey,
+        ),
       ];
 
   List<Widget> _buildScreens(MainController con) => [
@@ -89,20 +108,20 @@ class _AppState extends State<App> {
       await _draggableViewKey.currentState?.close();
       return false;
     }
+
+    final profileContext = _profileKey.currentContext;
+    if (profileContext != null) {
+      final navigator = Navigator.maybeOf(profileContext);
+      if (navigator != null && await navigator.maybePop()) {
+        return false;
+      }
+    }
+
     if (controller.index != 0) {
       controller.jumpToTab(0);
       return false;
     }
     return true;
-  }
-
-  void _tapNavigation(int index) {
-    if (index < 0 || index > 3) return;
-    if (index == controller.index) {
-      return;
-    }
-    controller.jumpToTab(index);
-    if (index == 3) _profileKey.currentState?.showProfile();
   }
 
   void _startPointer(PointerDownEvent event) {
@@ -174,27 +193,6 @@ class _AppState extends State<App> {
                     con: con,
                     onOpenStateChanged: (open) => _playerOpen.value = open,
                   ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    height: 64,
-                    child: Row(
-                      children: List.generate(4, (index) {
-                        return Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              splashColor: Colors.white12,
-                              highlightColor: Colors.white.withValues(alpha: 0.04),
-                              onTap: () => _tapNavigation(index),
-                              child: const SizedBox.expand(),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -207,39 +205,23 @@ class _AppState extends State<App> {
 
 class _LibraryNavIcon extends StatelessWidget {
   final Color color;
-
   const _LibraryNavIcon({required this.color});
-
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 24,
-      height: 24,
-      child: CustomPaint(painter: _LibraryNavPainter(color)),
-    );
-  }
+  Widget build(BuildContext context) => SizedBox(width: 24, height: 24, child: CustomPaint(painter: _LibraryNavPainter(color)));
 }
 
 class _LibraryNavPainter extends CustomPainter {
   final Color color;
-
   const _LibraryNavPainter(this.color);
-
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2.6
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
+    final paint = Paint()..color = color..strokeWidth = 2.6..strokeCap = StrokeCap.round..style = PaintingStyle.stroke;
     final centerY = size.height / 2;
     canvas.drawLine(Offset(3, centerY - 7), Offset(3, centerY + 7), paint);
     canvas.drawLine(Offset(9, centerY - 9), Offset(9, centerY + 8), paint);
     canvas.drawLine(Offset(15, centerY - 6), Offset(15, centerY + 8), paint);
     canvas.drawLine(Offset(20, centerY - 8), Offset(22, centerY + 7), paint);
   }
-
   @override
   bool shouldRepaint(covariant _LibraryNavPainter oldDelegate) => oldDelegate.color != color;
 }
