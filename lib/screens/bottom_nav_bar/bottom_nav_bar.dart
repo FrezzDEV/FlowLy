@@ -8,6 +8,7 @@ import '../../controllers/main_controller.dart';
 import '../../models/song_model.dart';
 import '../../services/global_gesture_service.dart';
 import '../../services/notification_player_service.dart';
+import '../../services/settings_service.dart';
 import '../../utils/draggable_view.dart';
 import '../home/home_screen.dart';
 import '../library/library.dart';
@@ -31,6 +32,8 @@ class _AppState extends State<App> {
   final ValueNotifier<bool> _playerOpen = ValueNotifier<bool>(false);
   MainController? _notificationController;
   bool _notificationsReady = false;
+  Offset? _pointerDownPosition;
+  bool _horizontalSwipeHandled = false;
 
   @override
   void dispose() {
@@ -145,6 +148,35 @@ class _AppState extends State<App> {
     return true;
   }
 
+  void _startPointer(PointerDownEvent event) {
+    _pointerDownPosition = event.position;
+    _horizontalSwipeHandled = false;
+  }
+
+  void _updatePointer(PointerMoveEvent event) {
+    final start = _pointerDownPosition;
+    if (start == null || _horizontalSwipeHandled) return;
+    final dx = event.position.dx - start.dx;
+    final dy = event.position.dy - start.dy;
+    if (dx.abs() < 80 || dx.abs() < dy.abs() * 1.35) return;
+    if (!SettingsService.swipeNavigationEnabled) return;
+
+    final current = controller.index;
+    final nextIndex = dx < 0
+        ? (current + 1) % 4
+        : (current - 1 + 4) % 4;
+    controller.jumpToTab(nextIndex);
+    if (nextIndex == 3) {
+      _profileKey.currentState?.showProfile();
+    }
+    _horizontalSwipeHandled = true;
+  }
+
+  void _endPointer(PointerEvent event) {
+    _pointerDownPosition = null;
+    _horizontalSwipeHandled = false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -155,37 +187,44 @@ class _AppState extends State<App> {
           _attachNotificationController(con);
           return WillPopScope(
             onWillPop: _handleBackButton,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                PersistentTabView(
-                  context,
-                  controller: controller,
-                  playWidget: const SizedBox.shrink(),
-                  screens: _buildScreens(con),
-                  items: _navBarsItems(),
-                  onItemSelected: (index) {
-                    if (index == 3) {
-                      _profileKey.currentState?.showProfile();
-                    }
-                  },
-                  confineInSafeArea: true,
-                  backgroundColor: Colors.black,
-                  handleAndroidBackButtonPress: false,
-                  hideNavigationBarWhenKeyboardShows: true,
-                  resizeToAvoidBottomInset: true,
-                  popAllScreensOnTapOfSelectedTab: true,
-                  popActionScreens: PopActionScreensType.all,
-                  navBarStyle: NavBarStyle.simple,
-                  navBarHeight: 64,
-                  padding: const NavBarPadding.all(0),
-                ),
-                DraggableView(
-                  key: _draggableViewKey,
-                  con: con,
-                  onOpenStateChanged: (open) => _playerOpen.value = open,
-                ),
-              ],
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: _startPointer,
+              onPointerMove: _updatePointer,
+              onPointerUp: _endPointer,
+              onPointerCancel: _endPointer,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  PersistentTabView(
+                    context,
+                    controller: controller,
+                    playWidget: const SizedBox.shrink(),
+                    screens: _buildScreens(con),
+                    items: _navBarsItems(),
+                    onItemSelected: (index) {
+                      if (index == 3) {
+                        _profileKey.currentState?.showProfile();
+                      }
+                    },
+                    confineInSafeArea: true,
+                    backgroundColor: Colors.black,
+                    handleAndroidBackButtonPress: false,
+                    hideNavigationBarWhenKeyboardShows: true,
+                    resizeToAvoidBottomInset: true,
+                    popAllScreensOnTapOfSelectedTab: true,
+                    popActionScreens: PopActionScreensType.all,
+                    navBarStyle: NavBarStyle.simple,
+                    navBarHeight: 64,
+                    padding: const NavBarPadding.all(0),
+                  ),
+                  DraggableView(
+                    key: _draggableViewKey,
+                    con: con,
+                    onOpenStateChanged: (open) => _playerOpen.value = open,
+                  ),
+                ],
+              ),
             ),
           );
         },
