@@ -15,16 +15,22 @@ class DraggableView extends StatefulWidget {
   });
 
   @override
-  State<DraggableView> createState() => _DraggableViewState();
+  DraggableViewState createState() => DraggableViewState();
 }
 
-class _DraggableViewState extends State<DraggableView> {
+class DraggableViewState extends State<DraggableView> {
   final BoxController _boxController = BoxController();
 
   @override
   void dispose() {
     _boxController.dispose();
     super.dispose();
+  }
+
+  void open() {
+    if (_boxController.isAttached) {
+      _boxController.openBox();
+    }
   }
 
   void _toggle() {
