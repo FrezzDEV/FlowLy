@@ -2,31 +2,19 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
+
 import '../controllers/main_controller.dart';
 import '../models/song_model.dart';
 import '../models/user.dart';
 import '../screens/artist_profile/artist_profile.dart';
-import '../screens/current_playing/current_playing_song.dart';
 import 'loading.dart';
 import 'botttom_sheet_widget.dart';
 
 class HorizontalSongList extends StatelessWidget {
   final List<SongModel> songs;
   final MainController con;
-  const HorizontalSongList({super.key, required this.songs, required this.con});
 
-  Future<void> _openPlayer(BuildContext context, int index) async {
-    try {
-      await con.playSong(con.convertToAudio(songs), index);
-      if (!context.mounted) return;
-      await PlayerRoute.open(context, con);
-    } catch (error) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Не удалось открыть плеер: $error')),
-      );
-    }
-  }
+  const HorizontalSongList({super.key, required this.songs, required this.con});
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +27,6 @@ class HorizontalSongList extends StatelessWidget {
         itemBuilder: (context, i) {
           final song = songs[i];
           return InkWell(
-            onTap: () => _openPlayer(context, i),
             onLongPress: () => showModalBottomSheet(
               useRootNavigator: true,
               isScrollControlled: true,
@@ -66,7 +53,8 @@ class HorizontalSongList extends StatelessWidget {
                         maxWidthDiskCache: (200 * devicePexelRatio).round(),
                         memCacheHeight: (200 * devicePexelRatio).round(),
                         memCacheWidth: (200 * devicePexelRatio).round(),
-                        progressIndicatorBuilder: (context, url, l) => const LoadingImage(size: 80),
+                        progressIndicatorBuilder: (context, url, l) =>
+                            const LoadingImage(size: 80),
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -74,7 +62,10 @@ class HorizontalSongList extends StatelessWidget {
                     Text(
                       song.songname ?? '',
                       maxLines: 2,
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: Colors.grey),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyLarge!
+                          .copyWith(color: Colors.grey),
                     ),
                   ],
                 ),
@@ -90,6 +81,7 @@ class HorizontalSongList extends StatelessWidget {
 class HorizontalArtistList extends StatelessWidget {
   final List<User> users;
   final MainController con;
+
   const HorizontalArtistList({super.key, required this.users, required this.con});
 
   @override
@@ -106,7 +98,10 @@ class HorizontalArtistList extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               CupertinoPageRoute(
-                builder: (context) => ArtistProfile(username: user.username!, con: con),
+                builder: (context) => ArtistProfile(
+                  username: user.username!,
+                  con: con,
+                ),
               ),
             ),
             child: Padding(
@@ -125,7 +120,8 @@ class HorizontalArtistList extends StatelessWidget {
                         maxWidthDiskCache: (200 * devicePexelRatio).round(),
                         memCacheHeight: (200 * devicePexelRatio).round(),
                         memCacheWidth: (200 * devicePexelRatio).round(),
-                        progressIndicatorBuilder: (context, url, l) => const LoadingImage(
+                        progressIndicatorBuilder: (context, url, l) =>
+                            const LoadingImage(
                           size: 80,
                           icon: Icon(LineIcons.user, size: 80),
                         ),
@@ -137,7 +133,10 @@ class HorizontalArtistList extends StatelessWidget {
                       user.name ?? '',
                       maxLines: 2,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: Colors.grey),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyLarge!
+                          .copyWith(color: Colors.grey),
                     ),
                   ],
                 ),
