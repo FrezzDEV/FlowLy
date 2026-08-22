@@ -17,6 +17,9 @@ class NotificationPlayerService {
       settings: settings,
       onDidReceiveNotificationResponse: (response) async {
         switch (response.actionId) {
+          case 'download':
+            await controller.downloadCurrent();
+            break;
           case 'previous':
             await controller.previous();
             break;
@@ -29,13 +32,11 @@ class NotificationPlayerService {
           case 'like':
             await controller.toggleFavoriteCurrent();
             break;
-          case 'download':
-            await controller.downloadCurrent();
-            break;
         }
         await show(controller);
       },
     );
+
     final android = _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
@@ -64,28 +65,33 @@ class NotificationPlayerService {
       styleInformation: const MediaStyleInformation(),
       actions: [
         const AndroidNotificationAction(
-          'previous',
-          'Назад',
+          'download',
+          'Скачать',
+          icon: DrawableResourceAndroidBitmap('ic_player_download'),
           cancelNotification: false,
         ),
-        AndroidNotificationAction(
+        const AndroidNotificationAction(
+          'previous',
+          'Назад',
+          icon: DrawableResourceAndroidBitmap('ic_player_previous'),
+          cancelNotification: false,
+        ),
+        const AndroidNotificationAction(
           'play_pause',
-          controller.isPlaying ? 'Пауза' : 'Продолжить',
+          'Пауза',
+          icon: DrawableResourceAndroidBitmap('ic_player_pause'),
           cancelNotification: false,
         ),
         const AndroidNotificationAction(
           'next',
           'Вперёд',
+          icon: DrawableResourceAndroidBitmap('ic_player_next'),
           cancelNotification: false,
         ),
         const AndroidNotificationAction(
           'like',
           'Лайк',
-          cancelNotification: false,
-        ),
-        const AndroidNotificationAction(
-          'download',
-          'Скачать',
+          icon: DrawableResourceAndroidBitmap('ic_player_like'),
           cancelNotification: false,
         ),
       ],
