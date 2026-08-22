@@ -25,91 +25,50 @@ class HomeScreen extends StatelessWidget {
   Widget _testPlayerCard() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(22),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTestPlayerTap,
-          child: Container(
-            height: 220,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF424242), Color(0xFF161616)],
-              ),
-            ),
-            padding: const EdgeInsets.all(22),
-            child: Stack(
-              children: [
-                const Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Icon(
-                    Icons.graphic_eq_rounded,
-                    color: Colors.white24,
-                    size: 72,
-                  ),
-                ),
-                const Positioned(
-                  top: 0,
-                  left: 0,
-                  child: Icon(
-                    Icons.music_note_rounded,
-                    color: Colors.white70,
-                    size: 34,
-                  ),
-                ),
-                const Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 66,
-                  child: Text(
-                    'Midnight Flow',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      height: 1.0,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                const Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 36,
-                  child: Text(
-                    'FlowLy Test Artist',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+      child: Center(
+        child: Material(
+          color: const Color(0xFF151515),
+          borderRadius: BorderRadius.circular(22),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTestPlayerTap,
+            child: const SizedBox.square(
+              dimension: 180,
+              child: Padding(
+                padding: EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.music_note_rounded,
                       color: Colors.white70,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
+                      size: 34,
                     ),
-                  ),
+                    Spacer(),
+                    Text(
+                      'Midnight Flow',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        height: 1.05,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      'FlowLy Test Artist',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow_rounded,
-                      color: Colors.black,
-                      size: 28,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
