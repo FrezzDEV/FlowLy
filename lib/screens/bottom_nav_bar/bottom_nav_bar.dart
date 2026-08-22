@@ -106,6 +106,7 @@ class _AppState extends State<App> {
             child: PersistentTabView(
               context,
               controller: controller,
+              playWidget: const SizedBox.shrink(),
               screens: _buildScreens(con),
               items: _navBarsItems(),
               onItemSelected: (index) {
