@@ -1,4 +1,4 @@
-import 'dart:ui' show lerpDouble;
+import 'dart:ui' show ImageFilter, lerpDouble;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -519,10 +519,7 @@ class _Artwork extends StatelessWidget {
           imageUrl: imageUrl ?? '',
           fit: BoxFit.cover,
           placeholder: (_, __) => const ColoredBox(color: Color(0xFF1B1B1B)),
-          errorWidget: (_, __, ___) => const ColoredBox(
-            color: Color(0xFF151515),
-            child: Icon(Icons.music_note, color: Colors.white54, size: 72),
-          ),
+          errorWidget: (_, __, ___) => const ColoredBox(color: Color(0xFF151515)),
         ),
       ),
     );
@@ -542,12 +539,16 @@ class _ControlRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
+            tooltip: 'Shuffle',
             onPressed: con.songs.length > 1 ? con.toggleShuffle : null,
-            icon: Icon(Icons.shuffle,
-                color: con.isShuffled ? Colors.white : Colors.white54,
-                size: 28),
+            icon: Icon(
+              Icons.shuffle,
+              color: con.isShuffled ? Colors.white : Colors.white54,
+              size: 28,
+            ),
           ),
           IconButton(
+            tooltip: 'Previous',
             onPressed: con.songs.length > 1 ? con.previous : null,
             icon: const Icon(Icons.skip_previous, color: Colors.white, size: 38),
           ),
@@ -560,16 +561,21 @@ class _ControlRow extends StatelessWidget {
               child: SizedBox(
                 width: 82,
                 height: 82,
-                child: Icon(con.isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: Colors.white, size: 42),
+                child: Icon(
+                  con.isPlaying ? Icons.pause : Icons.play_arrow,
+                  color: Colors.white,
+                  size: 42,
+                ),
               ),
             ),
           ),
           IconButton(
+            tooltip: 'Next',
             onPressed: con.songs.length > 1 ? con.next : null,
             icon: const Icon(Icons.skip_next, color: Colors.white, size: 38),
           ),
           IconButton(
+            tooltip: 'Repeat',
             onPressed: con.toggleLoop,
             icon: Icon(
               con.loopMode == LoopModeType.one ? Icons.repeat_one : Icons.repeat,
@@ -621,11 +627,10 @@ class _BottomTabLabel extends StatelessWidget {
 }
 
 class _RoundIconButton extends StatelessWidget {
-  const _RoundIconButton({required this.icon, this.onTap, this.size = 40});
+  const _RoundIconButton({required this.icon, required this.onTap});
 
   final IconData icon;
-  final double size;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -635,10 +640,10 @@ class _RoundIconButton extends StatelessWidget {
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Icon(icon, color: Colors.white, size: size * .55),
+        child: const SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(Icons.play_arrow, color: Colors.white, size: 22),
         ),
       ),
     );
