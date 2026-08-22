@@ -29,7 +29,14 @@ class _AppState extends State<App> {
       GlobalKey<ProfilePageState>();
   final GlobalKey<DraggableViewState> _draggableViewKey =
       GlobalKey<DraggableViewState>();
+  final ValueNotifier<bool> _playerOpen = ValueNotifier<bool>(false);
   double? _horizontalDragStartX;
+
+  @override
+  void dispose() {
+    _playerOpen.dispose();
+    super.dispose();
+  }
 
   List<PersistentBottomNavBarItem> _navBarsItems() {
     return [
@@ -72,19 +79,32 @@ class _AppState extends State<App> {
   Future<void> _openTestPlayer(MainController con) async {
     await con.setPlaylist([
       SongModel(
-        songid: 'flowly-test-song',
+        songid: 'flowly-test-song-1',
         songname: 'Midnight Flow',
         name: 'FlowLy Test Artist',
-        trackid: 'flowly-test-track',
-        duration: '3:42',
-        coverImageUrl:
-            'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=85',
+        trackid: 'flowly-test-track-1',
+      ),
+      SongModel(
+        songid: 'flowly-test-song-2',
+        songname: 'Neon Dreams',
+        name: 'FlowLy Test Artist',
+        trackid: 'flowly-test-track-2',
+      ),
+      SongModel(
+        songid: 'flowly-test-song-3',
+        songname: 'Afterglow',
+        name: 'FlowLy Test Artist',
+        trackid: 'flowly-test-track-3',
       ),
     ]);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _draggableViewKey.currentState?.open();
     });
+  }
+
+  void _openPlayerFromMini() {
+    _draggableViewKey.currentState?.open();
   }
 
   void _handleMainMenuSwipeEnd(DragEndDetails details) {
@@ -131,7 +151,18 @@ class _AppState extends State<App> {
                 PersistentTabView(
                   context,
                   controller: controller,
-                  playWidget: const SizedBox.shrink(),
+                  playWidget: ValueListenableBuilder<bool>(
+                    valueListenable: _playerOpen,
+                    builder: (context, open, _) {
+                      if (open || con.currentSong == null) {
+                        return const SizedBox.shrink();
+                      }
+                      return MiniPlayer(
+                        con: con,
+                        onTap: _openPlayerFromMini,
+                      );
+                    },
+                  ),
                   screens: _buildScreens(con),
                   items: _navBarsItems(),
                   onItemSelected: (index) {
@@ -150,7 +181,11 @@ class _AppState extends State<App> {
                   navBarHeight: 64,
                   padding: const NavBarPadding.all(0),
                 ),
-                DraggableView(key: _draggableViewKey, con: con),
+                DraggableView(
+                  key: _draggableViewKey,
+                  con: con,
+                  onOpenStateChanged: (open) => _playerOpen.value = open,
+                ),
               ],
             ),
           );
