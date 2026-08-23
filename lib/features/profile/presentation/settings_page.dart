@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:flowly/app/localization/app_locale.dart';
-import 'settings_pages.dart';
+import 'package:flowly/features/settings/presentation/settings_pages.dart';
 
 class SettingsPage extends StatelessWidget {
   final String languageName;
