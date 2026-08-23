@@ -3,14 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:provider/provider.dart';
 
+import 'persistent-tab-view.dart';
+import '../../core/gestures/global_gesture_service.dart';
+import '../../domain/entities/song_model.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/library/presentation/library.dart';
 import '../../features/player/domain/main_controller.dart';
 import '../../features/player/infrastructure/notification_player_service.dart';
+import '../../features/player/presentation/draggable_view.dart';
 import '../../features/profile/presentation/profile.dart';
 import '../../features/search/presentation/search_page.dart';
-import '../../shared/widgets/draggable_view.dart';
-import '../../core/gestures/global_gesture_service.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
