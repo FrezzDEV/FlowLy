@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/nav-bar-essentials.model.dart';
+import '../nav-bar-essentials.model.dart';
 
 class BottomNavSimple extends StatelessWidget {
   final NavBarEssentials? navBarEssentials;
