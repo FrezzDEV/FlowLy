@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../controllers/main_controller.dart';
-import '../models/song_model.dart';
+import 'package:flowly/features/player/domain/main_controller.dart';
+import 'package:flowly/domain/entities/song_model.dart';
 import 'like_button/like_button.dart';
 
 class PlayListWidget extends StatefulWidget {

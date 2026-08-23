@@ -3,9 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 
-import '../controllers/main_controller.dart';
-import '../models/song_model.dart';
-import '../models/user.dart';
+import 'package:flowly/features/player/domain/main_controller.dart';
+import 'package:flowly/domain/entities/song_model.dart';
+import 'package:flowly/domain/entities/user.dart';
 import '../screens/artist_profile/artist_profile.dart';
 import 'loading.dart';
 import 'botttom_sheet_widget.dart';

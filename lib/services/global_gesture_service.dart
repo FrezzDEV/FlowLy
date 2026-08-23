@@ -1,4 +1,4 @@
-import '../controllers/main_controller.dart';
+import 'package:flowly/features/player/domain/main_controller.dart';
 
 class GlobalGestureService {
   GlobalGestureService._();

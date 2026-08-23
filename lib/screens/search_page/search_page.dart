@@ -1,9 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../../controllers/main_controller.dart';
-import '../../methods/string_methods.dart';
-import '../../models/catagory.dart';
+import 'package:flowly/features/player/domain/main_controller.dart';
+import 'package:flowly/core/utils/string_methods.dart';
+import 'package:flowly/data/models/catagory.dart';
 import '../genre_page/genre_page.dart';
 import '../search_results/search_result.dart';
 

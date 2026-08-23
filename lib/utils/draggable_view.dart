@@ -2,7 +2,7 @@ import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 
-import '../controllers/main_controller.dart';
+import 'package:flowly/features/player/domain/main_controller.dart';
 
 class DraggableView extends StatefulWidget {
   final MainController con;

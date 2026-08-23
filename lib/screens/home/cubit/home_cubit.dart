@@ -1,8 +1,8 @@
 import 'package:bloc/bloc.dart';
-import '../../../models/loading_enum.dart';
-import '../../../models/song_model.dart';
-import '../../../repositories/get_home_page.dart';
-import '../../../models/user.dart';
+import 'package:flowly/data/models/loading_enum.dart';
+import 'package:flowly/domain/entities/song_model.dart';
+import 'package:flowly/data/repositories/get_home_page.dart';
+import 'package:flowly/domain/entities/user.dart';
 
 part 'home_state.dart';
 

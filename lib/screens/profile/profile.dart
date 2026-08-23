@@ -5,9 +5,9 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../../controllers/main_controller.dart';
-import '../../models/song_model.dart';
-import '../../utils/app_locale.dart';
+import 'package:flowly/features/player/domain/main_controller.dart';
+import 'package:flowly/domain/entities/song_model.dart';
+import 'package:flowly/app/localization/app_locale.dart';
 import 'settings_pages.dart';
 
 class ProfilePage extends StatefulWidget {

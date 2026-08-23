@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../domain/entities/song_model.dart';
 import '../../../features/player/domain/main_controller.dart';
-import '../../../data/models/loading_enum.dart';
+import 'package:flowly/data/models/loading_enum.dart';
 import '../../../shared/widgets/horizontal_songs_list.dart';
 import '../../../shared/widgets/recent_users.dart';
 import 'home_cubit.dart';

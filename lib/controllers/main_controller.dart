@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import '../models/song_model.dart';
+import 'package:flowly/domain/entities/song_model.dart';
 
 enum LoopModeType { none, all, one }
 

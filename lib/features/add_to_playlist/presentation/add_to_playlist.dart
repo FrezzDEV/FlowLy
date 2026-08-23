@@ -2,9 +2,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:line_icons/line_icons.dart';
-import '../../methods/get_time_ago.dart';
-import '../../methods/snackbar.dart';
-import '../../utils/loading.dart';
+import 'package:flowly/core/utils/get_time_ago.dart';
+import 'package:flowly/core/utils/snackbar.dart';
+import 'package:flowly/shared/widgets/loading.dart';
 
 class AddToPlaylist extends StatelessWidget {
   final String name;

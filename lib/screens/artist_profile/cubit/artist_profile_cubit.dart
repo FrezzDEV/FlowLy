@@ -1,10 +1,10 @@
 import 'package:bloc/bloc.dart';
-import '../../../controllers/main_controller.dart';
-import '../../../models/loading_enum.dart';
-import '../../../repositories/get_artists_data.dart';
+import 'package:flowly/features/player/domain/main_controller.dart';
+import 'package:flowly/data/models/loading_enum.dart';
+import 'package:flowly/data/repositories/get_artists_data.dart';
 
-import '../../../models/song_model.dart';
-import '../../../models/user_model.dart';
+import 'package:flowly/domain/entities/song_model.dart';
+import 'package:flowly/domain/entities/user_model.dart';
 
 part 'artist_profile_state.dart';
 

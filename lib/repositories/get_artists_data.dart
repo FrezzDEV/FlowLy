@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import '../api/url.dart';
-import '../methods/get_response.dart';
-import '../models/song_model.dart';
-import '../models/user_model.dart';
+import 'package:flowly/core/network/url.dart';
+import 'package:flowly/core/utils/get_response.dart';
+import 'package:flowly/domain/entities/song_model.dart';
+import 'package:flowly/domain/entities/user_model.dart';
 
 class GetArtistsData {
   Future<UserModel> getUserData(String id) async {

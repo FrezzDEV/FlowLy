@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 
-import '../../controllers/main_controller.dart';
+import 'package:flowly/features/player/domain/main_controller.dart';
 
 class PlayingControls extends StatelessWidget {
   final bool isPlaying;

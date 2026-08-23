@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import '../../utils/app_locale.dart';
+import 'package:flowly/app/localization/app_locale.dart';
 import '../library/library.dart';
-import '../../controllers/main_controller.dart';
+import 'package:flowly/features/player/domain/main_controller.dart';
 
 class WelcomePage extends StatefulWidget {
   final MainController controller;

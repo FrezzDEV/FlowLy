@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../controllers/main_controller.dart';
-import '../../models/loading_enum.dart';
-import '../../utils/horizontal_songs_list.dart';
-import '../../utils/recent_users.dart';
+import 'package:flowly/features/player/domain/main_controller.dart';
+import 'package:flowly/data/models/loading_enum.dart';
+import 'package:flowly/shared/widgets/horizontal_songs_list.dart';
+import 'package:flowly/shared/widgets/recent_users.dart';
 import 'cubit/home_cubit.dart';
 
 class HomeScreen extends StatelessWidget {

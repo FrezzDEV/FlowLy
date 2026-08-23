@@ -1,7 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../utils/app_locale.dart';
+import 'package:flowly/app/localization/app_locale.dart';
 
 class DownloadFolderSettingsPage extends StatefulWidget {
   const DownloadFolderSettingsPage({super.key});

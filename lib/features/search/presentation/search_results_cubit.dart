@@ -1,9 +1,9 @@
 import 'package:bloc/bloc.dart';
 
-import '../../../data/models/loading_enum.dart';
+import 'package:flowly/data/models/loading_enum.dart';
 import '../../../domain/entities/song_model.dart';
 import '../../../domain/entities/user.dart';
-import '../../../data/repositories/get_search_results.dart';
+import 'package:flowly/data/repositories/get_search_results.dart';
 import '../../player/domain/main_controller.dart';
 
 part 'search_results_state.dart';

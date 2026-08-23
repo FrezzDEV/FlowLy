@@ -4,12 +4,12 @@ import 'package:line_icons/line_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:flowly/utils/bottom_nav_bar/persistent-tab-view.dart';
 
-import '../../controllers/main_controller.dart';
-import '../../models/song_model.dart';
-import '../../services/global_gesture_service.dart';
-import '../../services/notification_player_service.dart';
-import '../../services/settings_service.dart';
-import '../../utils/draggable_view.dart';
+import 'package:flowly/features/player/domain/main_controller.dart';
+import 'package:flowly/domain/entities/song_model.dart';
+import 'package:flowly/core/gestures/global_gesture_service.dart';
+import 'package:flowly/features/player/infrastructure/notification_player_service.dart';
+import 'package:flowly/core/storage/settings_service.dart';
+import 'package:flowly/features/player/presentation/draggable_view.dart';
 import '../home/home_screen.dart';
 import '../library/library.dart';
 import '../profile/profile.dart';

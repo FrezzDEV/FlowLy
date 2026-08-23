@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:line_icons/line_icons.dart';
-import '../../controllers/main_controller.dart';
-import '../../models/loading_enum.dart';
+import 'package:flowly/features/player/domain/main_controller.dart';
+import 'package:flowly/data/models/loading_enum.dart';
 import '../artist_profile/artist_profile.dart';
-import '../../utils/botttom_sheet_widget.dart';
-import '../../utils/loading.dart';
-import '../../utils/recent_search.dart';
+import 'package:flowly/features/player/presentation/botttom_sheet_widget.dart';
+import 'package:flowly/shared/widgets/loading.dart';
+import 'package:flowly/shared/widgets/recent_search.dart';
 
 import 'cubit/search_results_cubit.dart';
 
