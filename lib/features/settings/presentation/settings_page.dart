@@ -6,8 +6,14 @@ import 'settings_pages.dart';
 class SettingsPage extends StatelessWidget {
   final String languageName;
   final VoidCallback? onLanguageChanged;
+  final VoidCallback? onAccount;
 
-  const SettingsPage({super.key, required this.languageName, this.onLanguageChanged});
+  const SettingsPage({
+    super.key,
+    required this.languageName,
+    this.onLanguageChanged,
+    this.onAccount,
+  });
 
   void _push(BuildContext context, Widget page) {
     Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
@@ -31,6 +37,7 @@ class SettingsPage extends StatelessWidget {
                   icon: Icons.person_outline,
                   title: AppLocale.text('Аккаунт', 'Account'),
                   subtitle: AppLocale.text('Профиль, подписка, данные', 'Profile, subscription, data'),
+                  onTap: onAccount,
                 ),
                 _SettingsRow(
                   icon: Icons.shield_outlined,
@@ -87,6 +94,7 @@ class SettingsPage extends StatelessWidget {
                   icon: Icons.language_outlined,
                   title: AppLocale.text('Язык', 'Language'),
                   subtitle: languageName,
+                  onTap: onLanguageChanged,
                 ),
                 _SettingsRow(
                   icon: Icons.system_update_outlined,
