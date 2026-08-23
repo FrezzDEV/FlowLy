@@ -1,8 +1,9 @@
 import 'package:bloc/bloc.dart';
-import '../../../models/loading_enum.dart';
-import '../../../models/song_model.dart';
-import '../../../repositories/get_home_page.dart';
-import '../../../models/user.dart';
+
+import '../../../data/models/loading_enum.dart';
+import '../../../domain/entities/song_model.dart';
+import '../../../domain/entities/user.dart';
+import '../../../data/repositories/get_home_page.dart';
 
 part 'home_state.dart';
 
@@ -19,8 +20,6 @@ class HomeCubit extends Cubit<HomeState> {
     Object? usersError;
     Object? songsError;
 
-    // Load each Home section independently. A failing users endpoint must not
-    // prevent the song recommendations from rendering.
     try {
       users = await repo.getUsers();
     } catch (error) {
@@ -33,8 +32,6 @@ class HomeCubit extends Cubit<HomeState> {
       songsError = error;
     }
 
-    // HomeScreen contains a guaranteed local demo recommendation, so it must
-    // still render even when both remote endpoints are unavailable.
     final error = songsError ?? usersError;
     emit(state.copyWith(
       users: users,
