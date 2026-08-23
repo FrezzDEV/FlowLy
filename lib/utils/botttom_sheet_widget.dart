@@ -3,9 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
-import 'package:flowly/features/player/domain/main_controller.dart';
-import 'package:flowly/core/utils/snackbar.dart';
-import 'package:flowly/domain/entities/song_model.dart';
+import '../controllers/main_controller.dart';
+import '../methods/snackbar.dart';
+import '../models/song_model.dart';
 import '../screens/add_to_playlist/add_to_playlist.dart';
 import 'like_button/like_button.dart';
 import 'loading.dart';

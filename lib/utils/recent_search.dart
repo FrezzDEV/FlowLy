@@ -2,9 +2,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:flowly/features/player/domain/main_controller.dart';
-import 'package:flowly/core/utils/snackbar.dart';
-import 'package:flowly/domain/entities/song_model.dart';
+import '../controllers/main_controller.dart';
+import '../methods/snackbar.dart';
+import '../models/song_model.dart';
 import '../screens/artist_profile/artist_profile.dart';
 import 'loading.dart';
 

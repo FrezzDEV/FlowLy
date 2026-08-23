@@ -3,10 +3,10 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flowly/features/player/domain/main_controller.dart';
+import '../controllers/main_controller.dart';
 import '../methods/get_greeting.dart';
 
-import 'package:flowly/domain/entities/user.dart';
+import '../models/user.dart';
 import '../screens/artist_profile/artist_profile.dart';
 import 'loading.dart';
 

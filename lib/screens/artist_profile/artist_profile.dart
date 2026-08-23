@@ -1,12 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flowly/features/player/domain/main_controller.dart';
-import 'package:flowly/data/models/loading_enum.dart';
-import 'package:flowly/features/player/presentation/botttom_sheet_widget.dart';
+import '../../controllers/main_controller.dart';
+import '../../models/loading_enum.dart';
+import '../../utils/botttom_sheet_widget.dart';
 
-import 'package:flowly/shared/widgets/loading.dart';
-import 'package:flowly/shared/widgets/sliver_appbar.dart';
+import '../../utils/loading.dart';
+import '../../utils/sliver_appbar.dart';
 import 'cubit/artist_profile_cubit.dart';
 
 class ArtistProfile extends StatelessWidget {

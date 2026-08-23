@@ -5,9 +5,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
-import 'package:flowly/features/player/domain/main_controller.dart';
-import 'package:flowly/domain/entities/song_model.dart';
-import 'package:flowly/domain/entities/user_model.dart';
+import '../controllers/main_controller.dart';
+import '../models/song_model.dart';
+import '../models/user_model.dart';
 
 double _appTopBarHeight = 60;
 

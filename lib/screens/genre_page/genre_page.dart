@@ -3,14 +3,14 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flowly/features/player/domain/main_controller.dart';
-import 'package:flowly/core/utils/string_methods.dart';
-import 'package:flowly/data/models/catagory.dart';
-import 'package:flowly/data/models/loading_enum.dart';
+import '../../controllers/main_controller.dart';
+import '../../methods/string_methods.dart';
+import '../../models/catagory.dart';
+import '../../models/loading_enum.dart';
 import 'cubit/genre_cubit.dart';
-import 'package:flowly/features/player/presentation/botttom_sheet_widget.dart';
-import 'package:flowly/shared/widgets/horizontal_songs_list.dart';
-import 'package:flowly/shared/widgets/loading.dart';
+import '../../utils/botttom_sheet_widget.dart';
+import '../../utils/horizontal_songs_list.dart';
+import '../../utils/loading.dart';
 
 class GenrePage extends StatelessWidget {
   final TagsModel tag;

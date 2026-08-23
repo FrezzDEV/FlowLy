@@ -1,6 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-import 'package:flowly/features/player/domain/main_controller.dart';
+import '../controllers/main_controller.dart';
 
 class NotificationPlayerService {
   NotificationPlayerService._();

@@ -1,9 +1,9 @@
 import 'package:bloc/bloc.dart';
-import 'package:flowly/features/player/domain/main_controller.dart';
-import 'package:flowly/data/models/loading_enum.dart';
-import 'package:flowly/domain/entities/song_model.dart';
-import 'package:flowly/domain/entities/user.dart';
-import 'package:flowly/data/repositories/get_genre_data.dart';
+import '../../../controllers/main_controller.dart';
+import '../../../models/loading_enum.dart';
+import '../../../models/song_model.dart';
+import '../../../models/user.dart';
+import '../../../repositories/get_genre_data.dart';
 
 part 'genre_state.dart';
 

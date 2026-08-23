@@ -1,1 +1,1 @@
-Trigger architecture migration CI run.
+This file exists only to trigger a clean CI run against the repaired profile/settings tree.

@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flowly/screens/bottom_nav_bar/bottom_nav_bar.dart';
+import 'package:flowly/screens/welcome/welcome_page.dart';
 
-import 'app/localization/app_locale.dart';
-import 'app/navigation/bottom_nav_bar.dart';
-import 'core/crash_reporting/crash_reporting_service.dart';
-import 'features/onboarding/presentation/welcome_page.dart';
-import 'features/player/domain/main_controller.dart';
-import 'features/settings/presentation/settings_page.dart';
+import 'controllers/main_controller.dart';
+import 'services/crash_reporting_service.dart';
+import 'services/settings_service.dart';
+import 'utils/app_locale.dart';
 
 Future<void> main() async {
   await CrashReportingService.run(_bootstrap);
@@ -30,7 +30,10 @@ Future<void> _bootstrap() async {
     Hive.openBox('app_settings'),
   ]);
 
-  await AppLocale.init();
+  await Future.wait([
+    SettingsService.init(),
+    AppLocale.init(),
+  ]);
 
   runApp(const MyApp());
 }
@@ -111,9 +114,6 @@ class MyApp extends StatelessWidget {
             );
           },
           home: _needsWelcome() ? _WelcomeHost() : const App(),
-          routes: {
-            '/settings': (context) => const SettingsPage(),
-          },
         );
       },
     );

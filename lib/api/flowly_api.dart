@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import 'package:flowly/core/storage/secure_storage_service.dart';
+import '../services/secure_storage_service.dart';
 
 class FlowLyApiException implements Exception {
   final int statusCode;

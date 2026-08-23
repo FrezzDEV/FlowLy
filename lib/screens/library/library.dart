@@ -3,13 +3,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:line_icons/line_icons.dart';
-import 'package:flowly/features/player/domain/main_controller.dart';
-import 'package:flowly/core/utils/get_time_ago.dart';
-import 'package:flowly/core/utils/snackbar.dart';
+import '../../controllers/main_controller.dart';
+import '../../methods/get_time_ago.dart';
+import '../../methods/snackbar.dart';
 import '../liked_songs/liked_songs.dart';
 import '../playlist/playlist_songs.dart';
 import '../recently_played/recently_played_songs.dart';
-import 'package:flowly/shared/widgets/loading.dart';
+import '../../utils/loading.dart';
 
 class Library extends StatelessWidget {
   final MainController con;

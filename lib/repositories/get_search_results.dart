@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:http/http.dart';
-import 'package:flowly/core/network/url.dart';
-import 'package:flowly/core/utils/get_response.dart';
-import 'package:flowly/domain/entities/song_model.dart';
-import 'package:flowly/domain/entities/user.dart';
+import '../api/url.dart';
+import '../methods/get_response.dart';
+import '../models/song_model.dart';
+import '../models/user.dart';
 
 class SearchRepository {
   Future<List<User>> getUsers(String tag) async {
