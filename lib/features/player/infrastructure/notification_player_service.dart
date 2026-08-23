@@ -1,12 +1,11 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-import '../controllers/main_controller.dart';
+import '../domain/main_controller.dart';
 
 class NotificationPlayerService {
   NotificationPlayerService._();
 
-  static final FlutterLocalNotificationsPlugin _plugin =
-      FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
   static const int _id = 1001;
 
   static Future<void> initialize(MainController controller) async {
@@ -37,9 +36,7 @@ class NotificationPlayerService {
       },
     );
 
-    final android = _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+    final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await android?.requestNotificationsPermission();
   }
 
@@ -64,36 +61,11 @@ class NotificationPlayerService {
       category: AndroidNotificationCategory.transport,
       styleInformation: const MediaStyleInformation(),
       actions: [
-        const AndroidNotificationAction(
-          'download',
-          'Скачать',
-          icon: DrawableResourceAndroidBitmap('ic_player_download'),
-          cancelNotification: false,
-        ),
-        const AndroidNotificationAction(
-          'previous',
-          'Назад',
-          icon: DrawableResourceAndroidBitmap('ic_player_previous'),
-          cancelNotification: false,
-        ),
-        const AndroidNotificationAction(
-          'play_pause',
-          'Пауза',
-          icon: DrawableResourceAndroidBitmap('ic_player_pause'),
-          cancelNotification: false,
-        ),
-        const AndroidNotificationAction(
-          'next',
-          'Вперёд',
-          icon: DrawableResourceAndroidBitmap('ic_player_next'),
-          cancelNotification: false,
-        ),
-        const AndroidNotificationAction(
-          'like',
-          'Лайк',
-          icon: DrawableResourceAndroidBitmap('ic_player_like'),
-          cancelNotification: false,
-        ),
+        const AndroidNotificationAction('download', 'Скачать', icon: DrawableResourceAndroidBitmap('ic_player_download'), cancelNotification: false),
+        const AndroidNotificationAction('previous', 'Назад', icon: DrawableResourceAndroidBitmap('ic_player_previous'), cancelNotification: false),
+        const AndroidNotificationAction('play_pause', 'Пауза', icon: DrawableResourceAndroidBitmap('ic_player_pause'), cancelNotification: false),
+        const AndroidNotificationAction('next', 'Вперёд', icon: DrawableResourceAndroidBitmap('ic_player_next'), cancelNotification: false),
+        const AndroidNotificationAction('like', 'Лайк', icon: DrawableResourceAndroidBitmap('ic_player_like'), cancelNotification: false),
       ],
     );
 
