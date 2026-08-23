@@ -4,11 +4,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
-import '../../controllers/main_controller.dart';
-import '../../methods/snackbar.dart';
-import '../../models/song_model.dart';
-import '../../utils/botttom_sheet_widget.dart';
-import '../../utils/loading.dart';
+
+import '../../../core/utils/snackbar.dart';
+import '../../../domain/entities/song_model.dart';
+import '../../player/domain/main_controller.dart';
+import '../../player/presentation/botttom_sheet_widget.dart';
+import '../../../shared/widgets/loading.dart';
 
 class LikedSongs extends StatelessWidget {
   final MainController con;
