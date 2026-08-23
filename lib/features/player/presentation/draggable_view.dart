@@ -2,7 +2,7 @@ import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 
-import '../controllers/main_controller.dart';
+import '../domain/main_controller.dart';
 
 class DraggableView extends StatefulWidget {
   final MainController con;
@@ -94,8 +94,7 @@ class DraggableViewState extends State<DraggableView>
         final artSize = lerpDouble(42, size.width * 0.56, t)!;
         final artTop = lerpDouble(11, 92, t)!;
         final artLeft = lerpDouble(10, (size.width - artSize) / 2, t)!;
-        final cardWidth =
-            size.width - lerpDouble(_miniMargin * 2, 0, t)!;
+        final cardWidth = size.width - lerpDouble(_miniMargin * 2, 0, t)!;
         final cardHeight = lerpDouble(_miniHeight, size.height, t)!;
         final miniOpacity = 1 - _remap(t, 0, 0.3);
         final expandedOpacity = _remap(t, 0.5, 1);
@@ -121,12 +120,8 @@ class DraggableViewState extends State<DraggableView>
                   t,
                 ),
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(
-                    lerpDouble(_miniRadius, 0, t)!,
-                  ),
-                  topRight: Radius.circular(
-                    lerpDouble(_miniRadius, 0, t)!,
-                  ),
+                  topLeft: Radius.circular(lerpDouble(_miniRadius, 0, t)!),
+                  topRight: Radius.circular(lerpDouble(_miniRadius, 0, t)!),
                   bottomLeft: Radius.zero,
                   bottomRight: Radius.zero,
                 ),
@@ -332,8 +327,7 @@ class DraggableViewState extends State<DraggableView>
                             ),
                             const SizedBox(height: 48),
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceEvenly,
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 _ActionButton(
                                   icon: Icons.skip_previous_rounded,
