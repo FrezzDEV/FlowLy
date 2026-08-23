@@ -2,18 +2,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:provider/provider.dart';
-import 'package:flowly/utils/bottom_nav_bar/persistent-tab-view.dart';
 
-import '../../controllers/main_controller.dart';
-import '../../models/song_model.dart';
-import '../../services/global_gesture_service.dart';
-import '../../services/notification_player_service.dart';
-import '../../services/settings_service.dart';
-import '../../utils/draggable_view.dart';
-import '../home/home_screen.dart';
-import '../library/library.dart';
-import '../profile/profile.dart';
-import '../search_page/search_page.dart';
+import '../../features/home/presentation/home_screen.dart';
+import '../../features/library/presentation/library.dart';
+import '../../features/player/domain/main_controller.dart';
+import '../../features/player/infrastructure/notification_player_service.dart';
+import '../../features/profile/presentation/profile.dart';
+import '../../features/search/presentation/search_page.dart';
+import '../../shared/widgets/draggable_view.dart';
+import '../../core/gestures/global_gesture_service.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -46,9 +43,7 @@ class _AppState extends State<App> {
     con.addListener(_onControllerChanged);
     if (!_notificationsReady) {
       _notificationsReady = true;
-      NotificationPlayerService.initialize(con).then(
-        (_) => NotificationPlayerService.show(con),
-      );
+      NotificationPlayerService.initialize(con).then((_) => NotificationPlayerService.show(con));
     }
   }
 
@@ -91,9 +86,6 @@ class _AppState extends State<App> {
       await _draggableViewKey.currentState?.close();
       return false;
     }
-
-    // Do not manually pop the Profile navigator or redirect to another tab.
-    // Let the active nested navigator handle its own Back stack.
     return true;
   }
 
@@ -115,7 +107,6 @@ class _AppState extends State<App> {
     final dx = event.position.dx - start.dx;
     final dy = event.position.dy - start.dy;
     if (dx.abs() < 80 || dx.abs() < dy.abs() * 1.35) return;
-    if (!SettingsService.swipeNavigationEnabled) return;
 
     final current = controller.index;
     final nextIndex = dx < 0 ? (current + 1) % 4 : (current - 1 + 4) % 4;
