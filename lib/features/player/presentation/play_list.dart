@@ -2,17 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'package:flowly/features/player/domain/main_controller.dart';
 import 'package:flowly/domain/entities/song_model.dart';
-import 'like_button/like_button.dart';
+import 'package:flowly/shared/widgets/like_button.dart';
 
 class PlayListWidget extends StatefulWidget {
   final MainController con;
   final List<SongModel> songs;
 
-  const PlayListWidget({
-    super.key,
-    required this.con,
-    required this.songs,
-  });
+  const PlayListWidget({super.key, required this.con, required this.songs});
 
   @override
   State<PlayListWidget> createState() => _PlayListWidgetState();
@@ -25,10 +21,7 @@ class _PlayListWidgetState extends State<PlayListWidget> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text(
-          'Queue',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        title: Text('Queue', style: Theme.of(context).textTheme.headlineSmall),
         actions: [
           if (widget.songs.isNotEmpty)
             IconButton(
@@ -43,10 +36,7 @@ class _PlayListWidgetState extends State<PlayListWidget> {
         ],
       ),
       body: widget.songs.isEmpty
-          ? const Center(
-              child: Text('Queue is empty',
-                  style: TextStyle(color: Colors.grey)),
-            )
+          ? const Center(child: Text('Queue is empty', style: TextStyle(color: Colors.grey)))
           : ReorderableListView.builder(
               itemCount: widget.songs.length,
               onReorder: (oldIndex, newIndex) {
@@ -59,22 +49,9 @@ class _PlayListWidgetState extends State<PlayListWidget> {
                 final song = widget.songs[index];
                 return ListTile(
                   key: ValueKey('${song.songid}-$index'),
-                  leading: Text(
-                    '${index + 1}',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  title: Text(
-                    song.songname ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  subtitle: Text(
-                    song.name ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
+                  leading: Text('${index + 1}', style: const TextStyle(color: Colors.grey)),
+                  title: Text(song.songname ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white)),
+                  subtitle: Text(song.name ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey)),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -89,8 +66,7 @@ class _PlayListWidgetState extends State<PlayListWidget> {
                       ),
                       IconButton(
                         tooltip: 'Play',
-                        onPressed: () =>
-                            widget.con.setPlaylist(widget.songs, startIndex: index),
+                        onPressed: () => widget.con.setPlaylist(widget.songs, startIndex: index),
                         icon: const Icon(Icons.play_arrow, color: Colors.white),
                       ),
                     ],
